@@ -1,0 +1,15 @@
+name: "hbase-connectors"
+description:
+    ""
+
+third_party {
+  url {
+    type: GIT
+    value: "https://github.com/apache/hbase-connectors"
+  }
+  version: "707e1c584a5e1653fb9bfb24d7429c761982adf3"
+  last_upgrade_date { year: 2022 month: 11 day: 29 }
+  license_type: NOTICE
+  local_modifications:
+      "LICENSE file has been created by copying hbase-connectors/LICENSE.txt."
+}
