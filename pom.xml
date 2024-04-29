@@ -27,21 +27,21 @@
 
   <modules>
     <module>spark-bigtable_2.12</module>
-    <module>spark-bigtable-it_2.12</module>
+    <module>spark-bigtable_2.12-it</module>
   </modules>
 
   <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <surefire.version>3.0.0-M5</surefire.version>
-    <junit.version>4.13.2</junit.version>
-
-    <spark.version>3.3.2</spark.version>
     <scala.version>2.12.14</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
-    <!--  Consider using com.google.cloud:libraries-bom when it releases a new version.  -->
+    <spark.version>3.3.2</spark.version>
     <bigtable.java.version>2.38.0</bigtable.java.version>
     <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>
+
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <scalatest.version>3.2.16</scalatest.version>
+    <surefire.version>3.0.0-M5</surefire.version>
+    <junit.version>4.13.2</junit.version>
 
     <slf4j.version>1.7.36</slf4j.version>
     <slf4j-reload4j.version>1.7.36</slf4j-reload4j.version>

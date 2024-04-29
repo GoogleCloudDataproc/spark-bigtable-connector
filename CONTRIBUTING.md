@@ -48,10 +48,10 @@ To run the unit tests in the `spark-bigtable_2.12` module, you can use this comm
 mvn -pl spark-bigtable test
 ```
 
-To run the integration tests in the `spark-bigtable-it_2.12` module, you can use this command:
+To run the integration tests in the `spark-bigtable_2.12-it` module, you can use this command:
 
 ```shell
-mvn -pl spark-bigtable-it_2.12 failsafe:integration-test failsafe:verify -DbigtableProjectId=${BIGTABLE_PROJECT_ID} -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} -P integration
+mvn -pl spark-bigtable_2.12-it failsafe:integration-test failsafe:verify -DbigtableProjectId=${BIGTABLE_PROJECT_ID} -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} -P integration
 ```
 
 In the above command, you can replace `-P integration` with `-P long-running`

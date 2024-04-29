@@ -41,12 +41,6 @@
       <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
       <version>${bigtable.java.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-bigtable-emulator</artifactId>
-      <version>${bigtable.java.emulator.version}</version>
-      <scope>test</scope>
-    </dependency>
 
     <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
     <dependency>
@@ -103,7 +97,7 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <version>3.2.16</version>
+      <version>${scalatest.version}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -111,6 +105,14 @@
           <artifactId>scala-library</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-bigtable-emulator</artifactId>
+      <version>${bigtable.java.emulator.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

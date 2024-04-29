@@ -73,7 +73,7 @@ class BigtableDefaultSource
   ): BaseRelation = {
     val relation = BigtableRelation(parameters, Some(data.schema))(sqlContext)
     relation.createTableIfNeeded()
-    relation.insert(data, false)
+    relation.insert(data, overwrite = true)
     relation
   }
 
