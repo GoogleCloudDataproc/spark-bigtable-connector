@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyspark.sql import SparkSession
 import argparse
+from pyspark.sql import SparkSession
+
 
 class TestBase():
   PROJECT_ID_PROPERTY_NAME = 'bigtableProjectId'
@@ -23,11 +24,11 @@ class TestBase():
   def setup_basic_args(self):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--' + self.PROJECT_ID_PROPERTY_NAME, help='Bigtable project ID.')
+      '--' + self.PROJECT_ID_PROPERTY_NAME, help='Bigtable project ID.')
     parser.add_argument(
-        '--' + self.INSTANCE_ID_PROPERTY_NAME, help='Bigtable instance ID.')
+      '--' + self.INSTANCE_ID_PROPERTY_NAME, help='Bigtable instance ID.')
     parser.add_argument(
-        '--' + self.TABLE_ID_PROPERTY_NAME, help='Bigtable table ID.')
+      '--' + self.TABLE_ID_PROPERTY_NAME, help='Bigtable table ID.')
     args = vars(parser.parse_args())  # Convert args from Namespace to dict.
 
     self.bigtable_project_id = args.get(self.PROJECT_ID_PROPERTY_NAME)
@@ -41,7 +42,7 @@ class TestBase():
         f'Bigtable project ID, instance ID, and table id should be specified '
         f'using --{self.PROJECT_ID_PROPERTY_NAME}=X, --{self.INSTANCE_ID_PROPERTY_NAME}=Y, '
         f'and --{self.TABLE_ID_PROPERTY_NAME}=Z, respectively.'
-        )
+      )
 
     self.catalog = ''.join(("""{
       "table":{"namespace":"default", "name":" """ + self.bigtable_table_id + """
@@ -55,22 +56,22 @@ class TestBase():
 
   def setup_spark(self):
     self.spark = SparkSession.builder \
-          .appName('test') \
-          .getOrCreate()
+      .appName('test') \
+      .getOrCreate()
 
   def write_dataframe(self, df, create_new_table='true'):
     df.write \
-        .format('bigtable') \
-        .options(catalog=self.catalog) \
-        .option('spark.bigtable.project.id', self.bigtable_project_id) \
-        .option('spark.bigtable.instance.id', self.bigtable_instance_id) \
-        .option('spark.bigtable.create.new.table', create_new_table) \
-        .save()
+      .format('bigtable') \
+      .options(catalog=self.catalog) \
+      .option('spark.bigtable.project.id', self.bigtable_project_id) \
+      .option('spark.bigtable.instance.id', self.bigtable_instance_id) \
+      .option('spark.bigtable.create.new.table', create_new_table) \
+      .save()
 
   def read_dataframe(self):
     return self.spark.read \
-        .format('bigtable') \
-        .options(catalog=self.catalog) \
-        .option('spark.bigtable.project.id', self.bigtable_project_id) \
-        .option('spark.bigtable.instance.id', self.bigtable_instance_id) \
-        .load()
+      .format('bigtable') \
+      .options(catalog=self.catalog) \
+      .option('spark.bigtable.project.id', self.bigtable_project_id) \
+      .option('spark.bigtable.instance.id', self.bigtable_instance_id) \
+      .load()

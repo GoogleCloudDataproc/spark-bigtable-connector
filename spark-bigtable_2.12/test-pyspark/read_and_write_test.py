@@ -14,6 +14,7 @@
 
 import test_base
 
+
 class ReadAndWriteTest(test_base.TestBase):
   def run_test(self):
     self.setup_basic_args()
@@ -34,5 +35,6 @@ class ReadAndWriteTest(test_base.TestBase):
     result_row = filtered_df.collect()[0]
     assert result_row['word'] == 'word4'
     assert result_row['count'] == 4
+
 
 ReadAndWriteTest().run_test()

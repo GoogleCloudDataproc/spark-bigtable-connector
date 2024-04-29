@@ -15,7 +15,6 @@
  */
 package com.google.cloud.spark.bigtable;
 
-import static org.apache.spark.sql.functions.*;
 import static org.junit.Assert.assertEquals;
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;

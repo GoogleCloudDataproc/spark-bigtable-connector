@@ -17,8 +17,14 @@
 package com.google.cloud.spark.bigtable;
 
 import static com.google.cloud.bigtable.admin.v2.models.GCRules.GCRULES;
-import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.*;
-import static org.apache.spark.sql.functions.*;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_BATCH_MUTATE_SIZE;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_CREATE_NEW_TABLE;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_EMULATOR_PORT;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_INSTANCE_ID;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_PROJECT_ID;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_TIMERANGE_END;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_TIMERANGE_START;
+import static org.apache.spark.sql.functions.count;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

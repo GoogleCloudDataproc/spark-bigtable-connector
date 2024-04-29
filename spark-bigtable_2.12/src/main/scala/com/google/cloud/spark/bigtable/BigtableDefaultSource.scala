@@ -19,15 +19,12 @@ package com.google.cloud.spark.bigtable
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
 import com.google.cloud.spark.bigtable.datasources._
-import com.google.cloud.spark.bigtable.filters.{
-  RowKeyWrapper,
-  SparkSqlFilterAdapter
-}
+import com.google.cloud.spark.bigtable.filters.{RowKeyWrapper, SparkSqlFilterAdapter}
 import com.google.common.collect.RangeSet
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, Row => SparkRow}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, Row => SparkRow}
 import org.apache.yetus.audience.InterfaceAudience
 
 object VersionInformation {

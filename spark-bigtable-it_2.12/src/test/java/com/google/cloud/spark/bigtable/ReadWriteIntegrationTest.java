@@ -15,7 +15,6 @@
  */
 package com.google.cloud.spark.bigtable;
 
-import static org.apache.spark.sql.functions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

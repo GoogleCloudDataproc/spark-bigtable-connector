@@ -18,13 +18,16 @@ package com.google.cloud.spark.bigtable.model;
 
 import java.io.Serializable;
 
-/** A JavaBean class for using as a DataFrame row in tests. */
+/**
+ * A JavaBean class for using as a DataFrame row in tests.
+ */
 public class TestRow implements Serializable {
   private String stringCol;
   private String stringCol2;
   private long longCol;
 
-  public TestRow() {}
+  public TestRow() {
+  }
 
   public TestRow(String stringCol, String stringCol2, long longCol) {
     this.stringCol = stringCol;

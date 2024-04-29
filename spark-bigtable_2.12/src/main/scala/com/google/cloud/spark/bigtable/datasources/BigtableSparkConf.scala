@@ -28,8 +28,10 @@ import org.apache.yetus.audience.InterfaceAudience;
 @InterfaceAudience.Public
 object BigtableSparkConf {
 
-  /** The Bigtable project and instance id. */
+  /** The Bigtable project id. */
   val BIGTABLE_PROJECT_ID = "spark.bigtable.project.id"
+
+  /** The Bigtable instance id. */
   val BIGTABLE_INSTANCE_ID = "spark.bigtable.instance.id"
 
   /** The Bigtable app profile. */

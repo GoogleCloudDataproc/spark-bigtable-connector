@@ -29,6 +29,10 @@ import org.threeten.bp.Duration
 import scala.collection.mutable
 import scala.math.max
 
+/** This class is responsible for creating BigtableDataClient objects, setting
+  * appropriate runtime configurations, and cashing them per each Spark worker
+  * to improve performance.
+  */
 @InterfaceAudience.Private
 object BigtableDataClientBuilder extends Serializable with Logging {
 
@@ -61,7 +65,7 @@ object BigtableDataClientBuilder extends Serializable with Logging {
   def getHandle(clientKey: BigtableClientKey): DataClientHandle = synchronized {
     if (!refCountMap.contains(clientKey)) {
       refCountMap += (clientKey -> 0)
-      logInfo("Creating a new BigtableDataClient with key = " + clientKey)
+      logDebug("Creating a new BigtableDataClient with key = " + clientKey)
       dataClientMap += (clientKey -> createDataClient(clientKey))
     }
     refCountMap(clientKey) += 1
@@ -216,6 +220,9 @@ object BigtableDataClientBuilder extends Serializable with Logging {
   }
 }
 
+/** This class is responsible for creating BigtableAdminClient objects and
+  * setting appropriate runtime configurations.
+  */
 @InterfaceAudience.Private
 object BigtableAdminClientBuilder extends Serializable {
   def getAdminClient(clientKey: BigtableClientKey): BigtableTableAdminClient = {

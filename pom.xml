@@ -30,31 +30,7 @@
     <module>spark-bigtable-it_2.12</module>
   </modules>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>artifact-registry</id>
-      <url>artifactregistry://us-central1-maven.pkg.dev/cloud-bigtable-ecosystem/spark-bigtable-connector-preview</url>
-    </snapshotRepository>
-    <repository>
-      <id>artifact-registry</id>
-      <url>artifactregistry://us-central1-maven.pkg.dev/cloud-bigtable-ecosystem/spark-bigtable-connector-preview</url>
-    </repository>
-  </distributionManagement>
-  <repositories>
-    <repository>
-      <id>artifact-registry</id>
-      <url>artifactregistry://us-central1-maven.pkg.dev/cloud-bigtable-ecosystem/spark-bigtable-connector-preview</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
   <properties>
-    <hbase.spark.version>1.0.1-SNAPSHOT</hbase.spark.version>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <surefire.version>3.0.0-M5</surefire.version>
@@ -73,14 +49,4 @@
     <scala-parser-combinators.version>1.1.2</scala-parser-combinators.version>
     <commons-lang.version>2.6</commons-lang.version>
   </properties>
-
-  <build>
-    <extensions>
-      <extension>
-        <groupId>com.google.cloud.artifactregistry</groupId>
-        <artifactId>artifactregistry-maven-wagon</artifactId>
-        <version>2.2.0</version>
-      </extension>
-    </extensions>
-  </build>
 </project>

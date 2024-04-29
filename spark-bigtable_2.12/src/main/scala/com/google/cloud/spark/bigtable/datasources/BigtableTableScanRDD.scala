@@ -108,6 +108,7 @@ class BigtableTableScanRDD(
     val iterator = new Iterator[BigtableRow] {
       override def hasNext: Boolean = {
         if (!it.hasNext) {
+          // TODO: Verify whether canceling the stream is required.
           stream.cancel()
           clientHandle.close()
           false
