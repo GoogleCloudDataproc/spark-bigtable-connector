@@ -22,13 +22,50 @@
   <artifactId>spark-bigtable-connector</artifactId>
   <packaging>pom</packaging>
   <version>0.1.0</version>
-  <name>Google Bigtable - Apache Spark</name>
-  <description>Apache Spark Connectors for Google Bigtable</description>
+  <name>Spark Bigtable Connector Build Parent</name>
+  <description>Parent project for all the Spark Bigtable Connector artifacts</description>
+  <url>https://github.com/GoogleCloudDataproc/spark-bigtable-connector</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <organization>Google Inc.</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>
+      scm:git:git@github.com:GoogleCloudDataproc/spark.bigtable-connector.git
+    </connection>
+    <developerConnection>
+      scm:git:git@github.com:GoogleCloudDataproc/spark.bigtable-connector.git
+    </developerConnection>
+    <url>git@github.com:GoogleCloudDataproc/spark.bigtable-connector.git</url>
+  </scm>
 
   <modules>
     <module>spark-bigtable_2.12</module>
     <module>spark-bigtable_2.12-it</module>
   </modules>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <scala.version>2.12.14</scala.version>
@@ -42,6 +79,9 @@
     <scalatest.version>3.2.16</scalatest.version>
     <surefire.version>3.0.0-M5</surefire.version>
     <junit.version>4.13.2</junit.version>
+    <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
+    <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+    <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
 
     <slf4j.version>1.7.36</slf4j.version>
     <slf4j-reload4j.version>1.7.36</slf4j-reload4j.version>
@@ -49,4 +89,49 @@
     <scala-parser-combinators.version>1.1.2</scala-parser-combinators.version>
     <commons-lang.version>2.6</commons-lang.version>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>${maven-gpg-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>${maven-source-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${maven-javadoc-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
