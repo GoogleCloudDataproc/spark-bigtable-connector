@@ -79,20 +79,21 @@ Spark SQL's data model, built on top of RDDs.
 
 ### Supported Spark runtime environments and requirements
 
-You can use the connector with Spark locally, as well as in managed environments
-such as Dataproc cluster or serverless. You need the following depending on the
-environments you choose to use:
+You can use the connector with Spark locally with the
+[Bigtable emulator](https://cloud.google.com/bigtable/docs/emulator),
+as well as in managed environments such as Dataproc cluster or serverless.
+You need the following depending on the environments you choose to use:
 
-| Runtime environment              | Bigtable | Dataproc | Cloud Storage |
-|----------------------------------|----------|----------|---------------|
-| Local Spark w/ Bigtable emulator | Optional | Optional | Optional      |
-| Local Spark                      | Required | Optional | Optional      |
-| Dataproc Cluster                 | Required | Required | Optional      |
-| Dataproc Serverless              | Required | Required | Required      |
+| Runtime environment                                                                 | Bigtable | Dataproc | Cloud Storage |
+|-------------------------------------------------------------------------------------|----------|----------|---------------|
+| Local Spark w/ [Bigtable emulator](https://cloud.google.com/bigtable/docs/emulator) | Optional | Optional | Optional      |
+| Local Spark                                                                         | Required | Optional | Optional      |
+| Dataproc Cluster                                                                    | Required | Required | Optional      |
+| Dataproc Serverless                                                                 | Required | Required | Required      |
 
 ### Supported Spark versions
 
-Our connector supports the following Spark versions **with Scala 2.12**:
+The connector supports the following Spark versions **with Scala 2.12**:
 
 | Scala version | Spark versions                    | Spark Application Languages                             |
 |---------------|-----------------------------------|---------------------------------------------------------|
@@ -132,8 +133,10 @@ which are created by concatenating multiple DataFrame columns together.
 
 ### Writing to Bigtable
 
-You can use the `dataFrame.write()` format write to Bigtable.
-This is a sample snippet of writing to Bigtable using Java:
+You can use the `bigtable` format along with specifying the Bigtable
+project and instance id to write to Bigtable. The catalog definition
+specifies the table destination. This is a sample snippet of writing
+to Bigtable using Java:
 
 ```java
 Dataset<Row> dataFrame;
@@ -148,8 +151,9 @@ dataFrame
 
 ### Reading from Bigtable
 
-You can use the `spark.read()` format to read from Bigtable.
-This is a sample snippet of reading from Bigtable using Java:
+You can use the `bigtable` format and catalog, along with the Bigtable
+project and instance id to read from Bigtable. This is a sample snippet
+of reading from Bigtable using Java:
 
 ```java
 Dataset<Row> dataFrame = spark
@@ -168,16 +172,16 @@ runtime configurations to
 the connector. For example, Bigtable project and instance ID or settings for
 timestamp and timeout configurations.
 For a full list of configurations, refer to
-`spark-bigtable_2.12/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala`,
+[BigtableSparkConf.scala](spark-bigtable_2.12/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
 where these configs are defined.
 
 ### Bigtable emulator support
 
 When using the connector locally, you can start a Bigtable emulator server and
 set the environment variable
-`export BIGTABLE_EMULATOR_HOST=localhost:<emulator_port>` to use the connector
-with the emulator instead of a
-real Bigtable instance. You can refer to the
+`export BIGTABLE_EMULATOR_HOST=localhost:<emulator_port>` in the same
+environment where Spark is launched. The connector will use the emulator
+instead of a real Bigtable instance. You can refer to the
 [Bigtable emulator documentations](https://cloud.google.com/bigtable/docs/emulator)
 for more details on using it.
 
@@ -209,7 +213,22 @@ filters is as follows:
 
 Note that when using compound row keys, filter on those columns are
 **not** pushed to Bigtable and are performed on the client-side (resulting in a
-full-table scan).
+full-table scan). If filtering is required, a workaround is to concatenate
+the intended columns into a *single* DataFrame column of a supported type
+(e.g., string) and use that column as the row key with one of the supported
+filters above. One option is using the `concat` function, with a sample snippet
+in Scala as follows:
+
+```scala
+df
+  .withColumn("new_row_key", 
+    org.apache.spark.sql.functions.concat(
+      df.col("first_col"), 
+      df.col("second_col")
+    ))
+  .drop("first_col")
+  .drop("second_col")
+```
 
 ### Client-side metrics
 
@@ -255,7 +274,9 @@ Support for other types, e.g., `int`, `float`, etc., will be added in future
 versions of the
 connector. The `examples` folder contains workaround for converting these types
 to `BinaryType`
-inside your application, in different languages. For complex types,
+inside your application, in different languages. Additionally, the columns may
+be converted to a supported type, e.g., `string()`, in SQL when writing and
+converted back to the intended type on read. For complex types,
 e.g., `ArrayType`, `MapType`, and `StructType`, you can use Avro
 for serializations. You can refer
 to [this link](https://spark.apache.org/docs/latest/sql-ref-datatypes.html)
