@@ -3,7 +3,7 @@
 This connector allows writing Spark SQL DataFrames
 into [Google Bigtable](https://cloud.google.com/bigtable) and reading tables
 from Bigtable. It uses
-the[Spark SQL Data Source API V1](https://spark.apache.org/docs/latest/sql-data-sources.html)
+the [Spark SQL Data Source API V1](https://spark.apache.org/docs/latest/sql-data-sources.html)
 to connect to Bigtable.
 
 ## Quickstart
@@ -25,7 +25,6 @@ the `--jars` flag to pass the GCS address of the connector when submitting it.
 For Maven, you can add the following snippet to your `pom.xml` file:
 
 ```xml
-
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.12</artifactId>
