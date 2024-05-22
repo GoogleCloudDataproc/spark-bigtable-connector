@@ -88,6 +88,7 @@ create_table_id() {
 #      can probably avoid this with escaping, etc., but it's not really critical
 #      since there's nothing special about its byte value to try to manually cover.
 #  2. Repeated characters would be ignored w/o affecting correctness.
+# TODO: Move the pre-split logic to the Java test using client APIs.
 create_table_with_random_splits() {
     BIGTABLE_PROJECT_ID=$1
     BIGTABLE_INSTANCE_ID=$2
@@ -140,6 +141,7 @@ run_load_test() {
     return $exit_code
 }
 
+# TODO: Delete all existing fuzz-test tables if there are old ones remaining.
 run_fuzz_tests() {
     SPARK_VERSION=$1
     echo "***Running Spark-Bigtable fuzz tests for Spark ${SPARK_VERSION}.***"
@@ -174,6 +176,7 @@ run_pyspark_test() {
     BASE_SCRIPT="spark-bigtable_2.12/test-pyspark/test_base.py"
     # Download Apache Spark on the machine from a GCS bucket, new versions
     # must be manually uploaded to the bucket first.
+    # TODO: Move this logic to an env setup script/Java code for easier reproduction.
     gsutil -q cp "gs://bigtable-spark-test-resources/spark-files/${SPARK_BIN_NAME}.tgz" .
     tar xzf ${SPARK_BIN_NAME}.tgz
     PYSPARK_TABLE_ID=$(create_table_id "pyspark")
