@@ -6,6 +6,12 @@ from Bigtable. It uses
 the [Spark SQL Data Source API V1](https://spark.apache.org/docs/latest/sql-data-sources.html)
 to connect to Bigtable.
 
+## Unreleased Changes
+
+This Readme may include documentation for changes that haven't been released yet.  The latest release's documentation and source code are found here.
+
+https://github.com/GoogleCloudDataproc/spark-bigtable-connector/blob/main/README.md
+
 ## Quickstart
 
 You can access the connector in two different ways:
@@ -18,7 +24,7 @@ You can access the connector in two different ways:
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>`(
-current `<version>` is `0.1.0`) and package it inside your application JAR using
+current `<version>` is `${next-release-tag}`) and package it inside your application JAR using
 libraries such as Maven Shade Plugin. For PySpark applications, you can use
 the `--jars` flag to pass the GCS address of the connector when submitting it.
 
@@ -28,14 +34,14 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.12</artifactId>
-  <version>0.1.0</version>
+  <version>${next-release-tag}</version>
 </dependency>
 ```
 
 For sbt, you can add the following to your `build.sbt` file:
 
 ```
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.1.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "${next-release-tag}"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -43,7 +49,7 @@ Gradle:
 
 ```
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.1.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '${next-release-tag}'
 }
 ```
 
