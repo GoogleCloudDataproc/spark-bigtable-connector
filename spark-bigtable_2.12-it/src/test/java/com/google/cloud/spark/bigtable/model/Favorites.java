@@ -23,8 +23,7 @@ public class Favorites implements Serializable {
   private String favorite_string;
   private int favorite_number;
 
-  public Favorites() {
-  }
+  public Favorites() {}
 
   public Favorites(String string, int number) {
     this.favorite_string = string;
