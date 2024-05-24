@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable-connector</artifactId>
   <packaging>pom</packaging>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <name>Spark Bigtable Connector Build Parent</name>
   <description>Parent project for all the Spark Bigtable Connector artifacts</description>
   <url>https://github.com/GoogleCloudDataproc/spark-bigtable-connector</url>
@@ -69,6 +69,7 @@
 
   <properties>
     <gpg.skip>true</gpg.skip>
+    <nexus.remote.skip>false</nexus.remote.skip>
 
     <scala.version>2.12.14</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
@@ -81,6 +82,7 @@
     <scalatest.version>3.2.16</scalatest.version>
     <surefire.version>3.0.0-M5</surefire.version>
     <junit.version>4.13.2</junit.version>
+    <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
     <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
     <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
     <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
@@ -100,6 +102,18 @@
       </properties>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>${nexus-staging-maven-plugin.version}</version>
+            <extensions>true</extensions>
+            <configuration>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+              <autoReleaseAfterClose>false</autoReleaseAfterClose>
+              <skipRemoteStaging>${nexus.remote.skip}</skipRemoteStaging>
+            </configuration>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
