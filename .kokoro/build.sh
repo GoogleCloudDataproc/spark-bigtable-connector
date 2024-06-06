@@ -25,6 +25,7 @@ source ${scriptDir}/common.sh
 
 # Upgrade Maven and print out Maven & Java version
 mvn wrapper:wrapper -Dmaven=3.8.8
+./mvnw --version
 mvn -version
 echo ${JOB_TYPE}
 
