@@ -23,7 +23,8 @@ cd ${scriptDir}/..
 # include common functions
 source ${scriptDir}/common.sh
 
-# Print out Maven & Java version
+# Upgrade Maven and print out Maven & Java version
+mvn wrapper:wrapper -Dmaven=3.8.8
 mvn -version
 echo ${JOB_TYPE}
 
