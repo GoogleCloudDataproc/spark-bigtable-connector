@@ -29,7 +29,7 @@ echo ${JOB_TYPE}
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
-  mvn install -B -V -ntp \
+  mvn install -B -V \
     -DskipTests=true \
     -Dclirr.skip=true \
     -Denforcer.skip=true \
@@ -52,7 +52,7 @@ run_unit_tests() {
     echo "***Running connector's unit tests.***"
     CONNECTOR_MODULE="spark-bigtable_2.12"
     mvn -pl ${CONNECTOR_MODULE} -am  \
-        test -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
+        test -B -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
     return $?
 }
 
@@ -63,7 +63,7 @@ run_bigtable_spark_tests() {
     BIGTABLE_SPARK_IT_MODULE="spark-bigtable_2.12-it"
     mvn -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
-        -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
+        -B -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
@@ -151,7 +151,7 @@ run_fuzz_tests() {
     BIGTABLE_SPARK_IT_MODULE="spark-bigtable_2.12-it"
     mvn -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
-        -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
+        -B -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
         -Dspark.version="${SPARK_VERSION}" \
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
