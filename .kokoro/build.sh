@@ -26,12 +26,11 @@ source ${scriptDir}/common.sh
 # Upgrade Maven and print out Maven & Java version
 mvn wrapper:wrapper -Dmaven=3.8.8
 ./mvnw --version
-mvn -version
 echo ${JOB_TYPE}
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
-  mvn install -B -V \
+  ./mvnw install -B -V -ntp \
     -DskipTests=true \
     -Dclirr.skip=true \
     -Denforcer.skip=true \
@@ -53,8 +52,8 @@ apt install -y google-cloud-sdk-cbt
 run_unit_tests() {
     echo "***Running connector's unit tests.***"
     CONNECTOR_MODULE="spark-bigtable_2.12"
-    mvn -pl ${CONNECTOR_MODULE} -am  \
-        test -B -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
+    ./mvnw -pl ${CONNECTOR_MODULE} -am  \
+        test -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
     return $?
 }
 
@@ -63,9 +62,9 @@ run_bigtable_spark_tests() {
     MAVEN_PROFILES=$2
     echo "***Running Spark-Bigtable tests for Spark ${SPARK_VERSION} and profile(s) ${MAVEN_PROFILES}.***"
     BIGTABLE_SPARK_IT_MODULE="spark-bigtable_2.12-it"
-    mvn -pl ${BIGTABLE_SPARK_IT_MODULE} \
+    ./mvnw -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
-        -B -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
+        -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
@@ -151,9 +150,9 @@ run_fuzz_tests() {
     create_table_with_random_splits \
       "${BIGTABLE_PROJECT_ID}" "${BIGTABLE_INSTANCE_ID}" "$TABLE_ID"
     BIGTABLE_SPARK_IT_MODULE="spark-bigtable_2.12-it"
-    mvn -pl ${BIGTABLE_SPARK_IT_MODULE} \
+    ./mvnw -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
-        -B -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
+        -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
         -Dspark.version="${SPARK_VERSION}" \
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
