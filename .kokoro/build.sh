@@ -128,6 +128,7 @@ run_load_test() {
     BASE_SCRIPT="spark-bigtable_2.12/test-pyspark/test_base.py"
     TABLE_ID=$(create_table_id "load")
     gcloud dataproc jobs submit pyspark \
+        --project=${BIGTABLE_PROJECT_ID} \
         --cluster=${DATAPROC_CLUSTER_NAME} \
         --region=${DATAPROC_CLUSTER_REGION} \
         --jars=${BIGTABLE_SPARK_JAR} \
