@@ -29,9 +29,14 @@ source ${scriptDir}/common.sh
 echo ${JOB_TYPE}
 # TODO: remove these after fixing the pyspark test issues
 set +e
+apt install -y python3.9
+which python3
+which python3.9
+export PYSPARK_PYTHON=/usr/bin/python3.9
 python --version
 python2 --version
 python3 --version
+python3.9 --version
 set -e
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
