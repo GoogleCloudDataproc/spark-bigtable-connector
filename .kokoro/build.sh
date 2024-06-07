@@ -29,6 +29,10 @@ source ${scriptDir}/common.sh
 echo ${JOB_TYPE}
 # TODO: remove these after fixing the pyspark test issues
 set +e
+apt update
+apt install software-properties-common
+add-apt-repository ppa:deadsnakes/ppa
+apt update
 apt install -y python3.9
 which python3
 which python3.9
