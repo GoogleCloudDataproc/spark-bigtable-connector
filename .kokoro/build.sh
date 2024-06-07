@@ -124,6 +124,7 @@ delete_table() {
 run_load_test() {
     echo "***Running Load test.***"
     BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar)
+    RESULT_BUCKET_NAME="bigtable-spark-test-resources"
     TEST_SCRIPT="spark-bigtable_2.12/test-pyspark/load_test.py"
     BASE_SCRIPT="spark-bigtable_2.12/test-pyspark/test_base.py"
     TABLE_ID=$(create_table_id "load")
@@ -131,6 +132,7 @@ run_load_test() {
         --project=${BIGTABLE_PROJECT_ID} \
         --cluster=${DATAPROC_CLUSTER_NAME} \
         --region=${DATAPROC_CLUSTER_REGION} \
+        --bucket=${RESULT_BUCKET_NAME} \
         --jars=${BIGTABLE_SPARK_JAR} \
         ${TEST_SCRIPT} \
         --py-files=${BASE_SCRIPT} \
