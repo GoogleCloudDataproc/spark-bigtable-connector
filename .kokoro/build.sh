@@ -27,21 +27,6 @@ source ${scriptDir}/common.sh
 ./mvnw -N wrapper:wrapper -Dmaven=3.8.8
 ./mvnw --version
 echo ${JOB_TYPE}
-# TODO: remove these after fixing the pyspark test issues
-set +e
-apt update
-apt install software-properties-common
-add-apt-repository ppa:deadsnakes/ppa
-apt update
-apt install -y python3.9
-which python3
-which python3.9
-export PYSPARK_PYTHON=/usr/bin/python3.9
-python --version
-python2 --version
-python3 --version
-python3.9 --version
-set -e
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
@@ -228,6 +213,21 @@ all_versions)
     for SPARK_HADOOP_VERSIONS in "2.4.8 2.7" "3.1.3 3.2" "3.3.0 3" "3.4.2 3"
     do
         run_pyspark_test ${SPARK_HADOOP_VERSIONS}
+        RETURN_CODE=$(($RETURN_CODE || $?))
+    done
+    run_unit_tests
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    ;;
+# Cannot currently run PySpark tests on release machines due to version issues.
+# But it doesn't create a high risk since they are already run periodically,
+# we test different Spark versions in Java tests, and we test PySpark
+# using Dataproc in the load test.
+# TODO: Fix Python version issues and run PySpark tests before releasing.
+all_versions_no_pyspark)
+    RETURN_CODE=0
+    for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
+    do
+        run_bigtable_spark_tests ${SPARK_VERSION} "integration"
         RETURN_CODE=$(($RETURN_CODE || $?))
     done
     run_unit_tests
