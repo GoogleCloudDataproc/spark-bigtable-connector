@@ -27,6 +27,12 @@ source ${scriptDir}/common.sh
 ./mvnw -N wrapper:wrapper -Dmaven=3.8.8
 ./mvnw --version
 echo ${JOB_TYPE}
+# TODO: remove these after fixing the pyspark test issues
+set +e
+python --version
+python2 --version
+python3 --version
+set -e
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
