@@ -28,7 +28,7 @@ import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, Row => SparkRow}
 import org.apache.yetus.audience.InterfaceAudience
 
 object VersionInformation {
-  val CONNECTOR_VERSION = "0.1.1"
+  val CONNECTOR_VERSION = "0.1.1"  // ${NEXT_VERSION_FLAG}
   val DATA_SOURCE_VERSION = "V1"
   val scalaVersion = util.Properties.versionNumberString
   // This remains unset only in unit tests where sqlContext is null.
