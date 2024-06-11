@@ -1,5 +1,7 @@
 # Release Notes
 
+## Next
+
 ## 0.1.1 - 2024-06-11
 
 * PR #10: Create a new profile for the release
