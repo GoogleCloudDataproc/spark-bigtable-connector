@@ -550,7 +550,13 @@ class RowFilterLogicTest
                      |"columns":{
                      |"KEY_FIELD":{"cf":"rowkey", "col":"key", "type":"string"},
                      |"BINARY_FIELD":{"cf":"c", "col":"binary", "type":"binary"},
+                     |"BOOLEAN_FIELD":{"cf":"c", "col":"boolean", "type":"boolean"},
+                     |"BYTE_FIELD":{"cf":"c", "col":"byte", "type":"byte"},
+                     |"SHORT_FIELD":{"cf":"c", "col":"short", "type":"short"},
+                     |"INT_FIELD":{"cf":"c", "col":"int", "type":"int"},
                      |"LONG_FIELD":{"cf":"c", "col":"long", "type":"long"},
+                     |"FLOAT_FIELD":{"cf":"c", "col":"float", "type":"float"},
+                     |"DOUBLE_FIELD":{"cf":"c", "col":"double", "type":"double"},
                      |"STRING_FIELD":{"cf":"c", "col":"string", "type":"string"}
                      |}
                      |}""".stripMargin
@@ -566,8 +572,9 @@ class RowFilterLogicTest
     df.registerTempTable("bigtableTestMapping")
     val results = sqlContext
       .sql(
-        "SELECT binary_field, " +
-          "long_field, " +
+        "SELECT binary_field, boolean_field, " +
+          "byte_field, short_field, int_field, long_field, " +
+          "float_field, double_field, " +
           "string_field FROM bigtableTestMapping"
       )
       .collect()
@@ -583,8 +590,14 @@ class RowFilterLogicTest
         .asInstanceOf[Array[Byte]]
         .sameElements(Array(1.toByte, 2.toByte, 3.toByte))
     )
-    assert(result.get(1) == 10000000000L)
-    assert(result.get(2) == "string")
+    assert(result.get(1) == true)
+    assert(result.get(2) == 127)
+    assert(result.get(3) == 32767)
+    assert(result.get(4) == 1000000)
+    assert(result.get(5) == 10000000000L)
+    assert(result.get(6) == 0.5)
+    assert(result.get(7) == 0.125)
+    assert(result.get(8) == "string")
   }
 
   def writeCatalog = s"""{
@@ -592,8 +605,14 @@ class RowFilterLogicTest
                     |"rowkey":"key",
                     |"columns":{
                     |"col0":{"cf":"rowkey", "col":"key", "type":"string"},
-                    |"col1":{"cf":"cf1", "col":"col1", "type":"bigint"},
-                    |"col2":{"cf":"cf2", "col":"col2", "type":"string"}
+                    |"col1":{"cf":"cf1", "col":"col1", "type":"boolean"},
+                    |"col2":{"cf":"cf1", "col":"col2", "type":"double"},
+                    |"col3":{"cf":"cf3", "col":"col3", "type":"float"},
+                    |"col4":{"cf":"cf3", "col":"col4", "type":"int"},
+                    |"col5":{"cf":"cf5", "col":"col5", "type":"bigint"},
+                    |"col6":{"cf":"cf6", "col":"col6", "type":"smallint"},
+                    |"col7":{"cf":"cf7", "col":"col7", "type":"string"},
+                    |"col8":{"cf":"cf8", "col":"col8", "type":"tinyint"}
                     |}
                     |}""".stripMargin
   def withCatalog(cat: String): DataFrame = {
@@ -769,12 +788,12 @@ class RowFilterLogicTest
     // Test getting everything -- Pruned Scan, TimeRange
     val element50 = everything
       .where(col("col0") === lit("row050"))
-      .select("col2")
+      .select("col7")
       .collect()(0)(0)
     assert(element50 == "String50: extra")
     val element200 = everything
       .where(col("col0") === lit("row200"))
-      .select("col2")
+      .select("col7")
       .collect()(0)(0)
     assert(element200 == "String200: new")
     // Test Getting old stuff -- Full Scan, TimeRange
@@ -795,7 +814,7 @@ class RowFilterLogicTest
     // Test Getting old stuff -- Pruned Scan, TimeRange
     val oldElement50 = oldRange
       .where(col("col0") === lit("row050"))
-      .select("col2")
+      .select("col7")
       .collect()(0)(0)
     assert(oldElement50 == "String50: old")
     // Test Getting middle stuff -- Full Scan, TimeRange
@@ -816,7 +835,7 @@ class RowFilterLogicTest
     // Test Getting middle stuff -- Pruned Scan, TimeRange
     val middleElement200 = middleRange
       .where(col("col0") === lit("row200"))
-      .select("col2")
+      .select("col7")
       .collect()(0)(0)
     assert(middleElement200 == "String200: extra")
   }
@@ -1187,8 +1206,38 @@ class RowFilterLogicTest
       )
       .setCell(
         columnFamily,
+        ByteString.copyFrom(BytesConverter.toBytes("boolean")),
+        ByteString.copyFrom(BytesConverter.toBytes(true))
+      )
+      .setCell(
+        columnFamily,
+        ByteString.copyFrom(BytesConverter.toBytes("byte")),
+        ByteString.copyFrom(Array(127.toByte))
+      )
+      .setCell(
+        columnFamily,
+        ByteString.copyFrom(BytesConverter.toBytes("short")),
+        ByteString.copyFrom(BytesConverter.toBytes(32767.toShort))
+      )
+      .setCell(
+        columnFamily,
+        ByteString.copyFrom(BytesConverter.toBytes("int")),
+        ByteString.copyFrom(BytesConverter.toBytes(1000000))
+      )
+      .setCell(
+        columnFamily,
         ByteString.copyFrom(BytesConverter.toBytes("long")),
         ByteString.copyFrom(BytesConverter.toBytes(10000000000L))
+      )
+      .setCell(
+        columnFamily,
+        ByteString.copyFrom(BytesConverter.toBytes("float")),
+        ByteString.copyFrom(BytesConverter.toBytes(0.5f))
+      )
+      .setCell(
+        columnFamily,
+        ByteString.copyFrom(BytesConverter.toBytes("double")),
+        ByteString.copyFrom(BytesConverter.toBytes(0.125))
       )
       .setCell(
         columnFamily,
@@ -1203,12 +1252,32 @@ class RowFilterLogicTest
   }
 }
 
-case class BigtableRecord(col0: String, col1: Long, col2: String)
+case class BigtableRecord(
+    col0: String,
+    col1: Boolean,
+    col2: Double,
+    col3: Float,
+    col4: Int,
+    col5: Long,
+    col6: Short,
+    col7: String,
+    col8: Byte
+)
 
 object BigtableRecord {
   def apply(i: Int, t: String): BigtableRecord = {
     val s = s"""row${"%03d".format(i)}"""
-    BigtableRecord(s, i.toLong, s"String$i: $t")
+    BigtableRecord(
+      s,
+      i % 2 == 0,
+      i.toDouble,
+      i.toFloat,
+      i,
+      i.toLong,
+      i.toShort,
+      s"String$i: $t",
+      i.toByte
+    )
   }
 }
 
