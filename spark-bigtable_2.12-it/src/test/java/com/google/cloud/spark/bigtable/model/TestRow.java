@@ -29,7 +29,9 @@ public class TestRow implements Serializable {
   private long longCol;
   private float floatCol;
   private double doubleCol;
+
   public TestRow() {}
+
   public TestRow(
       String stringCol,
       String stringCol2,
@@ -66,30 +68,39 @@ public class TestRow implements Serializable {
   public void setStringCol2(String stringCol2) {
     this.stringCol2 = stringCol2;
   }
+
   public boolean isBooleanCol() {
     return booleanCol;
   }
+
   public void setBooleanCol(boolean booleanCol) {
     this.booleanCol = booleanCol;
   }
+
   public byte getByteCol() {
     return byteCol;
   }
+
   public void setByteCol(byte byteCol) {
     this.byteCol = byteCol;
   }
+
   public short getShortCol() {
     return shortCol;
   }
+
   public void setShortCol(short shortCol) {
     this.shortCol = shortCol;
   }
+
   public int getIntCol() {
     return intCol;
   }
+
   public void setIntCol(int intCol) {
     this.intCol = intCol;
   }
+
   public long getLongCol() {
     return longCol;
   }
@@ -97,18 +108,23 @@ public class TestRow implements Serializable {
   public void setLongCol(long longCol) {
     this.longCol = longCol;
   }
+
   public float getFloatCol() {
     return floatCol;
   }
+
   public void setFloatCol(float floatCol) {
     this.floatCol = floatCol;
   }
+
   public double getDoubleCol() {
     return doubleCol;
   }
+
   public void setDoubleCol(double doubleCol) {
     this.doubleCol = doubleCol;
   }
+
   @Override
   public int hashCode() {
     final int prime = 31;
