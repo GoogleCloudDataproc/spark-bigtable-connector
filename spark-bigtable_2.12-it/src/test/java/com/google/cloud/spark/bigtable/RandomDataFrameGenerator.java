@@ -162,7 +162,17 @@ public class RandomDataFrameGenerator {
 
   private DataType getRandomDataType() {
     // We can add more types to this list as they become supported in the connector.
-    DataType[] types = {DataTypes.LongType, DataTypes.StringType, DataTypes.BinaryType};
+    DataType[] types = {
+      DataTypes.BooleanType,
+      DataTypes.ByteType,
+      DataTypes.ShortType,
+      DataTypes.IntegerType,
+      DataTypes.LongType,
+      DataTypes.FloatType,
+      DataTypes.DoubleType,
+      DataTypes.StringType,
+      DataTypes.BinaryType
+    };
     int dataTypeCode = random.nextInt(types.length);
     return types[dataTypeCode];
   }

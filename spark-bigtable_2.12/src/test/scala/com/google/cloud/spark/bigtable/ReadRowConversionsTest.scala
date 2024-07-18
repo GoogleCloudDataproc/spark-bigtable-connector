@@ -65,7 +65,17 @@ class ReadRowConversionsTest
         "binary",
         Array[Byte](10.toByte, 20.toByte, -30.toByte)
       ),
+      (BytesConverter.toBytes(false), "boolean", false),
+      (Array[Byte](123.toByte), "byte", 123.toByte),
+      (BytesConverter.toBytes(4321.toShort), "short", 4321.toShort),
+      (BytesConverter.toBytes(-123523), "int", -123523),
       (BytesConverter.toBytes(9885673210123L), "long", 9885673210123L),
+      (BytesConverter.toBytes(23.678012f), "float", 23.678012f),
+      (
+        BytesConverter.toBytes(-123876.987123000123),
+        "double",
+        -123876.987123000123
+      ),
       // Using byte '0' in string columns is allowed in non-compound row keys.
       (
         BytesConverter.toBytes("foo\u0000bar\u0000"),
@@ -107,10 +117,10 @@ class ReadRowConversionsTest
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
 
-    val rowKeyValues = Array[Any](100L, 1000000123L, -987123L)
+    val rowKeyValues = Array[Any](100, 10.4f, -987123L)
     val rowKeyBytes = Array[Array[Byte]](
-      BytesConverter.toBytes(100L),
-      BytesConverter.toBytes(1000000123L),
+      BytesConverter.toBytes(100),
+      BytesConverter.toBytes(10.4f),
       BytesConverter.toBytes(-987123L)
     )
     val keyFields = Seq(
@@ -118,14 +128,14 @@ class ReadRowConversionsTest
         sparkColName = "s1",
         btColFamily = "rowkey",
         btColName = "bt1",
-        simpleType = Option("long"),
+        simpleType = Option("int"),
         len = -1
       ),
       Field(
         sparkColName = "s2",
         btColFamily = "rowkey",
         btColName = "bt2",
-        simpleType = Option("long"),
+        simpleType = Option("float"),
         len = -1
       ),
       Field(
@@ -326,9 +336,12 @@ class ReadRowConversionsTest
     val rowkey: ByteString =
       ByteString.copyFrom(BytesConverter.toBytes("fooRowKey"))
     val cells = List[RowCell](
-      createRowCell("cf1", "c1", 1000000, BytesConverter.toBytes("colVal$12")),
-      createRowCell("cf1", "c2", 0, BytesConverter.toBytes(9898989898989898L)),
-      createRowCell("cf2", "c3", 0, Array[Byte](100, 110, -120))
+      createRowCell("cf1", "c1", 0, BytesConverter.toBytes(678)),
+      createRowCell("cf1", "c2", 1000000, BytesConverter.toBytes("colVal$12")),
+      createRowCell("cf1", "c3", 0, BytesConverter.toBytes(9898989898989898L)),
+      createRowCell("cf2", "c4", 100, BytesConverter.toBytes(-333.444)),
+      createRowCell("cf3", "c5", 999999, Array[Byte](15.toByte)),
+      createRowCell("cf3", "c6", 0, Array[Byte](100, 110, -120))
     )
     val bigtableRow: BigtableRow = createBigtableRow(rowkey, cells)
 
@@ -336,19 +349,25 @@ class ReadRowConversionsTest
     // since buildRow gets these columns from catalog.getRowKeyColumns
     val fields = Seq(
       Field("stringCol", "rowkey", "stringCol", Option("string")),
-      Field("s_col1", "cf1", "c1", Option("string")),
-      Field("s_col2", "cf1", "c2", Option("long")),
-      Field("s_col3", "cf2", "c3", Option("binary"))
+      Field("s_col1", "cf1", "c1", Option("int")),
+      Field("s_col2", "cf1", "c2", Option("string")),
+      Field("s_col3", "cf1", "c3", Option("long")),
+      Field("s_col4", "cf2", "c4", Option("double")),
+      Field("s_col5", "cf3", "c5", Option("byte")),
+      Field("s_col6", "cf3", "c6", Option("binary"))
     )
     val actualSparkRow: SparkRow =
       ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
 
     assert(actualSparkRow.getAs[String](0) == "fooRowKey")
-    assert(actualSparkRow.getAs[String](1) == "colVal$12")
-    assert(actualSparkRow.getAs[Long](2) == 9898989898989898L)
+    assert(actualSparkRow.getAs[Int](1) == 678)
+    assert(actualSparkRow.getAs[String](2) == "colVal$12")
+    assert(actualSparkRow.getAs[Long](3) == 9898989898989898L)
+    assert(actualSparkRow.getAs[Double](4) == -333.444)
+    assert(actualSparkRow.getAs[Byte](5) == 15.toByte)
     assert(
       actualSparkRow
-        .get(3)
+        .get(6)
         .asInstanceOf[Array[Byte]]
         .sameElements(Array[Byte](100, 110, -120))
     )
@@ -425,6 +444,12 @@ class ReadRowConversionsTest
     val testData = Table(
       ("rowCellBytes", "colType", "colLength"),
       (
+        Array[Byte](10.toByte, 20.toByte, -30.toByte, 40.toByte, -50.toByte),
+        "int",
+        4
+      ),
+      (Array[Byte](10.toByte, 20.toByte, -30.toByte), "int", 4),
+      (
         Array[Byte](
           1.toByte,
           2.toByte,
@@ -436,22 +461,15 @@ class ReadRowConversionsTest
           8.toByte,
           9.toByte
         ),
-        "long",
+        "double",
         8
       ),
       (
-        Array[Byte](
-          1.toByte,
-          2.toByte,
-          3.toByte,
-          -4.toByte,
-          5.toByte,
-          6.toByte,
-          7.toByte
-        ),
-        "long",
-        8
-      )
+        Array[Byte](-1.toByte, 2.toByte, 3.toByte, -4.toByte, 5.toByte),
+        "float",
+        4
+      ),
+      (Array[Byte](0.toByte, 0.toByte, 0.toByte, 0.toByte), "string", 3)
     )
     forAll(testData) {
       (rowCellBytes: Array[Byte], colType: String, colLength: Int) =>

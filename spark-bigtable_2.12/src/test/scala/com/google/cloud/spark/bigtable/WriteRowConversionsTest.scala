@@ -69,6 +69,18 @@ class WriteRowConversionsTest
         ),
         "string"
       ),
+      // Int row key and column
+      (SparkRow(1248987, -987123),
+        Seq(BytesConverter.toBytes(1248987), BytesConverter.toBytes(-987123)),
+        "int"),
+      // Float row key and column
+      (SparkRow(-876.2344f, 1111.00002f),
+        Seq(BytesConverter.toBytes(-876.2344f), BytesConverter.toBytes(1111.00002f)),
+        "float"),
+      // Double row key and column
+      (SparkRow(46245.43543, -32222.000024),
+        Seq(BytesConverter.toBytes(46245.43543), BytesConverter.toBytes(-32222.000024)),
+        "double"),
       // Long row key and column
       (
         SparkRow(1248987L, -987123L),
@@ -123,7 +135,7 @@ class WriteRowConversionsTest
       )
 
     val sparkRow =
-      SparkRow("rowkey2\u0000", 111L, "colValue", "fixedLen", -444L)
+      SparkRow("rowkey2\u0000", 111L, "colValue", "fixedLen", -444.444f)
 
     val writeRowConversions = new WriteRowConversions(
       relation.catalog,
@@ -153,7 +165,7 @@ class WriteRowConversionsTest
       ),
       (
         4,
-        Field("spark_rowkey3", "rowkey", "bt_rowkey", Option("long"), len = -1)
+        Field("spark_rowkey3", "rowkey", "bt_rowkey", Option("float"), len = -1)
       )
     )
     writeRowConversions.columnIndexAndField =
@@ -165,7 +177,7 @@ class WriteRowConversionsTest
       BytesConverter.toBytes(111L)
         ++ BytesConverter.toBytes("rowkey2\u0000")
         ++ BytesConverter.toBytes("fixedLen")
-        ++ BytesConverter.toBytes(-444L)
+        ++ BytesConverter.toBytes(-444.444f)
     )
     val expectedEntry: MutateRowsRequest.Entry =
       MutateRowsRequest.Entry
@@ -200,7 +212,7 @@ class WriteRowConversionsTest
 
     // All string columns in a compound row key should either have a fixed length
     // or end with byte '0'.
-    val sparkRow = SparkRow("rowkey2", 111L, "colValue", "ROWKEY3", -777L)
+    val sparkRow = SparkRow("rowkey2", 111L, "colValue", "ROWKEY3", -777.444f)
     val writeRowConversions = new WriteRowConversions(
       relation.catalog,
       relation.schema,
@@ -233,7 +245,7 @@ class WriteRowConversionsTest
       ),
       (
         4,
-        Field("spark_rowkey3", "rowkey", "bt_rowkey", Option("long"), len = -1)
+        Field("spark_rowkey3", "rowkey", "bt_rowkey", Option("float"), len = -1)
       )
     )
     writeRowConversions.columnIndexAndField =
@@ -250,12 +262,7 @@ class WriteRowConversionsTest
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
 
     val sparkRow = SparkRow(
-      "StringCOL_123",
-      -1999L,
-      6767676767L,
-      "foo\u3943RowKEY",
-      45698701L
-    )
+      "StringCOL_123", -1999, 6767676767L, "foo\u3943RowKEY", 456.98701)
 
     val writeRowConversions = new WriteRowConversions(
       relation.catalog,
@@ -266,9 +273,9 @@ class WriteRowConversionsTest
       Seq((3, Field("spark_rowkey", "rowkey", "bt_rowkey", Option("string"))))
     writeRowConversions.columnIndexAndField = Array(
       (2, Field("col2", "cf1", "bt_col2", Option("long"))),
-      (4, Field("col4", "cf2", "bt_col4", Option("long"))),
+      (4, Field("col4", "cf2", "bt_col4", Option("double"))),
       (0, Field("col0", "cf1", "bt_col0", Option("string"))),
-      (1, Field("col1", "cf3", "bt_col1", Option("long")))
+      (1, Field("col1", "cf3", "bt_col1", Option("int"))),
     )
 
     val actualEntry: MutateRowsRequest.Entry =
@@ -308,7 +315,7 @@ class WriteRowConversionsTest
                 )
                 .setTimestampMicros(10000000L)
                 .setValue(
-                  ByteString.copyFrom(BytesConverter.toBytes(45698701L))
+                  ByteString.copyFrom(BytesConverter.toBytes(456.98701))
                 )
             )
         )
@@ -339,7 +346,7 @@ class WriteRowConversionsTest
                   ByteString.copyFrom(BytesConverter.toBytes("bt_col1"))
                 )
                 .setTimestampMicros(10000000L)
-                .setValue(ByteString.copyFrom(BytesConverter.toBytes(-1999L)))
+                .setValue(ByteString.copyFrom(BytesConverter.toBytes(-1999)))
             )
         )
         .build()
@@ -392,6 +399,9 @@ class WriteRowConversionsTest
     val testData = Table(
       ("sparkRow", "dataType", "shouldFail"),
       (SparkRow(123, "fooCol"), "string", false),
+      (SparkRow(235.35, 352.3), "float", false),
+      (SparkRow(235.35f, 2354.32f), "double", false),
+      (SparkRow(235.35, 235432100L), "double", false),
       (SparkRow(235.35f, 2354.00897), "long", false),
       (SparkRow("324", "fooCol"), "long", true),
       (SparkRow(Array[Byte](1, 2, 3, 4, 5, 6, 7, 8, 9), 678), "long", true),

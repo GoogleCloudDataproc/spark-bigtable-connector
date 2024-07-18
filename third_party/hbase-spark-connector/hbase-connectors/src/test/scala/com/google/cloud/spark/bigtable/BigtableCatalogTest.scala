@@ -22,20 +22,16 @@ import org.apache.spark.sql.types._
 import org.scalatest.funsuite.AnyFunSuite
 
 class BigtableCatalogSuite extends AnyFunSuite with Logging {
-  val map = s"""MAP<int, struct<varchar:string>>"""
-  val array = s"""array<struct<tinYint:tinyint>>"""
-  val arrayMap = s"""MAp<int, ARRAY<double>>"""
   val catalog = s"""{
-                    |"table":{"name":"htable"},
-                    |"rowkey":"key1:key2",
-                    |"columns":{
-                    |"col1":{"cf":"rowkey", "col":"key1", "type":"string"},
-                    |"col2":{"cf":"rowkey", "col":"key2", "type":"long"},
-                    |"col3":{"cf":"cf1", "col":"col2", "type":"binary"},
-                    |"col4":{"cf":"cf1", "col":"col3", "type":"string"},
-                    |"col5":{"cf":"cf1", "col":"col3", "type":"long"}
-                    |}
-                    |}""".stripMargin
+                   |"table":{"name":"htable"},
+                   |"rowkey":"key1:key2",
+                   |"columns":{
+                   |"col1":{"cf":"rowkey", "col":"key1", "type":"string"},
+                   |"col2":{"cf":"rowkey", "col":"key2", "type":"long"},
+                   |"col3":{"cf":"cf1", "col":"col3", "type":"binary"},
+                   |"col4":{"cf":"cf1", "col":"col4", "type":"double"}
+                   |}
+                   |}""".stripMargin
   val parameters = Map("catalog" -> catalog)
   val t = BigtableTableCatalog(parameters)
   def checkDataType(
@@ -49,13 +45,14 @@ class BigtableCatalogSuite extends AnyFunSuite with Logging {
 
   test("basic") {
     assert(t.getField("col1").isRowKey)
+    assert(t.getField("col2").dt == LongType)
+    assert(t.getField("col3").dt == BinaryType)
+    assert(t.getField("col4").dt == DoubleType)
+    assert(t.getField("col1").isRowKey)
     assert(t.getField("col2").isRowKey)
     assert(!t.getField("col3").isRowKey)
-    assert(t.getField("col1").length == -1)
     assert(t.getField("col2").length == DataTypeBytes.LONG_BYTES)
-    assert(t.getField("col3").dt == BinaryType)
-    assert(t.getField("col4").dt == StringType)
-    assert(t.getField("col5").dt == LongType)
+    assert(t.getField("col1").length == -1)
   }
 
   test("compound row key with binary types") {
@@ -75,12 +72,12 @@ class BigtableCatalogSuite extends AnyFunSuite with Logging {
     BigtableTableCatalog(parameters)
   }
 
-  test("unsupported double type") {
+  test("unsupported type") {
     val catalog = s"""{
                      |"table":{"name":"htable2"},
-                     |"rowkey":"double_key",
+                     |"rowkey":"timestamp_key",
                      |"columns":{
-                     |"double_col":{"cf":"rowkey", "col":"double_key", "type":"double"},
+                     |"timestamp_col":{"cf":"rowkey", "col":"timestamp_key", "type":"timestamp"},
                      |"col3":{"cf":"cf1", "col":"col3", "type":"long"}
                      |}
                      |}""".stripMargin

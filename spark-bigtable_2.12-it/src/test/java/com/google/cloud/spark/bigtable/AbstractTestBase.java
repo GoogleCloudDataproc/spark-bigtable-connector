@@ -65,8 +65,14 @@ public abstract class AbstractTestBase {
           + "\"tableCoder\":\"PrimitiveType\"},\"rowkey\":\"stringCol\","
           + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\", \"col\":\"stringCol\","
           + " \"type\":\"string\"},\"stringCol2\":{\"cf\":\"col_family1\","
-          + " \"col\":\"stringCol2\", \"type\":\"string\"},\"longCol\":{\"cf\":\"col_family2\","
-          + " \"col\":\"longCol\", \"type\":\"long\"}}}";
+          + " \"col\":\"stringCol2\", \"type\":\"string\"},\"byteCol\":{\"cf\":\"col_family1\","
+          + " \"col\":\"byteCol\", \"type\":\"byte\"},\"booleanCol\":{\"cf\":\"col_family1\","
+          + " \"col\":\"booleanCol\", \"type\":\"boolean\"},\"shortCol\":{\"cf\":\"col_family2\","
+          + " \"col\":\"shortCol\", \"type\":\"short\"},\"intCol\":{\"cf\":\"col_family2\","
+          + " \"col\":\"intCol\", \"type\":\"int\"},\"longCol\":{\"cf\":\"col_family2\","
+          + " \"col\":\"longCol\", \"type\":\"long\"},\"floatCol\":{\"cf\":\"col_family3\","
+          + " \"col\":\"floatCol\", \"type\":\"float\"},\"doubleCol\":{\"cf\":\"col_family3\","
+          + " \"col\":\"doubleCol\", \"type\":\"double\"}}}";
 
   static SparkSession createSparkSession() {
     return SparkSession.builder().master("local").config("spark.ui.enabled", "false").getOrCreate();
@@ -277,14 +283,26 @@ public abstract class AbstractTestBase {
         // Keep the row number in the String non-negative.
         String.format("StringColOne%03d", number - startRange),
         String.format("StringColTwo%03d", number - startRange),
-        number);
+        (number % 2 == 0),
+        (byte) number,
+        (short) number,
+        number,
+        number,
+        (float) (number * 3.14),
+        (double) (number / 3.14));
   }
 
   TestRow generateTestRowWithOffset(int rowkeyNumber, int offset) {
     return new TestRow(
         String.format("StringColOne%08d", rowkeyNumber),
         String.format("StringColTwo%08d", rowkeyNumber),
-        rowkeyNumber + offset);
+        (rowkeyNumber % 2 == 0),
+        (byte) rowkeyNumber,
+        (short) rowkeyNumber,
+        rowkeyNumber + offset,
+        rowkeyNumber + offset,
+        (float) (rowkeyNumber * 3.14),
+        (double) (rowkeyNumber / 3.14));
   }
 
   Dataset<Row> createTestDataFrame(int numOfRows) {
@@ -332,7 +350,10 @@ public abstract class AbstractTestBase {
               rowWeShouldHaveSelected.getStringCol(), r.getString(r.fieldIndex("stringCol")));
           assertEquals(
               rowWeShouldHaveSelected.getStringCol2(), r.getString(r.fieldIndex("stringCol2")));
+          assertEquals(rowWeShouldHaveSelected.getByteCol(), r.getByte(r.fieldIndex("byteCol")));
           assertEquals(rowWeShouldHaveSelected.getLongCol(), r.getLong(r.fieldIndex("longCol")));
+          assertEquals(rowWeShouldHaveSelected.getIntCol(), r.getInt(r.fieldIndex("intCol")));
+          assertEquals(rowWeShouldHaveSelected.getShortCol(), r.getShort(r.fieldIndex("shortCol")));
         });
   }
 

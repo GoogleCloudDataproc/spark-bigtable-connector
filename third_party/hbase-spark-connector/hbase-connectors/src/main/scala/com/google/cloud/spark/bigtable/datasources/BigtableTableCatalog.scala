@@ -27,7 +27,17 @@ import scala.util.parsing.json.JSON
 
 // As we finalize the encoding of different types, we add support for them.
 object SupportedDataTypes {
-  final val SUPPORTED_TYPES = Array[DataType](LongType, StringType, BinaryType)
+  final val SUPPORTED_TYPES = Array[DataType](
+    BooleanType,
+    ByteType,
+    ShortType,
+    IntegerType,
+    LongType,
+    FloatType,
+    DoubleType,
+    StringType,
+    BinaryType
+  )
 }
 
 // This corresponds to the mapping between a DataFrame column and Bigtable column/row key part.
@@ -66,18 +76,18 @@ case class Field(
   val dt: DataType = getDt
 
   private def getDt: DataType = {
-    val potentialSimplyType = simpleType.map(DataTypeParserWrapper.parse)
+    val potentiallySimpleType = simpleType.map(DataTypeParserWrapper.parse)
     if (
-      potentialSimplyType.nonEmpty
-      && !SupportedDataTypes.SUPPORTED_TYPES.contains(potentialSimplyType.get)
+      potentiallySimpleType.nonEmpty
+      && !SupportedDataTypes.SUPPORTED_TYPES.contains(potentiallySimpleType.get)
     ) {
       throw new IllegalArgumentException(
-        "DataType " + potentialSimplyType.get
+        "DataType " + potentiallySimpleType.get
           + " is currently not supported for DataFrame columns. Consider converting it to"
           + " a byte array manually first."
       )
     }
-    potentialSimplyType.getOrElse {
+    potentiallySimpleType.getOrElse {
       schema
         .map { x =>
           SchemaConverters.toSqlType(x).dataType
