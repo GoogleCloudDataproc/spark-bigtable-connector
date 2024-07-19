@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #33: Add support for more primitive types, i.e., Int, Float, etc.
+
 ## 0.1.1 - 2024-06-11
 
 * PR #10: Create a new profile for the release
