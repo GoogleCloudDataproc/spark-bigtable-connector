@@ -18,7 +18,7 @@ You can access the connector in two different ways:
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>`(
-current `<version>` is `0.1.1`) and package it inside your application JAR using
+current `<version>` is `0.2.0`) and package it inside your application JAR using
 libraries such as Maven Shade Plugin. For PySpark applications, you can use
 the `--jars` flag to pass the GCS address of the connector when submitting it.
 
@@ -28,14 +28,14 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.12</artifactId>
-  <version>0.1.1</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
 For sbt, you can add the following to your `build.sbt` file:
 
 ```
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.1.1"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.2.0"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -43,7 +43,7 @@ Gradle:
 
 ```
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.1.1'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.2.0'
 }
 ```
 
