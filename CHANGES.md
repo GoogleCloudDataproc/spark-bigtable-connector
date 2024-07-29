@@ -1,6 +1,6 @@
 # Release Notes
 
-## Next
+## 0.2.0 - 2024-07-29
 
 * PR #33: Add support for more primitive types, i.e., Int, Float, etc.
 
