@@ -33,7 +33,7 @@ public class DataBoostIntegrationTest extends AbstractTestBase {
   private static final String dataBoostAppProfile = "data-boost";
 
   @Test
-  public void writeAndReadLongRunningTest() {
+  public void readFromDataBoostTable() {
     String catalog = parameterizeCatalog(rawBasicCatalog, tableName);
     Dataset<Row> expectedDf = createTestDataFrame(numOfRows);
 
