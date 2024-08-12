@@ -18,8 +18,6 @@ package com.google.cloud.spark.bigtable;
 import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.DEFAULT_BIGTABLE_APP_PROFILE_ID;
 import static org.junit.Assert.assertEquals;
 
-import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
-import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import junitparams.JUnitParamsRunner;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
