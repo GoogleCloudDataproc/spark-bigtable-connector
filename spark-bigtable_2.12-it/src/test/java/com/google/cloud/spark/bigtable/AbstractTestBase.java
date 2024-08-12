@@ -17,6 +17,7 @@
 package com.google.cloud.spark.bigtable;
 
 import static com.google.cloud.bigtable.admin.v2.models.GCRules.GCRULES;
+import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_APP_PROFILE_ID;
 import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_BATCH_MUTATE_SIZE;
 import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_CREATE_NEW_TABLE;
 import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_EMULATOR_PORT;
@@ -234,6 +235,10 @@ public abstract class AbstractTestBase {
 
   static ReaderOption withReaderEndTime(Long timeInMilliseconds) {
     return reader -> reader.option(BIGTABLE_TIMERANGE_END(), timeInMilliseconds);
+  }
+
+  static ReaderOption withReaderAppProfile(String appProfile) {
+    return reader -> reader.option(BIGTABLE_APP_PROFILE_ID(), appProfile);
   }
 
   static ReaderOption withReaderEmulatorPort(String emulatorPort) {
