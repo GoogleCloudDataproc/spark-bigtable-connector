@@ -18,9 +18,12 @@ package com.google.cloud.spark.bigtable;
 import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.DEFAULT_BIGTABLE_APP_PROFILE_ID;
 import static org.junit.Assert.assertEquals;
 
+import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
+import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import junitparams.JUnitParamsRunner;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -31,6 +34,12 @@ public class DataBoostIntegrationTest extends AbstractTestBase {
   private static final String tableName = "DO-NOT-DELETE-cbt-data-boost";
   private static final int numOfRows = 256;
   private static final String dataBoostAppProfile = "data-boost";
+
+  @BeforeClass
+  public static void initialSetup() throws Exception {
+    spark = createSparkSession();
+    setBigtableProperties();
+  }
 
   @Test
   public void readFromDataBoostTable() {
