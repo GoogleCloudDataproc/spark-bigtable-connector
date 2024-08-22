@@ -95,6 +95,12 @@
       <version>${slf4j-reload4j.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.openlineage</groupId>
+      <artifactId>openlineage-spark_${scala.binary.version}</artifactId>
+      <version>${openlineage.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
