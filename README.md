@@ -26,9 +26,9 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 
 ```xml
 <dependency>
-   <groupId>com.google.cloud.spark.bigtable</groupId>
-   <artifactId>spark-bigtable_2.12</artifactId>
-   <version>0.2.1</version>
+  <groupId>com.google.cloud.spark.bigtable</groupId>
+  <artifactId>spark-bigtable_2.12</artifactId>
+  <version>0.2.1</version>
 </dependency>
 ```
 
