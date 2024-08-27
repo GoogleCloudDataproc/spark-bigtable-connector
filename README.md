@@ -275,8 +275,10 @@ documentation to find more details on accessing and interpreting these metrics.
 
 ### Use with Data Boost (Preview)
 
-For read-only jobs, you can use Data Boost (Preview) serverless compute, which
-lets you avoid impacting your application-serving clusters. To use Data Boost,
+For read-only jobs, you can use Data Boost (Preview) serverless compute, a new
+compute option for Bigtable that is specially optimized for high-throughput
+pipeline job performance and production app serving traffic isolation
+requirements. To use Data Boost,
 you must create a Data Boost app profile and then provide the app profile ID for
 the `spark.bigtable.app_profile.id` Spark option when you add your Bigtable
 configuration to your Spark application. You can also convert an existing app
