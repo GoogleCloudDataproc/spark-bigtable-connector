@@ -190,6 +190,34 @@ instead of a real Bigtable instance. You can refer to the
 [Bigtable emulator documentations](https://cloud.google.com/bigtable/docs/emulator)
 for more details on using it.
 
+### Simple data type serialization
+
+This connector supports encoding a number of Spark's simple data types as byte
+array for storage in Bigtable, with the following table summarizing the Spark
+type names, the corresponding
+[GoogleSQL data types](https://cloud.google.com/spanner/docs/reference/standard-sql/data-types),
+the names you need to use in the catalog string, and the encoding description:
+
+| Spark SQL data type | GoogleSQL type | Catalog type | Encoding description                                                                                                        |
+|---------------------|----------------|--------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `BooleanType`       | `BOOL`         | `boolean`    | `True` -> 1 byte corresponding to `-1` in two's-complement <br/> `False` -> 1 byte corresponding to `0` in two's-complement |
+| `ByteType`          | N/A            | `byte`       | 1-byte signed two's-complement number                                                                                       |
+| `ShortType`         | N/A            | `short`      | 2-byte signed two's-complement number, using big-endian                                                                     |
+| `IntegerType`       | N/A            | `int`        | 4-byte signed two's-complement number, using big-endian                                                                     |
+| `LongType`          | `INT64`        | `long`       | 8-byte signed two's-complement number, using big-endian                                                                     |
+| `FloatType`         | `FLOAT32`      | `float`      | 4-byte single-precision using IEEE 754 standard                                                                             |
+| `DoubleType`        | `FLOAT64`      | `double`     | 64-bit double-precision using IEEE 754 standard                                                                             |
+| `StringType`        | `STRING`       | `string`     | UTF-8 encoded string                                                                                                        |
+| `BinaryType`        | `BYTES`        | `binary`     | The corresponding array of bytes                                                                                            |
+
+You can refer to
+[this link](https://spark.apache.org/docs/latest/sql-ref-datatypes.html)
+for more information on Spark SQL types.
+If you want to use a specific encoding schema for your DataFrame values, you
+can manually convert these types to byte arrays and then store them on
+Bigtable. The examples in the `examples` folder contain samples for converting
+a column to `BinaryType` inside your application, in different languages.
+
 ### Complex data type serialization using Apache Avro
 
 You can specify an Avro schema for columns with a complex Spark SQL type such as
@@ -202,6 +230,11 @@ This connector supports pushing down some of the filters on the row key column
 in the DataFrame to Bigtable
 and performing them on the server-side. The list of supported or non-supported
 filters is as follows:
+
+**_NOTE:_**  The supported row key filters are only pushed to Bigtable when the
+value used in the filter has a type Long, String, or Byte array (e.g.,
+`rowKey < "some-value"`). Support for other types (e.g., Integer, Float, etc.)
+will be added in the future.
 
 | Filter               | Push down filter supported |
 |----------------------|----------------------------|
@@ -216,7 +249,7 @@ filters is as follows:
 | `Not`                | No                         |
 | Compound Row Key     | No                         |
 
-Note that when using compound row keys, filter on those columns are
+When using compound row keys, filter on those columns are
 **not** pushed to Bigtable and are performed on the client-side (resulting in a
 full-table scan). If filtering is required, a workaround is to concatenate
 the intended columns into a *single* DataFrame column of a supported type
@@ -226,11 +259,13 @@ in Scala as follows:
 
 ```scala
 df
-  .withColumn("new_row_key", 
+  .withColumn(
+    "new_row_key",
     org.apache.spark.sql.functions.concat(
-      df.col("first_col"), 
+      df.col("first_col"),
       df.col("second_col")
-    ))
+    )
+  )
   .drop("first_col")
   .drop("second_col")
 ```
@@ -243,6 +278,21 @@ client-side metrics are enabled
 inside the connector by default. You can refer to the
 [client-side metrics](https://cloud.google.com/bigtable/docs/client-side-metrics)
 documentation to find more details on accessing and interpreting these metrics.
+
+### Use with Data Boost (Preview)
+
+For read-only jobs, you can use Data Boost (Preview) serverless compute, a new
+compute option for Bigtable that is specially optimized for high-throughput
+pipeline job performance and production app serving traffic isolation
+requirements. To use Data Boost,
+you must create a Data Boost app profile and then provide the app profile ID for
+the `spark.bigtable.app_profile.id` Spark option when you add your Bigtable
+configuration to your Spark application. You can also convert an existing app
+profile to a Data Boost app profile or specify a standard app profile to use
+your instance's cluster nodes. You can refer to documentations on
+[Data Boost](https://cloud.google.com/bigtable/docs/data-boost-overview) and
+[App profiles](https://cloud.google.com/bigtable/docs/configuring-app-profiles)
+for more information.
 
 ### Use low-level RDD functions with Bigtable
 
@@ -264,25 +314,3 @@ as `com.google.cloud.bigtable.data.v2.BigtableDataClient`, use
 You can access examples for Java, Scala, and Python inside the `examples`
 directory. Each directory contains a `README.md` file with instruction on
 running the example inside.
-
-## Limitations
-
-Currently, only some types are supported in the connector catalog, as follows:
-
-| Type                  | Catalog support |
-|-----------------------|-----------------|
-| `long`                | Yes             |
-| `string`              | Yes             |
-| `binary` (byte array) | Yes             |
-
-Support for other types, e.g., `int`, `float`, etc., will be added in future
-versions of the
-connector. The `examples` folder contains workaround for converting these types
-to `BinaryType`
-inside your application, in different languages. Additionally, the columns may
-be converted to a supported type, e.g., `string()`, in SQL when writing and
-converted back to the intended type on read. For complex types,
-e.g., `ArrayType`, `MapType`, and `StructType`, you can use Avro
-for serializations. You can refer
-to [this link](https://spark.apache.org/docs/latest/sql-ref-datatypes.html)
-for more information on Spark SQL types.

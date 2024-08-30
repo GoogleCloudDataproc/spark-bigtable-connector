@@ -253,15 +253,15 @@ in Scala as follows:
 
 ```scala
 df
-        .withColumn(
-           "new_row_key",
-           org.apache.spark.sql.functions.concat(
-              df.col("first_col"),
-              df.col("second_col")
-           )
-        )
-        .drop("first_col")
-        .drop("second_col")
+  .withColumn(
+    "new_row_key",
+    org.apache.spark.sql.functions.concat(
+      df.col("first_col"),
+      df.col("second_col")
+    )
+  )
+  .drop("first_col")
+  .drop("second_col")
 ```
 
 ### Client-side metrics
