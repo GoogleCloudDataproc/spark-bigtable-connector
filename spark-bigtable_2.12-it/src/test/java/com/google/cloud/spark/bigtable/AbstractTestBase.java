@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.DataFrameReader;
 import org.apache.spark.sql.DataFrameWriter;
 import org.apache.spark.sql.Dataset;
@@ -59,6 +60,8 @@ public abstract class AbstractTestBase {
   static String runtimeProvidedTableId;
   static SparkSession spark;
 
+  static JavaSparkContext javaSparkContext;
+
   // This basic catalog is used for tests where we are not specifically testing
   // catalog functionalities.
   final String rawBasicCatalog =
@@ -77,6 +80,11 @@ public abstract class AbstractTestBase {
 
   static SparkSession createSparkSession() {
     return SparkSession.builder().master("local").config("spark.ui.enabled", "false").getOrCreate();
+  }
+
+  static JavaSparkContext createJavaSparkContext() {
+    spark = createSparkSession();
+    return new JavaSparkContext(spark.sparkContext());
   }
 
   static void setBigtableProperties() throws Exception {

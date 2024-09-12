@@ -101,12 +101,17 @@ class BigtableTableScanRDDTest
     )
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
-    rdd = new BigtableTableScanRDD(relation, relation.clientKey, filterRangeSet)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
 
     val actualPartitions: Array[BigtableScanPartition] =
-      rdd.getPartitions.map(partition =>
-        partition.asInstanceOf[BigtableScanPartition]
-      )
+      rdd.getPartitions.map(partition => partition.asInstanceOf[BigtableScanPartition])
     assert(actualPartitions.length == 3)
 
     val expectedSetResult0: RangeSet[RowKeyWrapper] =
@@ -171,12 +176,17 @@ class BigtableTableScanRDDTest
     )
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
-    rdd = new BigtableTableScanRDD(relation, relation.clientKey, filterRangeSet)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
 
     val actualPartitions: Array[BigtableScanPartition] =
-      rdd.getPartitions.map(partition =>
-        partition.asInstanceOf[BigtableScanPartition]
-      )
+      rdd.getPartitions.map(partition => partition.asInstanceOf[BigtableScanPartition])
 
     assert(actualPartitions.length == 1)
 
@@ -243,12 +253,17 @@ class BigtableTableScanRDDTest
     )
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
-    rdd = new BigtableTableScanRDD(relation, relation.clientKey, filterRangeSet)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
 
     val actualPartitions: Array[BigtableScanPartition] =
-      rdd.getPartitions.map(partition =>
-        partition.asInstanceOf[BigtableScanPartition]
-      )
+      rdd.getPartitions.map(partition => partition.asInstanceOf[BigtableScanPartition])
     assert(actualPartitions.length == 2)
 
     val expectedSetResult0: RangeSet[RowKeyWrapper] =
@@ -318,12 +333,17 @@ class BigtableTableScanRDDTest
     )
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
-    rdd = new BigtableTableScanRDD(relation, relation.clientKey, filterRangeSet)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
 
     val actualPartitions: Array[BigtableScanPartition] =
-      rdd.getPartitions.map(partition =>
-        partition.asInstanceOf[BigtableScanPartition]
-      )
+      rdd.getPartitions.map(partition => partition.asInstanceOf[BigtableScanPartition])
     assert(actualPartitions.length == 3)
 
     val expectedSetResult0: RangeSet[RowKeyWrapper] =
@@ -389,12 +409,17 @@ class BigtableTableScanRDDTest
     )
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
-    rdd = new BigtableTableScanRDD(relation, relation.clientKey, filterRangeSet)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
 
     val actualPartitions: Array[BigtableScanPartition] =
-      rdd.getPartitions.map(partition =>
-        partition.asInstanceOf[BigtableScanPartition]
-      )
+      rdd.getPartitions.map(partition => partition.asInstanceOf[BigtableScanPartition])
     assert(actualPartitions.length == 3)
 
     val expectedSetResult0: RangeSet[RowKeyWrapper] =
@@ -450,12 +475,17 @@ class BigtableTableScanRDDTest
     )
     val relation =
       BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
-    rdd = new BigtableTableScanRDD(relation, relation.clientKey, filterRangeSet)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
 
     val actualPartitions: Array[BigtableScanPartition] =
-      rdd.getPartitions.map(partition =>
-        partition.asInstanceOf[BigtableScanPartition]
-      )
+      rdd.getPartitions.map(partition => partition.asInstanceOf[BigtableScanPartition])
     assert(actualPartitions.length == 2)
 
     val expectedSetResult0: RangeSet[RowKeyWrapper] =
