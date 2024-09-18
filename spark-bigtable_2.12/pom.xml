@@ -107,6 +107,18 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>io.openlineage</groupId>
+      <artifactId>spark-extension-interfaces</artifactId>
+      <version>${openlineage.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.openlineage</groupId>
+      <artifactId>spark-extension-entrypoint</artifactId>
+      <version>1.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>com.google.cloud</groupId>
@@ -228,6 +240,10 @@
                   <excludes>
                     <exclude>com.google.cloud.spark.bigtable.**</exclude>
                   </excludes>
+                </relocation>
+                <relocation>
+                  <pattern>io.openlineage.spark.shade</pattern>
+                  <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
