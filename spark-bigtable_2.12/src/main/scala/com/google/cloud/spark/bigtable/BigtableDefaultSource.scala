@@ -21,9 +21,6 @@ import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.filters.{RowKeyWrapper, SparkSqlFilterAdapter}
 import com.google.common.collect.RangeSet
-import io.openlineage.spark.shade.client.OpenLineage
-import io.openlineage.spark.shade.client.utils.DatasetIdentifier
-import io.openlineage.spark.shade.extension.v1.{LineageRelation, LineageRelationProvider}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -44,8 +41,7 @@ object VersionInformation {
 class BigtableDefaultSource
     extends RelationProvider
     with CreatableRelationProvider
-    with DataSourceRegister
-    with LineageRelationProvider {
+    with DataSourceRegister {
 
   /** Constructs a BigtableRelation object.
     *
@@ -82,26 +78,6 @@ class BigtableDefaultSource
   }
 
   override def shortName(): String = "bigtable"
-
-  def getLineageDatasetIdentifier(
-      sparkListenerEventName: String,
-      openLineage: OpenLineage,
-      sqlContext: Any,
-      parameters: Any
-  ): DatasetIdentifier = {
-    val params: Map[String, String] =
-      parameters.asInstanceOf[Map[String, String]]
-    val catalog = BigtableTableCatalog(params)
-    val projectId = params.getOrElse(
-      BigtableSparkConf.BIGTABLE_PROJECT_ID,
-      "unknownProjectId"
-    )
-    val instanceId = params.getOrElse(
-      BigtableSparkConf.BIGTABLE_INSTANCE_ID,
-      "unknownInstanceId"
-    )
-    new DatasetIdentifier(catalog.name, s"bigtable://$projectId/$instanceId")
-  }
 }
 
 /** Custom Relation class which manages reading from and writing to Bigtable.
@@ -116,8 +92,7 @@ case class BigtableRelation(
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
-    with Logging
-    with LineageRelation {
+    with Logging {
   Option(sqlContext).foreach(context =>
     VersionInformation.sparkVersion = context.sparkContext.version
   )
@@ -218,20 +193,5 @@ case class BigtableRelation(
     readRdd.map { r =>
       ReadRowConversions.buildRow(fieldsOrdered, r, catalog)
     }
-  }
-
-  def getLineageDatasetIdentifier(
-      sparkListenerEventName: String,
-      openLineage: OpenLineage
-  ): DatasetIdentifier = {
-    val projectId = parameters.getOrElse(
-      BigtableSparkConf.BIGTABLE_PROJECT_ID,
-      "unknownProjectId"
-    )
-    val instanceId = parameters.getOrElse(
-      BigtableSparkConf.BIGTABLE_INSTANCE_ID,
-      "unknownInstanceId"
-    )
-    new DatasetIdentifier(tableId, s"bigtable://$projectId/$instanceId")
   }
 }
