@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #42: feat: Add RDD support to the connector.
+
 ## 0.2.1 - 2024-08-21
 
 * PR #36: Update Bigtable Java client version to 2.42.0.
