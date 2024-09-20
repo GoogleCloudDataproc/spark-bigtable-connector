@@ -296,12 +296,77 @@ for more information.
 
 ### Use low-level RDD functions with Bigtable
 
+You can use the Bigtable Spark connector to write and read low-level RDDs to
+and from Bigtable. The connector manages steps such as connection
+creation and caching to simplify the usage, while giving you freedom for how
+exactly to convert between your RDD and Bigtable table (e.g., type conversion,
+custom timestamps for each row, number of columns in each row, etc.). You can
+create a new `BigtableRDD` object and call these functions for read and write
+operations (note that this functionality is only supported in Java and Scala,
+not PySpark):
+
+#### Writing an RDD
+For writing, you need to pass in an RDD of
+[RowMutationEntry](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/com.google.cloud.bigtable.data.v2.models.RowMutationEntry)
+objects to the following function (note the use of Java vs. Scala Map in the
+two languages):
+
+In Java:
+```java
+BigtableRDD.writeRDD(
+    RDD<RowMutationEntry> rdd, 
+    String tableId,
+    java.util.Map<String, String> parameters);
+```
+
+In Scala:
+```scala
+BigtableRDD.writeRDD(
+   rdd: RDD[RowMutationEntry], 
+   tableId: String,
+   parameters: Map[String, String]
+)
+```
+
+#### Reading an RDD
+When reading an RDD, you receive an RDD of Bigtable
+[Row](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/com.google.cloud.bigtable.data.v2.models.Row)
+objects after calling the following function (note the use of Java vs. Scala 
+Map in the two languages):
+
+In Java:
+```java
+BigtableRDD.readRDD(String tableId, java.util.Map<String, String> parameters);
+```
+
+In Scala:
+```scala
+BigtableRDD.readRDD(tableId: String, parameters: Map[String, String])
+```
+
+Note that in both cases, you can pass in a Map of the following runtime
+parameters:
+
+1. `spark.bigtable.project.id`
+2. `spark.bigtable.instance.id`
+3. `spark.bigtable.app_profile.id`
+4. `spark.bigtable.read.rows.attempt.timeout.milliseconds`
+5. `spark.bigtable.read.rows.total.timeout.milliseconds`
+6. `spark.bigtable.mutate.rows.attempt.timeout.milliseconds`
+7. `spark.bigtable.mutate.rows.total.timeout.milliseconds`
+8. `spark.bigtable.batch.mutate.size`
+9. `spark.bigtable.enable.batch_mutate.flow_control`
+
+You can refer to the
+[official documentation](https://cloud.google.com/bigtable/docs/use-bigtable-spark-connector)
+for more details about each of these options.
+
+### Accessing Bigtable Java Client methods
+
 Since the Bigtable Spark connector is based on the
 [Bigtable client for Java](https://github.com/googleapis/java-bigtable),
-you can directly use the client in your Spark applications and perform
-distributed read or write requests
-within the low-level RDD functions such as `mapPartitions`
-and `foreachPartition`.
+you can directly use the client in your Spark applications, if you want
+to have even more control over how you interact with Bigtable.
 
 To use the Bigtable client for Java classes, append the
 `com.google.cloud.spark.bigtable.repackaged` prefix to the package names. For

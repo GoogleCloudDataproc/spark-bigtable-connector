@@ -28,7 +28,7 @@ import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, Row => SparkRow}
 import org.apache.yetus.audience.InterfaceAudience
 
 object VersionInformation {
-  val CONNECTOR_VERSION = "0.2.1"  // ${NEXT_VERSION_FLAG}
+  val CONNECTOR_VERSION = "0.2.1" // ${NEXT_VERSION_FLAG}
   val DATA_SOURCE_VERSION = "V1"
   val scalaVersion = util.Properties.versionNumberString
   // This remains unset only in unit tests where sqlContext is null.
@@ -187,7 +187,14 @@ case class BigtableRelation(
     val filterRangeSet: RangeSet[RowKeyWrapper] = SparkSqlFilterAdapter
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
     val readRdd: BigtableTableScanRDD =
-      new BigtableTableScanRDD(this, clientKey, filterRangeSet)
+      new BigtableTableScanRDD(
+        clientKey,
+        filterRangeSet,
+        tableId,
+        sqlContext.sparkContext,
+        startTimestampMicros,
+        endTimestampMicros
+      )
 
     val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
     readRdd.map { r =>

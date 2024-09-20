@@ -21,22 +21,24 @@ import com.google.cloud.bigtable.data.v2.BigtableDataClient
 import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, TimestampFilter}
 import com.google.cloud.bigtable.data.v2.models.Range.ByteStringRange
 import com.google.cloud.bigtable.data.v2.models.{KeyOffset, Query, Row => BigtableRow}
-import com.google.cloud.spark.bigtable._
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{BoundType, RangeSet, TreeRangeSet, Range => GuavaRange}
 import com.google.protobuf.ByteString
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 import org.apache.yetus.audience.InterfaceAudience
 
 import scala.collection.JavaConverters._
 
 @InterfaceAudience.Private
 class BigtableTableScanRDD(
-    relation: BigtableRelation,
     clientKey: BigtableClientKey,
-    filterRangeSet: RangeSet[RowKeyWrapper]
-) extends RDD[BigtableRow](relation.sqlContext.sparkContext, Nil) {
+    filterRangeSet: RangeSet[RowKeyWrapper],
+    tableId: String,
+    sparkContext: SparkContext,
+    startTimestampMicros: Option[Long],
+    endTimestampMicros: Option[Long]
+) extends RDD[BigtableRow](sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
     try {
@@ -44,7 +46,7 @@ class BigtableTableScanRDD(
       val bigtableDataClient = clientHandle.getClient()
 
       val keyOffsets: List[KeyOffset] =
-        bigtableDataClient.sampleRowKeys(relation.tableId).asScala.toList
+        bigtableDataClient.sampleRowKeys(tableId).asScala.toList
 
       val tabletRanges: Array[BigtableTabletRange] =
         new Array[BigtableTabletRange](keyOffsets.size)
@@ -131,7 +133,7 @@ class BigtableTableScanRDD(
       val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
       val bigtableDataClient: BigtableDataClient = clientHandle.getClient()
 
-      var query = Query.create(relation.tableId)
+      var query = Query.create(tableId)
       split
         .asInstanceOf[BigtableScanPartition]
         .partitionRangeSet
@@ -200,8 +202,8 @@ class BigtableTableScanRDD(
   }
 
   private def addTimestampFilter(query: Query): Query = {
-    var timestampFilter: TimestampFilter = FILTERS.timestamp()
-    (relation.startTimestampMicros, relation.endTimestampMicros) match {
+    val timestampFilter: TimestampFilter = FILTERS.timestamp()
+    (startTimestampMicros, endTimestampMicros) match {
       case (Some(startStamp), Some(endStamp)) =>
         query.filter(
           timestampFilter.range().startClosed(startStamp).endOpen(endStamp)
