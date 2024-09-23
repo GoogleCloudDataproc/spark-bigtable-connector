@@ -30,6 +30,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
 
   @BeforeClass
   public static void initialSetup() throws Exception {
+    System.out.println("*debugging* lineage test");
     spark = createSparkSessionWithOL();
     setBigtableProperties();
 
@@ -128,10 +129,12 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
 
   private List<JsonObject> parseEventLog(File file) throws Exception {
     List<JsonObject> eventList;
+    System.out.println("*debugging* in parseEvent");
     try (Scanner scanner = new Scanner(file)) {
       eventList = new ArrayList<>();
       while (scanner.hasNextLine()) {
         String line = scanner.nextLine();
+        System.out.println("*debugging* line = " + line);
         JsonObject event = JsonParser.parseString(line).getAsJsonObject();
         if (!event.getAsJsonArray("inputs").isEmpty()
             && !event.getAsJsonArray("outputs").isEmpty()) {
