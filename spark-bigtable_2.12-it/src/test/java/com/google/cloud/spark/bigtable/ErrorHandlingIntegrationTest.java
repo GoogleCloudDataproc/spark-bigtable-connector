@@ -38,7 +38,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -56,6 +58,11 @@ public class ErrorHandlingIntegrationTest extends AbstractTestBase {
 
   private String FAKE_ERROR_MESSAGE = "Fake error message";
 
+  @BeforeClass
+  public static void initialBeforeClassSetup() throws Exception {
+    spark = createSparkSession();
+  }
+
   @Before
   public void initialSetup() throws Exception {
     fakeGenericDataService = new FakeGenericDataService();
@@ -68,8 +75,12 @@ public class ErrorHandlingIntegrationTest extends AbstractTestBase {
     LOG.info("Bigtable mock server started on port " + server.getPort());
     emulatorPort = Integer.toString(server.getPort());
 
-    spark = createSparkSession();
     setBigtableProperties();
+  }
+
+  @AfterClass
+  public static void cleanup() throws Exception {
+    stopSparkSession(spark);
   }
 
   @After

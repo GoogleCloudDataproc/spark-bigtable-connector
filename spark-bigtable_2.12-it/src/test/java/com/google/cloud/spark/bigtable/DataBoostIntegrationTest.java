@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import junitparams.JUnitParamsRunner;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,11 @@ public class DataBoostIntegrationTest extends AbstractTestBase {
   public static void initialSetup() throws Exception {
     spark = createSparkSession();
     setBigtableProperties();
+  }
+
+  @AfterClass
+  public static void cleanup() throws Exception {
+    stopSparkSession(spark);
   }
 
   @Test

@@ -63,6 +63,7 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
   @AfterClass
   public static void cleanup() throws Exception {
     adminClient.close();
+    stopSparkSession(spark);
   }
 
   @Test
