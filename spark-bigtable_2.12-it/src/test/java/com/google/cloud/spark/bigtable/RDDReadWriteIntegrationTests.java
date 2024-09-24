@@ -28,7 +28,6 @@ import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data
 import com.google.cloud.spark.bigtable.repackaged.io.grpc.Status;
 import java.util.ArrayList;
 import java.util.List;
-
 import junitparams.JUnitParamsRunner;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.spark.api.java.JavaRDD;
@@ -83,8 +82,7 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
       BigtableRDD bigtableRDD = new BigtableRDD(spark.sparkContext());
       bigtableRDD.writeRDD(mutationsRDD.rdd(), useTable, createRDDConf());
 
-      JavaRDD<Row> bigtableRowsRDD =
-          bigtableRDD.readRDD(useTable, createRDDConf()).toJavaRDD();
+      JavaRDD<Row> bigtableRowsRDD = bigtableRDD.readRDD(useTable, createRDDConf()).toJavaRDD();
 
       JavaRDD<Tuple2<String, Long>> readTupleRDD =
           bigtableRowsRDD.map(

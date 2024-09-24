@@ -128,9 +128,13 @@ case class BigtableRelation(
   val pushDownRowKeyFilters: Boolean = bigtableSparkConf.bigtablePushDownRowKeyFilters
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.
-  val startTimestampMicros: Option[Long] = bigtableSparkConf.bigtableTimeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
-  val endTimestampMicros: Option[Long] = bigtableSparkConf.bigtableTimeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
-  val writeTimestampMicros: Long = bigtableSparkConf.bigtableWriteTimestamp.map(timestamp => Math.multiplyExact(timestamp, 1000L)).getOrElse(Math.multiplyExact(System.currentTimeMillis(), 1000L))
+  val startTimestampMicros: Option[Long] =
+    bigtableSparkConf.bigtableTimeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
+  val endTimestampMicros: Option[Long] =
+    bigtableSparkConf.bigtableTimeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
+  val writeTimestampMicros: Long = bigtableSparkConf.bigtableWriteTimestamp
+    .map(timestamp => Math.multiplyExact(timestamp, 1000L))
+    .getOrElse(Math.multiplyExact(System.currentTimeMillis(), 1000L))
 
   def tableId = s"${catalog.name}"
   val clientKey = new BigtableClientKey(bigtableSparkConf, UserAgentInformation.DATAFRAME_TEXT)

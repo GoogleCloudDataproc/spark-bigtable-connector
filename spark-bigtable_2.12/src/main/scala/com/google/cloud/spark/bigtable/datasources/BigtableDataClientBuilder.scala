@@ -261,8 +261,10 @@ object BigtableAdminClientBuilder extends Serializable {
 }
 
 @InterfaceAudience.Private
-class BigtableClientKey(@transient bigtableSparkConf: BigtableSparkConf, dataFrameOrRDDUserAgentText: String)
-    extends Serializable {
+class BigtableClientKey(
+    @transient bigtableSparkConf: BigtableSparkConf,
+    dataFrameOrRDDUserAgentText: String
+) extends Serializable {
   val projectId: String = bigtableSparkConf.bigtableProjectId.getOrElse(
     throw new IllegalArgumentException(
       "Parameter " +
@@ -284,7 +286,8 @@ class BigtableClientKey(@transient bigtableSparkConf: BigtableSparkConf, dataFra
   val readRowsAttemptTimeout: Option[String] = bigtableSparkConf.bigtableReadRowsAttemptTimeoutMs
   val readRowsTotalTimeout: Option[String] = bigtableSparkConf.bigtableReadRowsTotalTimeoutMs
 
-  val mutateRowsAttemptTimeout: Option[String] = bigtableSparkConf.bigtableMutateRowsAttemptTimeoutMs
+  val mutateRowsAttemptTimeout: Option[String] =
+    bigtableSparkConf.bigtableMutateRowsAttemptTimeoutMs
   val mutateRowsTotalTimeout: Option[String] = bigtableSparkConf.bigtableMutateRowsTotalTimeoutMs
 
   val readRowsRetries: Option[String] = bigtableSparkConf.maxReadRowsRetries
