@@ -82,9 +82,17 @@ public abstract class AbstractTestBase {
     return SparkSession.builder().master("local").config("spark.ui.enabled", "false").getOrCreate();
   }
 
+  static void stopSparkSession(SparkSession sparkSession) {
+    sparkSession.stop();
+  }
+
   static JavaSparkContext createJavaSparkContext() {
     spark = createSparkSession();
     return new JavaSparkContext(spark.sparkContext());
+  }
+
+  static void stopJavaSparkContext(JavaSparkContext javaSparkContext) {
+    javaSparkContext.stop();
   }
 
   static void setBigtableProperties() throws Exception {

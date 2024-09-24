@@ -69,6 +69,7 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
   @AfterClass
   public static void cleanup() throws Exception {
     adminClient.close();
+    stopJavaSparkContext(javaSparkContext);
   }
 
   @Test

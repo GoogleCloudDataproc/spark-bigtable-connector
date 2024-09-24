@@ -82,7 +82,8 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
       String outputCatalog = parameterizeCatalog(outputCatalogTemplate, outputTable);
       writeDataframeToBigtable(outputDf, outputCatalog, false);
 
-      // Ensure OpenLineage events have sufficient time to propagate to avoid incomplete or missing event data.
+      // Ensure OpenLineage events have sufficient time to propagate to avoid incomplete or missing
+      // event data.
       Dataset<Row> outputReadDf = readDataframeFromBigtable(spark, outputCatalog);
       assertDataFramesEqual(outputReadDf, outputDf);
 
