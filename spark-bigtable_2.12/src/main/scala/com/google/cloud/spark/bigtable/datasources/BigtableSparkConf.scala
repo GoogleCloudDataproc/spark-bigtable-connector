@@ -18,12 +18,15 @@ package com.google.cloud.spark.bigtable.datasources
 
 import org.apache.yetus.audience.InterfaceAudience;
 
-/** This is the bigtable configuration. User can either set them in SparkConf, which
+/** This is the bigtable configuration. Users can either set them in SparkConf, which
   * will take effect globally, or configure it per table, which will overwrite the value
   * set in SparkConf. If not set, the default value will take effect.
   * To access these variables inside Java, use the following import statement:
   * `import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.*;`
   * You can then use a syntax like `BIGTABLE_PROJECT_ID()` to access them.
+  * When using RDDs, you can either provide a Map of configs/values or use the
+  * default constructor `new BigtableSparkConf()` and use methods such as
+  * `setBigtableProjectId` to set specific values directly.
   */
 @InterfaceAudience.Public
 object BigtableSparkConf {
@@ -94,3 +97,69 @@ object BigtableSparkConf {
   private[datasources] val MAX_READ_ROWS_RETRIES =
     "spark.bigtable.max.read.rows.retries"
 }
+
+class BigtableSparkConf extends Serializable {
+  var bigtableProjectId: Option[String] = None
+  var bigtableInstanceId: Option[String] = None
+  var bigtableAppProfileId: String = BigtableSparkConf.DEFAULT_BIGTABLE_APP_PROFILE_ID
+
+  var bigtableCreateNewTable: Boolean = BigtableSparkConf.DEFAULT_BIGTABLE_CREATE_NEW_TABLE
+
+  var bigtableTimeRangeStart: Option[Long] = None
+  var bigtableTimeRangeEnd: Option[Long] = None
+  var bigtableWriteTimestamp: Option[Long] = None
+
+  var bigtableEmulatorPort: Option[Int] = None
+
+  var bigtablePushDownRowKeyFilters: Boolean = BigtableSparkConf.DEFAULT_BIGTABLE_PUSH_DOWN_FILTERS
+
+  var bigtableReadRowsAttemptTimeoutMs: Option[String] = None
+  var bigtableReadRowsTotalTimeoutMs: Option[String] = None
+
+  var bigtableMutateRowsAttemptTimeoutMs: Option[String] = None
+  var bigtableMutateRowsTotalTimeoutMs: Option[String] = None
+
+  var bigtableBatchMutateSize: Long = BigtableSparkConf.BIGTABLE_DEFAULT_BATCH_MUTATE_SIZE
+  var bigtableEnableBatchMutateFlowControl: Boolean = BigtableSparkConf.DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL
+
+  var maxReadRowsRetries: Option[String] = None
+
+  // This constructor is package-private to allow internal instantiation when using DataFrames (since Spark SQL passes a Map<String, String> object). However, for external use with RDDs, users need to use the default constructor and set configs through setter methods.
+  private[bigtable] def this(conf: Map[String, String]) = {
+    this()
+    this.bigtableProjectId = conf.get(BigtableSparkConf.BIGTABLE_PROJECT_ID)
+    this.bigtableInstanceId = conf.get(BigtableSparkConf.BIGTABLE_INSTANCE_ID)
+    this.bigtableAppProfileId = conf.getOrElse(BigtableSparkConf.BIGTABLE_APP_PROFILE_ID, BigtableSparkConf.DEFAULT_BIGTABLE_APP_PROFILE_ID)
+
+    this.bigtableCreateNewTable = conf.getOrElse(BigtableSparkConf.BIGTABLE_CREATE_NEW_TABLE, BigtableSparkConf.DEFAULT_BIGTABLE_CREATE_NEW_TABLE.toString).toBoolean
+
+    this.bigtableTimeRangeStart = conf.get(BigtableSparkConf.BIGTABLE_TIMERANGE_START).map(_.toLong)
+    this.bigtableTimeRangeEnd = conf.get(BigtableSparkConf.BIGTABLE_TIMERANGE_END).map(_.toLong)
+    this.bigtableWriteTimestamp = conf.get(BigtableSparkConf.BIGTABLE_WRITE_TIMESTAMP).map(_.toLong)
+
+    this.bigtableEmulatorPort = conf.get(BigtableSparkConf.BIGTABLE_EMULATOR_PORT).map(_.toInt)
+
+    this.bigtablePushDownRowKeyFilters = conf.getOrElse(BigtableSparkConf.BIGTABLE_PUSH_DOWN_ROW_KEY_FILTERS, BigtableSparkConf.DEFAULT_BIGTABLE_PUSH_DOWN_FILTERS.toString).toBoolean
+
+    this.bigtableReadRowsAttemptTimeoutMs = conf.get(BigtableSparkConf.BIGTABLE_READ_ROWS_ATTEMPT_TIMEOUT_MS)
+    this.bigtableReadRowsTotalTimeoutMs = conf.get(BigtableSparkConf.BIGTABLE_READ_ROWS_TOTAL_TIMEOUT_MS)
+
+    this.bigtableMutateRowsAttemptTimeoutMs = conf.get(BigtableSparkConf.BIGTABLE_MUTATE_ROWS_ATTEMPT_TIMEOUT_MS)
+    this.bigtableMutateRowsTotalTimeoutMs = conf.get(BigtableSparkConf.BIGTABLE_MUTATE_ROWS_TOTAL_TIMEOUT_MS)
+
+    this.bigtableBatchMutateSize = conf.getOrElse(BigtableSparkConf.BIGTABLE_BATCH_MUTATE_SIZE, BigtableSparkConf.BIGTABLE_DEFAULT_BATCH_MUTATE_SIZE.toString).toLong
+    this.bigtableEnableBatchMutateFlowControl = conf.getOrElse(BigtableSparkConf.BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL, BigtableSparkConf.DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL.toString).toBoolean
+
+    this.maxReadRowsRetries = conf.get(BigtableSparkConf.MAX_READ_ROWS_RETRIES)
+  }
+  def setBigtableProjectId(value: String): Unit = bigtableProjectId = Some(value)
+  def setBigtableInstanceId(value: String): Unit = bigtableInstanceId = Some(value)
+  def setBigtableAppProfileId(value: String): Unit = bigtableAppProfileId = value
+  def setBigtableReadRowsAttemptTimeoutMs(value: String): Unit = bigtableReadRowsAttemptTimeoutMs = Some(value)
+  def setBigtableReadRowsTotalTimeoutMs(value: String): Unit = bigtableReadRowsTotalTimeoutMs = Some(value)
+  def setBigtableMutateRowsAttemptTimeoutMs(value: String): Unit = bigtableMutateRowsAttemptTimeoutMs = Some(value)
+  def setBigtableMutateRowsTotalTimeoutMs(value: String): Unit = bigtableMutateRowsTotalTimeoutMs = Some(value)
+  def setBigtableBatchMutateSize(value: Int): Unit = bigtableBatchMutateSize = value
+  def setBigtableEnableBatchMutateFlowControl(value: Boolean): Unit = bigtableEnableBatchMutateFlowControl = value
+}
+

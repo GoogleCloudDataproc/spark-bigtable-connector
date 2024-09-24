@@ -302,60 +302,46 @@ creation and caching to simplify the usage, while giving you freedom for how
 exactly to convert between your RDD and Bigtable table (e.g., type conversion,
 custom timestamps for each row, number of columns in each row, etc.). You can
 create a new `BigtableRDD` object and call these functions for read and write
-operations (note that this functionality is only supported in Java and Scala,
+operations (note that this feature is only supported in Java and Scala,
 not PySpark):
 
 #### Writing an RDD
 For writing, you need to pass in an RDD of
 [RowMutationEntry](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/com.google.cloud.bigtable.data.v2.models.RowMutationEntry)
-objects to the following function (note the use of Java vs. Scala Map in the
-two languages):
+objects to the following function:
 
-In Java:
-```java
-BigtableRDD.writeRDD(
-    RDD<RowMutationEntry> rdd, 
-    String tableId,
-    java.util.Map<String, String> parameters);
-```
-
-In Scala:
 ```scala
-BigtableRDD.writeRDD(
+bigtableRDD.writeRDD(
    rdd: RDD[RowMutationEntry], 
    tableId: String,
-   parameters: Map[String, String]
+   bigtableSparkConf: BigtableSparkConf
 )
 ```
 
 #### Reading an RDD
 When reading an RDD, you receive an RDD of Bigtable
 [Row](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/com.google.cloud.bigtable.data.v2.models.Row)
-objects after calling the following function (note the use of Java vs. Scala 
-Map in the two languages):
+objects after calling the following function:
 
-In Java:
-```java
-BigtableRDD.readRDD(String tableId, java.util.Map<String, String> parameters);
-```
-
-In Scala:
 ```scala
-BigtableRDD.readRDD(tableId: String, parameters: Map[String, String])
+BigtableRDD.readRDD(tableId: String, bigtableSparkConf: BigtableSparkConf)
 ```
 
-Note that in both cases, you can pass in a Map of the following runtime
-parameters:
+Note that in both cases, you need to pass in a `BigtableSparkConf` object
+corresponding to the options you want to set in your workflow. You can create
+an instance of this object with `new BigtableSparkConf()` and use the setter
+methods to set specific configs, e.g., `setBigtableProjectId(someProjectId)`.
+A list of the setter methods for the supported configs is as follows:
 
-1. `spark.bigtable.project.id`
-2. `spark.bigtable.instance.id`
-3. `spark.bigtable.app_profile.id`
-4. `spark.bigtable.read.rows.attempt.timeout.milliseconds`
-5. `spark.bigtable.read.rows.total.timeout.milliseconds`
-6. `spark.bigtable.mutate.rows.attempt.timeout.milliseconds`
-7. `spark.bigtable.mutate.rows.total.timeout.milliseconds`
-8. `spark.bigtable.batch.mutate.size`
-9. `spark.bigtable.enable.batch_mutate.flow_control`
+1. `setBigtableProjectId(value: String)`
+2. `setBigtableInstanceId(value: String)`
+3. `setBigtableAppProfileId(value: String)`
+4. `setBigtableReadRowsAttemptTimeoutMs(value: String)`
+5. `setBigtableReadRowsTotalTimeoutMs(value: String)`
+6. `setBigtableMutateRowsAttemptTimeoutMs(value: String)`
+7. `setBigtableMutateRowsTotalTimeoutMs(value: String)`
+8. `setBigtableBatchMutateSize(value: Int)`
+9. `setBigtableEnableBatchMutateFlowControl(value: Boolean)`
 
 You can refer to the
 [official documentation](https://cloud.google.com/bigtable/docs/use-bigtable-spark-connector)
