@@ -33,7 +33,7 @@ import org.apache.yetus.audience.InterfaceAudience
 object UserAgentInformation {
   val CONNECTOR_VERSION = "0.2.1" // ${NEXT_VERSION_FLAG}
   val DATA_SOURCE_VERSION = "V1"
-  val DATAFRAME_TEXT = "DF data source/" + DATA_SOURCE_VERSION
+  val DATAFRAME_TEXT = "DF/" + DATA_SOURCE_VERSION
   val RDD_TEXT = "RDD/"
   val scalaVersion = util.Properties.versionNumberString
   // This remains unset only in unit tests where sqlContext is null.
