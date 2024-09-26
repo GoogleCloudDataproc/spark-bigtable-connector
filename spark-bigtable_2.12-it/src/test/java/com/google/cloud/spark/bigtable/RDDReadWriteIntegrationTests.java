@@ -15,22 +15,20 @@
  */
 package com.google.cloud.spark.bigtable;
 
-import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_INSTANCE_ID;
-import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.BIGTABLE_PROJECT_ID;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
+import com.google.cloud.spark.bigtable.datasources.BigtableSparkConf;
+import com.google.cloud.spark.bigtable.datasources.BigtableSparkConfBuilder;
 import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Row;
 import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowCell;
 import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
 import com.google.cloud.spark.bigtable.repackaged.io.grpc.Status;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import junitparams.JUnitParamsRunner;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.spark.api.java.JavaRDD;
@@ -83,10 +81,9 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
       LOG.info("Original RDD Created.");
 
       BigtableRDD bigtableRDD = new BigtableRDD(spark.sparkContext());
-      bigtableRDD.writeRDD(mutationsRDD.rdd(), useTable, createRDDParameters());
+      bigtableRDD.writeRDD(mutationsRDD.rdd(), useTable, createRDDConf());
 
-      JavaRDD<Row> bigtableRowsRDD =
-          bigtableRDD.readRDD(useTable, createRDDParameters()).toJavaRDD();
+      JavaRDD<Row> bigtableRowsRDD = bigtableRDD.readRDD(useTable, createRDDConf()).toJavaRDD();
 
       JavaRDD<Tuple2<String, Long>> readTupleRDD =
           bigtableRowsRDD.map(
@@ -121,7 +118,7 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
 
       BigtableRDD bigtableRDD = new BigtableRDD(spark.sparkContext());
       try {
-        bigtableRDD.writeRDD(erroneousMutationsRDD.rdd(), useTable, createRDDParameters());
+        bigtableRDD.writeRDD(erroneousMutationsRDD.rdd(), useTable, createRDDConf());
         fail("The connector should have thrown a " + Status.NOT_FOUND + " exception.");
       } catch (Exception e) {
         assertThat(
@@ -164,11 +161,8 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
         });
   }
 
-  Map<String, String> createRDDParameters() {
-    Map<String, String> parameters = new HashMap<>();
-    parameters.put(BIGTABLE_PROJECT_ID(), projectId);
-    parameters.put(BIGTABLE_INSTANCE_ID(), instanceId);
-    return parameters;
+  BigtableSparkConf createRDDConf() {
+    return new BigtableSparkConfBuilder().setProjectId(projectId).setInstanceId(instanceId).build();
   }
 
   void assertTupleRDDsEqual(

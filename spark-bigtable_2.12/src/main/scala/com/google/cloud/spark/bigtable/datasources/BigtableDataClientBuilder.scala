@@ -261,68 +261,45 @@ object BigtableAdminClientBuilder extends Serializable {
 }
 
 @InterfaceAudience.Private
-class BigtableClientKey(@transient parameters: Map[String, String])
-    extends Serializable {
-  val projectId: String = parameters
-    .get(BigtableSparkConf.BIGTABLE_PROJECT_ID)
-    .getOrElse(
-      throw new IllegalArgumentException(
-        "Parameter " +
-          BigtableSparkConf.BIGTABLE_PROJECT_ID + " must be provided."
-      )
+class BigtableClientKey(
+    @transient bigtableSparkConf: BigtableSparkConf,
+    dataFrameOrRDDUserAgentText: String
+) extends Serializable {
+  val projectId: String = bigtableSparkConf.projectId.getOrElse(
+    throw new IllegalArgumentException(
+      "Parameter " +
+        BigtableSparkConf.BIGTABLE_PROJECT_ID + " must be provided."
     )
-  val instanceId: String = parameters
-    .get(BigtableSparkConf.BIGTABLE_INSTANCE_ID)
-    .getOrElse(
-      throw new IllegalArgumentException(
-        "Parameter " +
-          BigtableSparkConf.BIGTABLE_INSTANCE_ID + " must be provided."
-      )
+  )
+  val instanceId: String = bigtableSparkConf.instanceId.getOrElse(
+    throw new IllegalArgumentException(
+      "Parameter " +
+        BigtableSparkConf.BIGTABLE_INSTANCE_ID + " must be provided."
     )
-
-  val appProfileId: String = parameters
-    .get(BigtableSparkConf.BIGTABLE_APP_PROFILE_ID)
-    .getOrElse(BigtableSparkConf.DEFAULT_BIGTABLE_APP_PROFILE_ID)
-  val emulatorPort: Option[Int] =
-    parameters.get(BigtableSparkConf.BIGTABLE_EMULATOR_PORT).map(_.toInt)
-
-  val batchMutateFlowControl: Boolean = parameters
-    .get(BigtableSparkConf.BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL)
-    .map(_.toBoolean)
-    .getOrElse(
-      BigtableSparkConf.DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL
-    )
-
-  val readRowsAttemptTimeout: Option[String] = parameters.get(
-    BigtableSparkConf.BIGTABLE_READ_ROWS_ATTEMPT_TIMEOUT_MS
-  )
-  val readRowsTotalTimeout: Option[String] = parameters.get(
-    BigtableSparkConf.BIGTABLE_READ_ROWS_TOTAL_TIMEOUT_MS
   )
 
-  val mutateRowsAttemptTimeout: Option[String] = parameters.get(
-    BigtableSparkConf.BIGTABLE_MUTATE_ROWS_ATTEMPT_TIMEOUT_MS
-  )
-  val mutateRowsTotalTimeout: Option[String] = parameters.get(
-    BigtableSparkConf.BIGTABLE_MUTATE_ROWS_TOTAL_TIMEOUT_MS
-  )
+  val appProfileId: String = bigtableSparkConf.appProfileId
+  val emulatorPort: Option[Int] = bigtableSparkConf.emulatorPort
 
-  val readRowsRetries: Option[String] =
-    parameters.get(BigtableSparkConf.MAX_READ_ROWS_RETRIES)
+  val batchMutateFlowControl: Boolean = bigtableSparkConf.enableBatchMutateFlowControl
 
-  val defaultBatchSize: Long =
-    BigtableSparkConf.BIGTABLE_DEFAULT_BATCH_MUTATE_SIZE
+  val readRowsAttemptTimeout: Option[String] = bigtableSparkConf.readRowsAttemptTimeoutMs
+  val readRowsTotalTimeout: Option[String] = bigtableSparkConf.readRowsTotalTimeoutMs
+
+  val mutateRowsAttemptTimeout: Option[String] =
+    bigtableSparkConf.mutateRowsAttemptTimeoutMs
+  val mutateRowsTotalTimeout: Option[String] = bigtableSparkConf.mutateRowsTotalTimeoutMs
+
+  val readRowsRetries: Option[String] = bigtableSparkConf.maxReadRowsRetries
+
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
-  val batchSize: Long = parameters
-    .get(BigtableSparkConf.BIGTABLE_BATCH_MUTATE_SIZE)
-    .map(_.toLong)
-    .getOrElse(defaultBatchSize)
+  val batchSize: Long = bigtableSparkConf.batchMutateSize
 
   val userAgentText: String =
-    ("spark-bigtable_2.12/" + VersionInformation.CONNECTOR_VERSION
-      + " spark/" + VersionInformation.sparkVersion
-      + " data source/" + VersionInformation.DATA_SOURCE_VERSION
-      + " scala/" + VersionInformation.scalaVersion)
+    ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION
+      + " spark/" + UserAgentInformation.sparkVersion
+      + " " + dataFrameOrRDDUserAgentText
+      + " scala/" + UserAgentInformation.scalaVersion)
 
   override def hashCode: Int = {
     val prime: Int = 31

@@ -44,6 +44,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
   @AfterClass
   public static void cleanup() {
     adminClient.close();
+    stopSparkSession(spark);
   }
 
   @Override
