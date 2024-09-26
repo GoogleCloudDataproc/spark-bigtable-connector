@@ -328,9 +328,17 @@ BigtableRDD.readRDD(tableId: String, bigtableSparkConf: BigtableSparkConf)
 ```
 
 Note that in both cases, you need to pass in a `BigtableSparkConf` object
-corresponding to the options you want to set in your workflow. You can create
-an instance of this object with `new BigtableSparkConf()` and use the setter
-methods to set specific configs, e.g., `setBigtableProjectId(someProjectId)`.
+corresponding to the options you want to set in your workflow. You can use the
+`BigtableSparkConfBuilder` class to create an instance of this class:
+
+```scala
+val bigtableSparkConf: BigtableSparkConf = 
+   new BigtableSparkConfBuilder()
+     .setBigtableProjectId(someProjectId)
+     .setBigtableInstanceId(someInstanceId)
+     .build()
+```
+
 A list of the setter methods for the supported configs is as follows:
 
 1. `setBigtableProjectId(value: String)`

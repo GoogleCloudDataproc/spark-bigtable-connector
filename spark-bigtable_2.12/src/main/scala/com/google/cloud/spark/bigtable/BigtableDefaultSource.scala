@@ -124,7 +124,7 @@ case class BigtableRelation(
     UserAgentInformation.sparkVersion = context.sparkContext.version
   )
   val catalog: BigtableTableCatalog = BigtableTableCatalog(parameters)
-  val bigtableSparkConf: BigtableSparkConf = new BigtableSparkConf(parameters)
+  val bigtableSparkConf: BigtableSparkConf = BigtableSparkConfBuilder().fromMap(parameters).build()
   val pushDownRowKeyFilters: Boolean = bigtableSparkConf.bigtablePushDownRowKeyFilters
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.
