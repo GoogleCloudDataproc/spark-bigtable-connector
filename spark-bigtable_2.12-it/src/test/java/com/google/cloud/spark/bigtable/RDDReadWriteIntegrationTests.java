@@ -163,8 +163,8 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
 
   BigtableSparkConf createRDDConf() {
     return new BigtableSparkConfBuilder()
-        .setBigtableProjectId(projectId)
-        .setBigtableInstanceId(instanceId)
+        .setProjectId(projectId)
+        .setInstanceId(instanceId)
         .build();
   }
 
