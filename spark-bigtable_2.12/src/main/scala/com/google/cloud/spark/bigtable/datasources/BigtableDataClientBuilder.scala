@@ -265,35 +265,35 @@ class BigtableClientKey(
     @transient bigtableSparkConf: BigtableSparkConf,
     dataFrameOrRDDUserAgentText: String
 ) extends Serializable {
-  val projectId: String = bigtableSparkConf.bigtableProjectId.getOrElse(
+  val projectId: String = bigtableSparkConf.projectId.getOrElse(
     throw new IllegalArgumentException(
       "Parameter " +
         BigtableSparkConf.BIGTABLE_PROJECT_ID + " must be provided."
     )
   )
-  val instanceId: String = bigtableSparkConf.bigtableInstanceId.getOrElse(
+  val instanceId: String = bigtableSparkConf.instanceId.getOrElse(
     throw new IllegalArgumentException(
       "Parameter " +
         BigtableSparkConf.BIGTABLE_INSTANCE_ID + " must be provided."
     )
   )
 
-  val appProfileId: String = bigtableSparkConf.bigtableAppProfileId
-  val emulatorPort: Option[Int] = bigtableSparkConf.bigtableEmulatorPort
+  val appProfileId: String = bigtableSparkConf.appProfileId
+  val emulatorPort: Option[Int] = bigtableSparkConf.emulatorPort
 
-  val batchMutateFlowControl: Boolean = bigtableSparkConf.bigtableEnableBatchMutateFlowControl
+  val batchMutateFlowControl: Boolean = bigtableSparkConf.enableBatchMutateFlowControl
 
-  val readRowsAttemptTimeout: Option[String] = bigtableSparkConf.bigtableReadRowsAttemptTimeoutMs
-  val readRowsTotalTimeout: Option[String] = bigtableSparkConf.bigtableReadRowsTotalTimeoutMs
+  val readRowsAttemptTimeout: Option[String] = bigtableSparkConf.readRowsAttemptTimeoutMs
+  val readRowsTotalTimeout: Option[String] = bigtableSparkConf.readRowsTotalTimeoutMs
 
   val mutateRowsAttemptTimeout: Option[String] =
-    bigtableSparkConf.bigtableMutateRowsAttemptTimeoutMs
-  val mutateRowsTotalTimeout: Option[String] = bigtableSparkConf.bigtableMutateRowsTotalTimeoutMs
+    bigtableSparkConf.mutateRowsAttemptTimeoutMs
+  val mutateRowsTotalTimeout: Option[String] = bigtableSparkConf.mutateRowsTotalTimeoutMs
 
   val readRowsRetries: Option[String] = bigtableSparkConf.maxReadRowsRetries
 
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
-  val batchSize: Long = bigtableSparkConf.bigtableBatchMutateSize
+  val batchSize: Long = bigtableSparkConf.batchMutateSize
 
   val userAgentText: String =
     ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION

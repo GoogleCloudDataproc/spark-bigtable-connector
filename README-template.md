@@ -334,22 +334,22 @@ corresponding to the options you want to set in your workflow. You can use the
 ```scala
 val bigtableSparkConf: BigtableSparkConf = 
    new BigtableSparkConfBuilder()
-     .setBigtableProjectId(someProjectId)
-     .setBigtableInstanceId(someInstanceId)
+     .setProjectId(someProjectId)
+     .setInstanceId(someInstanceId)
      .build()
 ```
 
 A list of the setter methods for the supported configs is as follows:
 
-1. `setBigtableProjectId(value: String)`
-2. `setBigtableInstanceId(value: String)`
-3. `setBigtableAppProfileId(value: String)`
-4. `setBigtableReadRowsAttemptTimeoutMs(value: String)`
-5. `setBigtableReadRowsTotalTimeoutMs(value: String)`
-6. `setBigtableMutateRowsAttemptTimeoutMs(value: String)`
-7. `setBigtableMutateRowsTotalTimeoutMs(value: String)`
-8. `setBigtableBatchMutateSize(value: Int)`
-9. `setBigtableEnableBatchMutateFlowControl(value: Boolean)`
+1. `setProjectId(value: String)`
+2. `setInstanceId(value: String)`
+3. `setAppProfileId(value: String)`
+4. `setReadRowsAttemptTimeoutMs(value: String)`
+5. `setReadRowsTotalTimeoutMs(value: String)`
+6. `setMutateRowsAttemptTimeoutMs(value: String)`
+7. `setMutateRowsTotalTimeoutMs(value: String)`
+8. `setBatchMutateSize(value: Int)`
+9. `setEnableBatchMutateFlowControl(value: Boolean)`
 
 You can refer to the
 [official documentation](https://cloud.google.com/bigtable/docs/use-bigtable-spark-connector)

@@ -33,7 +33,7 @@ import org.apache.yetus.audience.InterfaceAudience
 object UserAgentInformation {
   val CONNECTOR_VERSION = "0.2.1" // ${NEXT_VERSION_FLAG}
   val DATA_SOURCE_VERSION = "V1"
-  val DATAFRAME_TEXT = "DataFrame data source/" + DATA_SOURCE_VERSION
+  val DATAFRAME_TEXT = "DF data source/" + DATA_SOURCE_VERSION
   val RDD_TEXT = "RDD/"
   val scalaVersion = util.Properties.versionNumberString
   // This remains unset only in unit tests where sqlContext is null.
@@ -125,14 +125,14 @@ case class BigtableRelation(
   )
   val catalog: BigtableTableCatalog = BigtableTableCatalog(parameters)
   val bigtableSparkConf: BigtableSparkConf = BigtableSparkConfBuilder().fromMap(parameters).build()
-  val pushDownRowKeyFilters: Boolean = bigtableSparkConf.bigtablePushDownRowKeyFilters
+  val pushDownRowKeyFilters: Boolean = bigtableSparkConf.pushDownRowKeyFilters
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.
   val startTimestampMicros: Option[Long] =
-    bigtableSparkConf.bigtableTimeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
+    bigtableSparkConf.timeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
   val endTimestampMicros: Option[Long] =
-    bigtableSparkConf.bigtableTimeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
-  val writeTimestampMicros: Long = bigtableSparkConf.bigtableWriteTimestamp
+    bigtableSparkConf.timeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
+  val writeTimestampMicros: Long = bigtableSparkConf.writeTimestamp
     .map(timestamp => Math.multiplyExact(timestamp, 1000L))
     .getOrElse(Math.multiplyExact(System.currentTimeMillis(), 1000L))
 
@@ -146,7 +146,7 @@ case class BigtableRelation(
     *  (throw exception if a table with that name already exists).
     */
   def createTableIfNeeded(): Unit = {
-    val createNewTable: Boolean = bigtableSparkConf.bigtableCreateNewTable
+    val createNewTable: Boolean = bigtableSparkConf.createNewTable
     if (createNewTable) {
       val bigtableAdminClient: BigtableTableAdminClient =
         BigtableAdminClientBuilder.getAdminClient(clientKey)
