@@ -162,10 +162,7 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
   }
 
   BigtableSparkConf createRDDConf() {
-    return new BigtableSparkConfBuilder()
-        .setProjectId(projectId)
-        .setInstanceId(instanceId)
-        .build();
+    return new BigtableSparkConfBuilder().setProjectId(projectId).setInstanceId(instanceId).build();
   }
 
   void assertTupleRDDsEqual(
