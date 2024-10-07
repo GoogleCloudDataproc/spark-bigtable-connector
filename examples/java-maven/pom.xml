@@ -25,10 +25,10 @@
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
-        <scala.binary.version>2.12</scala.binary.version>
-        <spark.version>3.1.2</spark.version>
+        <scala.binary.version>2.13</scala.binary.version>
+        <spark.version>3.3.0</spark.version>
         <reload4j.version>1.7.36</reload4j.version>
-        <spark.bigtable.version>0.1.0</spark.bigtable.version>
+        <spark.bigtable.version>0.2.2-SNAPSHOT</spark.bigtable.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
