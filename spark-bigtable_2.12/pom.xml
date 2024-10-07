@@ -44,7 +44,8 @@
     <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
     <dependency>
       <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_${scala.binary.version}</artifactId>
+<!--      <artifactId>scala-parser-combinators_${scala.binary.version}</artifactId>-->
+      <artifactId>scala-parser-combinators_2.13</artifactId>
       <version>${scala-parser-combinators.version}</version>
     </dependency>
 
@@ -57,7 +58,8 @@
 
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.binary.version}</artifactId>
+<!--      <artifactId>spark-core_${scala.binary.version}</artifactId>-->
+      <artifactId>spark-core_2.13</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
       <exclusions>
@@ -82,7 +84,8 @@
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.binary.version}</artifactId>
+<!--      <artifactId>spark-sql_${scala.binary.version}</artifactId>-->
+      <artifactId>spark-sql_2.13</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -95,7 +98,8 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.binary.version}</artifactId>
+<!--      <artifactId>scalatest_${scala.binary.version}</artifactId>-->
+      <artifactId>scalatest_2.13</artifactId>
       <version>${scalatest.version}</version>
       <scope>test</scope>
       <exclusions>

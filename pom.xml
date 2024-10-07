@@ -90,7 +90,7 @@
     <slf4j.version>1.7.36</slf4j.version>
     <slf4j-reload4j.version>1.7.36</slf4j-reload4j.version>
     <reload4j.version>1.2.24</reload4j.version>
-    <scala-parser-combinators.version>1.1.2</scala-parser-combinators.version>
+    <scala-parser-combinators.version>2.0.0</scala-parser-combinators.version>
     <commons-lang.version>2.6</commons-lang.version>
     <openlineage.version>1.22.0</openlineage.version>
   </properties>
