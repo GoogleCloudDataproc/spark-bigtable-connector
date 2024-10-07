@@ -33,7 +33,8 @@ import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.util
 import java.util.HashMap
-import scala.collection.JavaConversions._
+import java.util.stream.Collectors
+import scala.collection.JavaConverters._
 
 @InterfaceAudience.Private
 abstract class AvroException(msg: String) extends Exception(msg)
@@ -69,10 +70,12 @@ object SchemaConverters {
       case ENUM    => SchemaType(StringType, nullable = false)
 
       case RECORD =>
-        val fields = avroSchema.getFields.map { f =>
-          val schemaType = toSqlType(f.schema())
-          StructField(f.name, schemaType.dataType, schemaType.nullable)
-        }
+
+        val fields = avroSchema.getFields.stream.map(
+          f => {
+            val schemaType = toSqlType(f.schema())
+            StructField(f.name, schemaType.dataType, schemaType.nullable)
+          }).collect(Collectors.toList[StructField])
 
         SchemaType(StructType(fields), nullable = false)
 
@@ -95,10 +98,10 @@ object SchemaConverters {
         )
 
       case UNION =>
-        if (avroSchema.getTypes.exists(_.getType == NULL)) {
+        if (avroSchema.getTypes.stream.anyMatch(_.getType == null)) {
           // In case of a union with null, eliminate it and make a recursive call
           val remainingUnionTypes =
-            avroSchema.getTypes.filterNot(_.getType == NULL)
+            avroSchema.getTypes.stream.filter(_.getType == NULL).collect(Collectors.toList[Schema])
           if (remainingUnionTypes.size == 1) {
             toSqlType(remainingUnionTypes.get(0)).copy(nullable = true)
           } else {
@@ -106,7 +109,7 @@ object SchemaConverters {
               .copy(nullable = true)
           }
         } else
-          avroSchema.getTypes.map(_.getType) match {
+          avroSchema.getTypes.stream.map(_.getType) match {
             case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
               SchemaType(LongType, nullable = false)
             case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
@@ -182,7 +185,7 @@ object SchemaConverters {
           }
       case RECORD =>
         val fieldConverters =
-          schema.getFields.map(f => createConverterToSQL(f.schema))
+          schema.getFields.stream.map(f => createConverterToSQL(f.schema)).collect(Collectors.toList[Any => Any])
         (item: Any) =>
           if (item == null) {
             null
@@ -191,7 +194,7 @@ object SchemaConverters {
             val converted = new Array[Any](fieldConverters.size)
             var idx = 0
             while (idx < fieldConverters.size) {
-              converted(idx) = fieldConverters.apply(idx)(record.get(idx))
+              converted(idx) = fieldConverters.get(idx)(record.get(idx))
               idx += 1
             }
             Row.fromSeq(converted.toSeq)
@@ -203,10 +206,10 @@ object SchemaConverters {
             null
           } else {
             try {
-              item.asInstanceOf[GenericData.Array[Any]].map(elementConverter)
+              item.asInstanceOf[GenericData.Array[Any]].stream.map(element => elementConverter.apply(element))
             } catch {
               case e: Throwable =>
-                item.asInstanceOf[util.ArrayList[Any]].map(elementConverter)
+                item.asInstanceOf[util.ArrayList[Any]].stream.map(element => elementConverter.apply(element))
             }
           }
       case MAP =>
@@ -217,19 +220,18 @@ object SchemaConverters {
           } else {
             item
               .asInstanceOf[HashMap[Any, Any]]
-              .map(x => (x._1.toString, valueConverter(x._2)))
-              .toMap
+              .forEach((k, v) => (k.toString, valueConverter(v)))
           }
       case UNION =>
-        if (schema.getTypes.exists(_.getType == NULL)) {
-          val remainingUnionTypes = schema.getTypes.filterNot(_.getType == NULL)
+        if (schema.getTypes.stream.anyMatch(_.getType == NULL)) {
+          val remainingUnionTypes = schema.getTypes.stream.filter(_.getType == NULL).collect(Collectors.toList[Schema])
           if (remainingUnionTypes.size == 1) {
             createConverterToSQL(remainingUnionTypes.get(0))
           } else {
             createConverterToSQL(Schema.createUnion(remainingUnionTypes))
           }
         } else
-          schema.getTypes.map(_.getType) match {
+          schema.getTypes.stream.map(_.getType) match {
             case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
               (item: Any) => {
                 item match {

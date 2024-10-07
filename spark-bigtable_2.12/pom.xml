@@ -14,21 +14,20 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
-    <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
+    <version>0.2.2-SNAPSHOT</version>  <!-- ${NEXT_VERSION_FLAG} -->
     <relativePath>../</relativePath>
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.12</artifactId>
   <name>Google Bigtable - Apache Spark Connector</name>
-  <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.2.2-SNAPSHOT</version>  <!-- ${NEXT_VERSION_FLAG} -->
 
   <dependencies>
     <dependency>
@@ -200,17 +199,13 @@
             </goals>
             <configuration>
               <transformers>
-                <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                   <addHeader>false</addHeader>
                 </transformer>
-                <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
                 </transformer>
-                <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>${app.main.class}</Main-Class>
                     <X-Compile-Source-JDK>${maven.compile.source}</X-Compile-Source-JDK>
