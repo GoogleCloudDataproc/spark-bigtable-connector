@@ -3,6 +3,7 @@ package com.google.cloud.spark.bigtable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
+import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import com.google.gson.JsonObject;
@@ -87,7 +88,6 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
       // event data.
       Dataset<Row> outputReadDf = readDataframeFromBigtable(spark, outputCatalog);
       assertDataFramesEqual(outputReadDf, outputDf);
-
       List<JsonObject> jsonObjects = parseEventLog(lineageFile);
       assertThat(jsonObjects.isEmpty(), is(false));
 
@@ -113,7 +113,6 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
   private static SparkSession createSparkSessionWithOL() throws IOException {
     lineageFile = File.createTempFile("openlineage_test_" + System.nanoTime(), ".log");
     lineageFile.deleteOnExit();
-
     spark =
         SparkSession.builder()
             .master("local")

@@ -19,11 +19,11 @@ You can access the connector in two different ways:
 1. From
    our [Maven Central repository](https://repo1.maven.org/maven2/com/google/cloud/spark/bigtable).
 2. Through a public GCS bucket, located
-   at `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
+   at `gs://spark-lib/bigtable/spark-bigtable_2.13-<version>.jar`.
 
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
-connector `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>`(
+connector `com.google.cloud.spark.bigtable:spark-bigtable_2.13:<version>`(
 current `<version>` is `${next-release-tag}`) and package it inside your application JAR using
 libraries such as Maven Shade Plugin. For PySpark applications, you can use
 the `--jars` flag to pass the GCS address of the connector when submitting it.
@@ -33,7 +33,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 ```xml
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.12</artifactId>
+  <artifactId>spark-bigtable_2.13</artifactId>
   <version>${next-release-tag}</version>
 </dependency>
 ```
@@ -41,7 +41,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 For sbt, you can add the following to your `build.sbt` file:
 
 ```
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "${next-release-tag}"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "${next-release-tag}"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -49,7 +49,7 @@ Gradle:
 
 ```
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '${next-release-tag}'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '${next-release-tag}'
 }
 ```
 
@@ -177,7 +177,7 @@ runtime configurations to
 the connector. For example, Bigtable project and instance ID or settings for
 timestamp and timeout configurations.
 For a full list of configurations, refer to
-[BigtableSparkConf.scala](spark-bigtable_2.12/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
+[BigtableSparkConf.scala](spark-bigtable_2.13/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
 where these configs are defined.
 
 ### Bigtable emulator support

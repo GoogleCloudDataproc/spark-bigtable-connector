@@ -18,7 +18,7 @@ name := "spark-bigtable-example"
 
 version := "0.1"
 
-scalaVersion := "2.12.19"
+scalaVersion := "2.13.14"
 val sparkVersion = "3.0.1"
 
 libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.1.0"

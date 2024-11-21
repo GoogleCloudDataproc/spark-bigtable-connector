@@ -272,11 +272,9 @@ object BigtableTableCatalog {
     val parameters = params
     val jString = parameters(tableCatalog)
     val map = JSON.parseFull(jString).get.asInstanceOf[Map[String, _]]
-    val tableMeta = map.get(table).get.asInstanceOf[Map[String, _]]
-    val tName = tableMeta.get(tableName).get.asInstanceOf[String]
-    val cIter = map
-      .get(columns)
-      .get
+    val tableMeta = map(table).asInstanceOf[Map[String, _]]
+    val tName = tableMeta(tableName).asInstanceOf[String]
+    val cIter = map(columns)
       .asInstanceOf[Map[String, Map[String, String]]]
       .toIterator
     val schemaMap = mutable.HashMap.empty[String, Field]
@@ -286,7 +284,7 @@ object BigtableTableCatalog {
       val f = Field(
         name,
         column.getOrElse(cf, rowKey),
-        column.get(col).get,
+        column(col),
         column.get(`type`),
         sAvro,
         len
