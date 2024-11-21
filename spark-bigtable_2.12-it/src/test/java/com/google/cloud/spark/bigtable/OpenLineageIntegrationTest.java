@@ -3,6 +3,7 @@ package com.google.cloud.spark.bigtable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
+import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import com.google.gson.JsonObject;
@@ -37,6 +38,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
         BigtableTableAdminSettings.newBuilder()
             .setProjectId(projectId)
             .setInstanceId(instanceId)
+            .setCredentialsProvider(NoCredentialsProvider.create())
             .build();
     adminClient = BigtableTableAdminClient.create(adminSettings);
   }
@@ -87,7 +89,6 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
       // event data.
       Dataset<Row> outputReadDf = readDataframeFromBigtable(spark, outputCatalog);
       assertDataFramesEqual(outputReadDf, outputDf);
-
       List<JsonObject> jsonObjects = parseEventLog(lineageFile);
       assertThat(jsonObjects.isEmpty(), is(false));
 
@@ -114,6 +115,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
     lineageFile = File.createTempFile("openlineage_test_" + System.nanoTime(), ".log");
     lineageFile.deleteOnExit();
 
+    System.out.println(lineageFile.getAbsolutePath());
     spark =
         SparkSession.builder()
             .master("local")
@@ -134,6 +136,7 @@ public class OpenLineageIntegrationTest extends AbstractTestBase {
       eventList = new ArrayList<>();
       while (scanner.hasNextLine()) {
         String line = scanner.nextLine();
+        System.out.println(line);
         JsonObject event = JsonParser.parseString(line).getAsJsonObject();
         if (!event.getAsJsonArray("inputs").isEmpty()
             && !event.getAsJsonArray("outputs").isEmpty()) {

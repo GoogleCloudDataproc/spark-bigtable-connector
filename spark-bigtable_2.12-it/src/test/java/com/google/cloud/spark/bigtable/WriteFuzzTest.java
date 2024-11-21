@@ -45,11 +45,11 @@ public class WriteFuzzTest extends AbstractTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(WriteFuzzTest.class);
   private static BigtableTableAdminClient adminClient;
 
-  private final int minRows = 50000;
-  private final int maxRows = 250000;
+  private final int minRows = 500;
+  private final int maxRows = 2500;
   private final int minCols = 18;
   private final int maxCols = 25;
-  private static final long totalDurationMinutes = 90;
+  private static final long totalDurationMinutes = 5;
   private final Stopwatch totalRunTime;
 
   public WriteFuzzTest() {

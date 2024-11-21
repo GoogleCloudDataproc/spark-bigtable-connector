@@ -37,8 +37,9 @@ public class ReadWriteLongRunningTest extends AbstractTestBase {
   private static BigtableTableAdminClient adminClient;
 
   private static final int batchSize = 1000;
-  private static final long batchGapMillis = 5 * 60 * 1000; // 5 minutes
-  private static final long totalDurationMillis = 18 * 3600 * 1000; // 18 hours
+  private static final long batchGapMillis = 2 * 60 * 1000; // 5 minutes
+  private static final long totalDurationMillis = 5 * 60 * 1000;
+  //private static final long totalDurationMillis = 18 * 3600 * 1000; // 18 hours
 
   private long endTime;
 

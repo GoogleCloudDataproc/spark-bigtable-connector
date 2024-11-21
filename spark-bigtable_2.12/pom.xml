@@ -41,7 +41,18 @@
       <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
       <version>${bigtable.java.version}</version>
     </dependency>
-
+    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.15.2</version>
+    </dependency>
     <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
     <dependency>
       <groupId>org.scala-lang.modules</groupId>
@@ -220,6 +231,11 @@
               </transformers>
               <artifactSet>
                 <excludes>
+                  <!-- Exclude Bigtable related dependencies -->
+                  <exclude>com.google.cloud:google-cloud-bigtable</exclude>
+                  <!-- Exclude gRPC related dependencies -->
+                  <exclude>com.google.api.grpc:*</exclude>
+                  <!-- Existing exclusions for slf4j and reload4j -->
                   <exclude>org.slf4j:slf4j-reload4j</exclude>
                   <exclude>org.slf4j:slf4j-api</exclude>
                   <exclude>ch.qos.reload4j:reload4j</exclude>
@@ -230,7 +246,7 @@
                   <pattern>io.netty</pattern>
                   <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.netty</shadedPattern>
                 </relocation>
-                <relocation>
+                <!--<relocation>
                   <pattern>io.grpc</pattern>
                   <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.grpc</shadedPattern>
                 </relocation>
@@ -239,8 +255,9 @@
                   <shadedPattern>com.google.cloud.spark.bigtable.repackaged.com.google</shadedPattern>
                   <excludes>
                     <exclude>com.google.cloud.spark.bigtable.**</exclude>
+                    <exclude>com.google.cloud.bigtable.**</exclude>
                   </excludes>
-                </relocation>
+                </relocation>-->
                 <relocation>
                   <pattern>io.openlineage.spark.shade</pattern>
                   <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade</shadedPattern>

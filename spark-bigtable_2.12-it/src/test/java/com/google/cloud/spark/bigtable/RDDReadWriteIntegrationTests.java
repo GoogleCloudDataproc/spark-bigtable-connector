@@ -23,10 +23,14 @@ import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import com.google.cloud.spark.bigtable.datasources.BigtableSparkConf;
 import com.google.cloud.spark.bigtable.datasources.BigtableSparkConfBuilder;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Row;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowCell;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
-import com.google.cloud.spark.bigtable.repackaged.io.grpc.Status;
+//import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Row;
+//import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowCell;
+//import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
+//import com.google.cloud.spark.bigtable.repackaged.io.grpc.Status;
+import /*com.google.cloud.spark.bigtable.repackaged.*/com.google.cloud.bigtable.data.v2.models.Row;
+import /*com.google.cloud.spark.bigtable.repackaged.*/com.google.cloud.bigtable.data.v2.models.RowCell;
+import /*com.google.cloud.spark.bigtable.repackaged.*/com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
+import /*com.google.cloud.spark.bigtable.repackaged.*/io.grpc.Status;
 import java.util.ArrayList;
 import java.util.List;
 import junitparams.JUnitParamsRunner;
@@ -117,6 +121,8 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
       LOG.info("Original RDD Created.");
 
       BigtableRDD bigtableRDD = new BigtableRDD(spark.sparkContext());
+      System.out.println(erroneousMutationsRDD.collect());
+      System.out.println(Status.NOT_FOUND.getCode().toString());
       try {
         bigtableRDD.writeRDD(erroneousMutationsRDD.rdd(), useTable, createRDDConf());
         fail("The connector should have thrown a " + Status.NOT_FOUND + " exception.");

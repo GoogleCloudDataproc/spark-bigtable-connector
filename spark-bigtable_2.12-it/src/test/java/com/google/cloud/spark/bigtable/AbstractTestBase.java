@@ -96,8 +96,8 @@ public abstract class AbstractTestBase {
   }
 
   static void setBigtableProperties() throws Exception {
-    projectId = System.getProperty(PROJECT_ID_PROPERTY_NAME);
-    instanceId = System.getProperty(INSTANCE_ID_PROPERTY_NAME);
+    projectId = "my-local-project";//System.getProperty(PROJECT_ID_PROPERTY_NAME);
+    instanceId = "my-local-instance";//System.getProperty(INSTANCE_ID_PROPERTY_NAME);
     if (instanceId == null || projectId == null) {
       throw new IllegalArgumentException(
           "Bigtable project and instance ID must be provided using "
