@@ -51,8 +51,8 @@
 
     <dependency>
       <groupId>com.google.cloud.spark.bigtable</groupId>
-      <artifactId>spark-bigtable_2.12</artifactId>
-      <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
+      <artifactId>spark-bigtable_2.13</artifactId>
+      <version>0.2.2</version>  <!-- ${NEXT_VERSION_FLAG} -->
       <exclusions>
         <!-- Exclude google-cloud-bigtable dependency -->
         <exclusion>

@@ -38,13 +38,13 @@ public class FilterPushDownFuzzTest extends AbstractTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(FilterPushDownFuzzTest.class);
   private static BigtableTableAdminClient adminClient;
 
-  private final int minRows = 50;
-  private final int maxRows = 250;
+  private final int minRows = 50000;
+  private final int maxRows = 250000;
   // We use a smaller minCols to increase the chances of reusing the same column in the same filter
   // multiple times.
   private final int minCols = 3;
-  private final int maxCols = 10;
-  private static final long totalDurationMinutes = 2;
+  private final int maxCols = 20;
+  private static final long totalDurationMinutes = 90;
   private final Stopwatch totalRunTime;
 
   public FilterPushDownFuzzTest() {

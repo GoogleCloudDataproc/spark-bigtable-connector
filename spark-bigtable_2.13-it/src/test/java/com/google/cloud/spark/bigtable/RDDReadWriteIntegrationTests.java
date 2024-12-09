@@ -121,8 +121,6 @@ public class RDDReadWriteIntegrationTests extends AbstractTestBase {
       LOG.info("Original RDD Created.");
 
       BigtableRDD bigtableRDD = new BigtableRDD(spark.sparkContext());
-      System.out.println(erroneousMutationsRDD.collect());
-      System.out.println(Status.NOT_FOUND.getCode().toString());
       try {
         bigtableRDD.writeRDD(erroneousMutationsRDD.rdd(), useTable, createRDDConf());
         fail("The connector should have thrown a " + Status.NOT_FOUND + " exception.");
