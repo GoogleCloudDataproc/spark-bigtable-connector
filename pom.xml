@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable-connector</artifactId>
   <packaging>pom</packaging>
-  <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.2.2</version>  <!-- ${NEXT_VERSION_FLAG} -->
   <name>Spark Bigtable Connector Build Parent</name>
   <description>Parent project for all the Spark Bigtable Connector artifacts</description>
   <url>https://github.com/GoogleCloudDataproc/spark-bigtable-connector</url>
@@ -52,8 +52,8 @@
   </scm>
 
   <modules>
-    <module>spark-bigtable_2.12</module>
-    <module>spark-bigtable_2.12-it</module>
+    <module>spark-bigtable_2.13</module>
+    <module>spark-bigtable_2.13-it</module>
   </modules>
 
   <distributionManagement>
@@ -71,8 +71,8 @@
     <gpg.skip>true</gpg.skip>
     <nexus.remote.skip>false</nexus.remote.skip>
 
-    <scala.version>2.12.14</scala.version>
-    <scala.binary.version>2.12</scala.binary.version>
+    <scala.version>2.13.14</scala.version>
+    <scala.binary.version>2.13</scala.binary.version>
     <spark.version>3.3.3</spark.version>
     <bigtable.java.version>2.42.0</bigtable.java.version>
     <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>

@@ -177,7 +177,7 @@ runtime configurations to
 the connector. For example, Bigtable project and instance ID or settings for
 timestamp and timeout configurations.
 For a full list of configurations, refer to
-[BigtableSparkConf.scala](spark-bigtable_2.12/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
+[BigtableSparkConf.scala](spark-bigtable_2.13/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
 where these configs are defined.
 
 ### Bigtable emulator support

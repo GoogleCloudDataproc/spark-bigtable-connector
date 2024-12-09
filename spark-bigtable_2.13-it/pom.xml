@@ -26,9 +26,9 @@
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.12-it</artifactId>
+  <artifactId>spark-bigtable_2.13-it</artifactId>
   <name>Google Bigtable - Spark Connector Integration Tests</name>
-  <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.2.2</version>  <!-- ${NEXT_VERSION_FLAG} -->
 
   <dependencies>
     <dependency>
