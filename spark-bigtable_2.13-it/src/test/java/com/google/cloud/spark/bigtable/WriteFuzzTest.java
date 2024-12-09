@@ -49,7 +49,7 @@ public class WriteFuzzTest extends AbstractTestBase {
   private final int maxRows = 250000;
   private final int minCols = 18;
   private final int maxCols = 25;
-  private static final long totalDurationMinutes = 90;;
+  private static final long totalDurationMinutes = 90;
   private final Stopwatch totalRunTime;
 
   public WriteFuzzTest() {
