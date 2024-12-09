@@ -20,12 +20,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import com.google.cloud.spark.bigtable.model.Favorites;
 import com.google.cloud.spark.bigtable.model.TestAvroRow;
 import com.google.cloud.spark.bigtable.model.TestRow;
-import com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.rpc.NotFoundException;
+//import com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.rpc.NotFoundException;
 import java.util.ArrayList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;

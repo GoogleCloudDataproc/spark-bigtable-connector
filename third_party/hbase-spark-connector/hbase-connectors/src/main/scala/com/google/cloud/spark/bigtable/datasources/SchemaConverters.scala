@@ -33,7 +33,7 @@ import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.util
 import java.util.HashMap
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 
 @InterfaceAudience.Private
 abstract class AvroException(msg: String) extends Exception(msg)
@@ -69,7 +69,7 @@ object SchemaConverters {
       case ENUM    => SchemaType(StringType, nullable = false)
 
       case RECORD =>
-        val fields = avroSchema.getFields.map { f =>
+        val fields = avroSchema.getFields.asScala.toSeq.map { f =>
           val schemaType = toSqlType(f.schema())
           StructField(f.name, schemaType.dataType, schemaType.nullable)
         }
@@ -95,18 +95,18 @@ object SchemaConverters {
         )
 
       case UNION =>
-        if (avroSchema.getTypes.exists(_.getType == NULL)) {
+        if (avroSchema.getTypes.asScala.exists(_.getType == NULL)) {
           // In case of a union with null, eliminate it and make a recursive call
           val remainingUnionTypes =
-            avroSchema.getTypes.filterNot(_.getType == NULL)
+            avroSchema.getTypes.asScala.filterNot(_.getType == NULL)
           if (remainingUnionTypes.size == 1) {
-            toSqlType(remainingUnionTypes.get(0)).copy(nullable = true)
+            toSqlType(remainingUnionTypes.head).copy(nullable = true)
           } else {
-            toSqlType(Schema.createUnion(remainingUnionTypes))
+            toSqlType(Schema.createUnion(remainingUnionTypes.asJava))
               .copy(nullable = true)
           }
         } else
-          avroSchema.getTypes.map(_.getType) match {
+          avroSchema.getTypes.asScala.map(_.getType) match {
             case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
               SchemaType(LongType, nullable = false)
             case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
@@ -182,7 +182,7 @@ object SchemaConverters {
           }
       case RECORD =>
         val fieldConverters =
-          schema.getFields.map(f => createConverterToSQL(f.schema))
+          schema.getFields.asScala.map(f => createConverterToSQL(f.schema))
         (item: Any) =>
           if (item == null) {
             null
@@ -203,10 +203,10 @@ object SchemaConverters {
             null
           } else {
             try {
-              item.asInstanceOf[GenericData.Array[Any]].map(elementConverter)
+              item.asInstanceOf[GenericData.Array[Any]].asScala.map(elementConverter)
             } catch {
               case e: Throwable =>
-                item.asInstanceOf[util.ArrayList[Any]].map(elementConverter)
+                item.asInstanceOf[util.ArrayList[Any]].asScala.map(elementConverter)
             }
           }
       case MAP =>
@@ -216,20 +216,21 @@ object SchemaConverters {
             null
           } else {
             item
-              .asInstanceOf[HashMap[Any, Any]]
+              .asInstanceOf[util.HashMap[Any, Any]]
+              .asScala
               .map(x => (x._1.toString, valueConverter(x._2)))
               .toMap
           }
       case UNION =>
-        if (schema.getTypes.exists(_.getType == NULL)) {
-          val remainingUnionTypes = schema.getTypes.filterNot(_.getType == NULL)
+        if (schema.getTypes.asScala.exists(_.getType == NULL)) {
+          val remainingUnionTypes = schema.getTypes.asScala.filterNot(_.getType == NULL)
           if (remainingUnionTypes.size == 1) {
-            createConverterToSQL(remainingUnionTypes.get(0))
+            createConverterToSQL(remainingUnionTypes.head)
           } else {
-            createConverterToSQL(Schema.createUnion(remainingUnionTypes))
+            createConverterToSQL(Schema.createUnion(remainingUnionTypes.asJava))
           }
         } else
-          schema.getTypes.map(_.getType) match {
+          schema.getTypes.asScala.map(_.getType) match {
             case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
               (item: Any) => {
                 item match {
@@ -413,7 +414,7 @@ object SchemaConverters {
           if (item == null) {
             null
           } else {
-            val javaMap = new HashMap[String, Any]()
+            val javaMap = new util.HashMap[String, Any]()
             item.asInstanceOf[Map[String, Any]].foreach { case (key, value) =>
               javaMap.put(key, valueConverter(value))
             }
@@ -474,7 +475,7 @@ object AvroSerdes {
         val encoder2: BinaryEncoder =
           EncoderFactory.get().directBinaryEncoder(bao2, null)
         writer2.write(gr, encoder2)
-        bao2.toByteArray()
+        bao2.toByteArray
       case _ => throw new Exception(s"unsupported data type ${schema.getType}")
     }
   }
