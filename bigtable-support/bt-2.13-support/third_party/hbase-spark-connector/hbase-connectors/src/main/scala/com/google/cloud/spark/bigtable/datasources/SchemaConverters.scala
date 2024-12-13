@@ -33,7 +33,7 @@ import java.nio.ByteBuffer
 import java.sql.Timestamp
 import java.util
 import java.util.HashMap
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 
 @InterfaceAudience.Private
 abstract class AvroException(msg: String) extends Exception(msg)
@@ -42,20 +42,20 @@ abstract class AvroException(msg: String) extends Exception(msg)
 case class SchemaConversionException(msg: String) extends AvroException(msg)
 
 /** *
- * On top level, the converters provide three high level interface.
- * 1. toSqlType: This function takes an avro schema and returns a sql schema.
- * 2. createConverterToSQL: Returns a function that is used to convert avro types to their
- *    corresponding sparkSQL representations.
- * 3. convertTypeToAvro: This function constructs converter function for a given sparkSQL
- *    datatype. This is used in writing Avro records out to disk
- */
+  * On top level, the converters provide three high level interface.
+  * 1. toSqlType: This function takes an avro schema and returns a sql schema.
+  * 2. createConverterToSQL: Returns a function that is used to convert avro types to their
+  *    corresponding sparkSQL representations.
+  * 3. convertTypeToAvro: This function constructs converter function for a given sparkSQL
+  *    datatype. This is used in writing Avro records out to disk
+  */
 @InterfaceAudience.Private
 object SchemaConverters {
 
   case class SchemaType(dataType: DataType, nullable: Boolean)
 
   /** This function takes an avro schema and returns a sql schema.
-   */
+    */
   def toSqlType(avroSchema: Schema): SchemaType = {
     avroSchema.getType match {
       case INT     => SchemaType(IntegerType, nullable = false)
@@ -69,7 +69,7 @@ object SchemaConverters {
       case ENUM    => SchemaType(StringType, nullable = false)
 
       case RECORD =>
-        val fields = avroSchema.getFields.map { f =>
+        val fields = avroSchema.getFields.asScala.toSeq.map { f =>
           val schemaType = toSqlType(f.schema())
           StructField(f.name, schemaType.dataType, schemaType.nullable)
         }
@@ -95,18 +95,18 @@ object SchemaConverters {
         )
 
       case UNION =>
-        if (avroSchema.getTypes.exists(_.getType == NULL)) {
+        if (avroSchema.getTypes.asScala.exists(_.getType == NULL)) {
           // In case of a union with null, eliminate it and make a recursive call
           val remainingUnionTypes =
-            avroSchema.getTypes.filterNot(_.getType == NULL)
+            avroSchema.getTypes.asScala.filterNot(_.getType == NULL)
           if (remainingUnionTypes.size == 1) {
-            toSqlType(remainingUnionTypes.get(0)).copy(nullable = true)
+            toSqlType(remainingUnionTypes.head).copy(nullable = true)
           } else {
-            toSqlType(Schema.createUnion(remainingUnionTypes))
+            toSqlType(Schema.createUnion(remainingUnionTypes.asJava))
               .copy(nullable = true)
           }
         } else
-          avroSchema.getTypes.map(_.getType) match {
+          avroSchema.getTypes.asScala.map(_.getType) match {
             case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
               SchemaType(LongType, nullable = false)
             case Seq(t1, t2) if Set(t1, t2) == Set(FLOAT, DOUBLE) =>
@@ -123,13 +123,13 @@ object SchemaConverters {
   }
 
   /** This function converts sparkSQL StructType into avro schema. This method uses two other
-   * converter methods in order to do the conversion.
-   */
+    * converter methods in order to do the conversion.
+    */
   private def convertStructToAvro[T](
-                                      structType: StructType,
-                                      schemaBuilder: RecordBuilder[T],
-                                      recordNamespace: String
-                                    ): T = {
+      structType: StructType,
+      schemaBuilder: RecordBuilder[T],
+      recordNamespace: String
+  ): T = {
     val fieldsAssembler: FieldAssembler[T] = schemaBuilder.fields()
     structType.fields.foreach { field =>
       val newField = fieldsAssembler.name(field.name).`type`()
@@ -154,8 +154,8 @@ object SchemaConverters {
   }
 
   /** Returns a function that is used to convert avro types to their
-   * corresponding sparkSQL representations.
-   */
+    * corresponding sparkSQL representations.
+    */
   def createConverterToSQL(schema: Schema): Any => Any = {
     schema.getType match {
       // Avro strings are in Utf8, so we have to call toString on them
@@ -182,7 +182,7 @@ object SchemaConverters {
           }
       case RECORD =>
         val fieldConverters =
-          schema.getFields.map(f => createConverterToSQL(f.schema))
+          schema.getFields.asScala.map(f => createConverterToSQL(f.schema))
         (item: Any) =>
           if (item == null) {
             null
@@ -203,10 +203,10 @@ object SchemaConverters {
             null
           } else {
             try {
-              item.asInstanceOf[GenericData.Array[Any]].map(elementConverter)
+              item.asInstanceOf[GenericData.Array[Any]].asScala.map(elementConverter)
             } catch {
               case e: Throwable =>
-                item.asInstanceOf[util.ArrayList[Any]].map(elementConverter)
+                item.asInstanceOf[util.ArrayList[Any]].asScala.map(elementConverter)
             }
           }
       case MAP =>
@@ -216,20 +216,21 @@ object SchemaConverters {
             null
           } else {
             item
-              .asInstanceOf[HashMap[Any, Any]]
+              .asInstanceOf[util.HashMap[Any, Any]]
+              .asScala
               .map(x => (x._1.toString, valueConverter(x._2)))
               .toMap
           }
       case UNION =>
-        if (schema.getTypes.exists(_.getType == NULL)) {
-          val remainingUnionTypes = schema.getTypes.filterNot(_.getType == NULL)
+        if (schema.getTypes.asScala.exists(_.getType == NULL)) {
+          val remainingUnionTypes = schema.getTypes.asScala.filterNot(_.getType == NULL)
           if (remainingUnionTypes.size == 1) {
-            createConverterToSQL(remainingUnionTypes.get(0))
+            createConverterToSQL(remainingUnionTypes.head)
           } else {
-            createConverterToSQL(Schema.createUnion(remainingUnionTypes))
+            createConverterToSQL(Schema.createUnion(remainingUnionTypes.asJava))
           }
         } else
-          schema.getTypes.map(_.getType) match {
+          schema.getTypes.asScala.map(_.getType) match {
             case Seq(t1, t2) if Set(t1, t2) == Set(INT, LONG) =>
               (item: Any) => {
                 item match {
@@ -257,14 +258,14 @@ object SchemaConverters {
   }
 
   /** This function is used to convert some sparkSQL type to avro type. Note that this function won't
-   * be used to construct fields of avro record (convertFieldTypeToAvro is used for that).
-   */
+    * be used to construct fields of avro record (convertFieldTypeToAvro is used for that).
+    */
   private def convertTypeToAvro[T](
-                                    dataType: DataType,
-                                    schemaBuilder: BaseTypeBuilder[T],
-                                    structName: String,
-                                    recordNamespace: String
-                                  ): T = {
+      dataType: DataType,
+      schemaBuilder: BaseTypeBuilder[T],
+      structName: String,
+      recordNamespace: String
+  ): T = {
     dataType match {
       case ByteType       => schemaBuilder.intType()
       case ShortType      => schemaBuilder.intType()
@@ -307,15 +308,15 @@ object SchemaConverters {
   }
 
   /** This function is used to construct fields of the avro record, where schema of the field is
-   * specified by avro representation of dataType. Since builders for record fields are different
-   * from those for everything else, we have to use a separate method.
-   */
+    * specified by avro representation of dataType. Since builders for record fields are different
+    * from those for everything else, we have to use a separate method.
+    */
   private def convertFieldTypeToAvro[T](
-                                         dataType: DataType,
-                                         newFieldBuilder: BaseFieldTypeBuilder[T],
-                                         structName: String,
-                                         recordNamespace: String
-                                       ): FieldDefault[T, _] = {
+      dataType: DataType,
+      newFieldBuilder: BaseFieldTypeBuilder[T],
+      structName: String,
+      recordNamespace: String
+  ): FieldDefault[T, _] = {
     dataType match {
       case ByteType       => newFieldBuilder.intType()
       case ShortType      => newFieldBuilder.intType()
@@ -366,13 +367,13 @@ object SchemaConverters {
   }
 
   /** This function constructs converter function for a given sparkSQL datatype. This is used in
-   * writing Avro records out to disk
-   */
+    * writing Avro records out to disk
+    */
   def createConverterToAvro(
-                             dataType: DataType,
-                             structName: String,
-                             recordNamespace: String
-                           ): (Any) => Any = {
+      dataType: DataType,
+      structName: String,
+      recordNamespace: String
+  ): (Any) => Any = {
     dataType match {
       case BinaryType =>
         (item: Any) =>
@@ -381,7 +382,7 @@ object SchemaConverters {
             case bytes: Array[Byte] => ByteBuffer.wrap(bytes)
           }
       case ByteType | ShortType | IntegerType | LongType | FloatType |
-           DoubleType | StringType | BooleanType =>
+          DoubleType | StringType | BooleanType =>
         identity
       case _: DecimalType =>
         (item: Any) => if (item == null) null else item.toString
@@ -413,7 +414,7 @@ object SchemaConverters {
           if (item == null) {
             null
           } else {
-            val javaMap = new HashMap[String, Any]()
+            val javaMap = new util.HashMap[String, Any]()
             item.asInstanceOf[Map[String, Any]].foreach { case (key, value) =>
               javaMap.put(key, valueConverter(value))
             }
@@ -474,7 +475,7 @@ object AvroSerdes {
         val encoder2: BinaryEncoder =
           EncoderFactory.get().directBinaryEncoder(bao2, null)
         writer2.write(gr, encoder2)
-        bao2.toByteArray()
+        bao2.toByteArray
       case _ => throw new Exception(s"unsupported data type ${schema.getType}")
     }
   }
