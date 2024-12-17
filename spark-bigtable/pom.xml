@@ -39,6 +39,11 @@
       <version>${bigtable.java.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>3.21.12</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
       <version>${bigtable.java.version}</version>
@@ -178,6 +183,7 @@
                 <!-- We need to put third-party code inside the `third_party` directory
                       for licensing compliance, including them in the project here. -->
                 <source>${third.party.src.main.path}</source>
+                <source>../third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</source>
                 <!-- Included for reciprocal license compliance.-->
                 <source>${project.build.directory}/sources</source>
               </sources>
@@ -192,7 +198,7 @@
             <configuration>
               <sources>
                 <source>src/test/scala</source>
-                <source>${third.party.src.test.path}</source>
+                <source>../third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</source>
               </sources>
             </configuration>
           </execution>
@@ -272,7 +278,7 @@
           <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
           <junitxml>.</junitxml>
           <filereports>WDF TestSuite.txt</filereports>
-          <runpath>${third.party.src.test.path}</runpath>
+          <runpath>../third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</runpath>
         </configuration>
         <executions>
           <execution>

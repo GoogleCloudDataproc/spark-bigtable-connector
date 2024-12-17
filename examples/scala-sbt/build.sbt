@@ -24,7 +24,7 @@ val sparkVersion = "3.5.1"
 
 resolvers += Resolver.mavenLocal
 
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.2.1"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13.14_3.5.1" % "0.2.1"
 
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
@@ -54,3 +54,5 @@ ThisBuild / assemblyMergeStrategy := {
     val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
     oldStrategy(x)
 }
+
+//javacOptions ++= Seq("-source", "17", "-target", "17")

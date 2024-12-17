@@ -76,10 +76,11 @@
         <spark.version>3.5.1</spark.version>
         <bigtable.java.version>2.42.0</bigtable.java.version>
         <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>
-        <third.party.src.main.path>bigtable-support/bt-2.13-support/third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</third.party.src.main.path>
-        <third.party.src.test.path>bigtable-support/bt-2.13-support/third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</third.party.src.test.path>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <third.party.src.main.path.scala12>../bigtable-support/bt-2.12-support/third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</third.party.src.main.path.scala12>
+        <third.party.src.main.path.scala13>../bigtable-support/bt-2.13-support/third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</third.party.src.main.path.scala13>
+        <third.party.src.main.path>${third.party.src.main.path.scala13}</third.party.src.main.path>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <scalatest.version>3.2.16</scalatest.version>
         <surefire.version>3.0.0-M5</surefire.version>
         <junit.version>4.13.2</junit.version>
@@ -87,7 +88,6 @@
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
-        <spark.bigtable.artifact.dir>${project.build.directory}</spark.bigtable.artifact.dir>
 
         <slf4j.version>1.7.36</slf4j.version>
         <slf4j-reload4j.version>1.7.36</slf4j-reload4j.version>
@@ -100,7 +100,7 @@
 
     <profiles>
         <profile>
-            <id>spark-bt_2.13_3.3.3</id>
+            <id>spark-bt_2.13.14_3.3.3</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -109,17 +109,15 @@
                 <scala.binary.version>2.13</scala.binary.version>
                 <spark.version>3.3.3</spark.version>
                 <bigtable.java.version>2.42.0</bigtable.java.version>
-                <third.party.src.main.path>../bigtable-support/bt-2.13-support/third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</third.party.src.main.path>
-                <third.party.src.test.path>../bigtable-support/bt-2.13-support/third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</third.party.src.test.path>
-                <spark.bigtable.artifactId>spark-bigtable_2.13_3.3.3</spark.bigtable.artifactId>
-                <spark.bigtable.artifact.dir>../bigtable-support/bt-2.13-support/target/</spark.bigtable.artifact.dir>
+                <third.party.src.main.path>${third.party.src.main.path.scala13}</third.party.src.main.path>
+                <spark.bigtable.artifactId>spark-bigtable_2.13.14_3.3.3</spark.bigtable.artifactId>
             </properties>
             <modules>
                 <module>spark-bigtable</module>
             </modules>
         </profile>
         <profile>
-            <id>spark-bt_2.12_3.3.3</id>
+            <id>spark-bt_2.12.14_3.3.3</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -128,10 +126,42 @@
                 <scala.binary.version>2.12</scala.binary.version>
                 <spark.version>3.3.3</spark.version>
                 <bigtable.java.version>2.42.0</bigtable.java.version>
-                <spark.bigtable.artifactId>spark-bigtable_2.12_3.3.3</spark.bigtable.artifactId>
-                <third.party.src.main.path>../bigtable-support/bt-2.12-support/third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</third.party.src.main.path>
-                <third.party.src.test.path>../bigtable-support/bt-2.12-support/third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</third.party.src.test.path>
-                <spark.bigtable.artifact.dir>../bigtable-support/bt-2.13-support/target/</spark.bigtable.artifact.dir>
+                <spark.bigtable.artifactId>spark-bigtable_2.12.14_3.3.3</spark.bigtable.artifactId>
+                <third.party.src.main.path>${third.party.src.main.path.scala12}</third.party.src.main.path>
+            </properties>
+            <modules>
+                <module>spark-bigtable</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>spark-bt_2.13.14_3.5.1</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <scala.version>2.13.14</scala.version>
+                <scala.binary.version>2.13</scala.binary.version>
+                <spark.version>3.5.1</spark.version>
+                <bigtable.java.version>2.42.0</bigtable.java.version>
+                <third.party.src.main.path>${third.party.src.main.path.scala13}</third.party.src.main.path>
+                <spark.bigtable.artifactId>spark-bigtable_2.13.14_3.5.1</spark.bigtable.artifactId>
+            </properties>
+            <modules>
+                <module>spark-bigtable</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>spark-bt_2.12.18_3.5.1</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <scala.version>2.12.18</scala.version>
+                <scala.binary.version>2.12</scala.binary.version>
+                <spark.version>3.5.1</spark.version>
+                <bigtable.java.version>2.42.0</bigtable.java.version>
+                <spark.bigtable.artifactId>spark-bigtable_2.12.18_3.5.1</spark.bigtable.artifactId>
+                <third.party.src.main.path>${third.party.src.main.path.scala12}</third.party.src.main.path>
             </properties>
             <modules>
                 <module>spark-bigtable</module>

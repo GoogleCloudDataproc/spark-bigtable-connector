@@ -22,7 +22,7 @@
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
     <version>0.2.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
-    <relativePath>../</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
