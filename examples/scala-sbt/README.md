@@ -14,7 +14,7 @@ sbt clean assembly
 ```
 
 The target JAR will be located under
-`target/scala-2.12/spark-bigtable-example-assembly-0.1.jar`.
+`target/scala-2.13/spark-bigtable-example-assembly-0.1.jar`.
 
 ## Running the example
 
@@ -31,7 +31,7 @@ gcloud dataproc jobs submit spark \
 --cluster=$BIGTABLE_SPARK_DATAPROC_CLUSTER \
 --region=$BIGTABLE_SPARK_DATAPROC_REGION \
 --class=spark.bigtable.example.WordCount \
---jars=target/scala-2.12/spark-bigtable-example-assembly-0.1.jar  \
+--jars=target/scala-2.13/spark-bigtable-example-assembly-0.1.jar  \
 --  \
 $BIGTABLE_SPARK_PROJECT_ID \
 $BIGTABLE_SPARK_INSTANCE_ID \
@@ -45,7 +45,7 @@ assuming you have Spark installed on your machine:
 
 ```shell
 spark-submit \
-target/scala-2.12/spark-bigtable-example-assembly-0.1.jar \
+target/scala-2.13/spark-bigtable-example-assembly-0.1.jar \
 $BIGTABLE_SPARK_PROJECT_ID \
 $BIGTABLE_SPARK_INSTANCE_ID \
 $BIGTABLE_SPARK_TABLE_NAME

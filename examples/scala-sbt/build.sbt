@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2024 Google LLC
  *
@@ -18,10 +19,12 @@ name := "spark-bigtable-example"
 
 version := "0.1"
 
-scalaVersion := "2.12.19"
-val sparkVersion = "3.0.1"
+scalaVersion := "2.13.14"
+val sparkVersion = "3.5.1"
 
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.1.0"
+resolvers += Resolver.mavenLocal
+
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13.14_3.5.1" % "0.2.1"
 
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
@@ -45,7 +48,11 @@ ThisBuild / assemblyMergeStrategy := {
   case PathList("io", "netty", xs @ _*)         => MergeStrategy.first
   case PathList(ps @ _*) if ps.last endsWith ".proto" => MergeStrategy.first
   case PathList(ps @ _*) if ps.last endsWith "module-info.class" => MergeStrategy.discard
+  case PathList("io", "grpc", "protobuf", "services", "ChannelzProtoUtil.class") => MergeStrategy.first
+  case PathList("io", "grpc", "protobuf", "services", "BinlogHelper.class") => MergeStrategy.first
   case x =>
     val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
     oldStrategy(x)
 }
+
+//javacOptions ++= Seq("-source", "17", "-target", "17")
