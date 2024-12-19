@@ -14,16 +14,30 @@
  * limitations under the License.
  */
 
-name := "spark-bigtable-example"
+/** build settings for scala 2.12 */
 
+name := "spark-bigtable-example-scala2.12"
 version := "0.1"
+scalaVersion := "2.12.18"
+val sparkBigtable = "spark-bigtable-scala2.12"
+val sparkBigtableVersion = "0.3.0"
 
-scalaVersion := "2.12.19"
-val sparkVersion = "3.0.1"
 
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.1.0"
+/** build settings for scala 2.13 */
+
+/*
+name := "spark-bigtable-example-scala2.13"
+version := "0.1"
+scalaVersion := "2.13.14"
+val sparkBigtable = "spark-bigtable-scala2.13"
+*/
+
+val sparkVersion = "3.5.1"
+
+resolvers += Resolver.mavenLocal
 
 libraryDependencies ++= Seq(
+  "com.google.cloud.spark.bigtable" % sparkBigtable % sparkBigtableVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.slf4j" % "slf4j-reload4j" % "1.7.36",
 )

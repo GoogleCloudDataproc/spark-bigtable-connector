@@ -15,7 +15,7 @@
  limitations under the License.
  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
@@ -25,7 +25,6 @@
   <name>Spark Bigtable Connector Build Parent</name>
   <description>Parent project for all the Spark Bigtable Connector artifacts</description>
   <url>https://github.com/GoogleCloudDataproc/spark-bigtable-connector</url>
-
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -52,8 +51,8 @@
   </scm>
 
   <modules>
-    <module>spark-bigtable_2.12</module>
-    <module>spark-bigtable_2.12-it</module>
+    <module>spark-bigtable</module>
+    <module>spark-bigtable-core-it</module>
   </modules>
 
   <distributionManagement>
@@ -71,9 +70,10 @@
     <gpg.skip>true</gpg.skip>
     <nexus.remote.skip>false</nexus.remote.skip>
 
-    <scala.version>2.12.14</scala.version>
-    <scala.binary.version>2.12</scala.binary.version>
-    <spark.version>3.3.3</spark.version>
+    <scala.version>2.13.14</scala.version>
+    <scala.binary.version>2.13</scala.binary.version>
+    <connector.artifact.id>spark-bigtable-scala2.13</connector.artifact.id>
+    <spark.version>3.5.1</spark.version>
     <bigtable.java.version>2.42.0</bigtable.java.version>
     <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>
 
