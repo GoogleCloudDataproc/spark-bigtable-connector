@@ -14,23 +14,34 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
     <version>0.3.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
-    <relativePath>../</relativePath>
   </parent>
 
-  <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.12</artifactId>
-  <name>Google Bigtable - Apache Spark Connector</name>
-  <version>0.3.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
+  <artifactId>spark-bigtable</artifactId>
+  <version>0.3.0</version> <!-- ${NEXT_VERSION_FLAG} -->
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>spark-bigtable-scala2.12</module>
+    <module>spark-bigtable-scala2.13</module>
+  </modules>
 
   <dependencies>
+    <!-- To fix the "NoClassDefFoundError: com/fasterxml/jackson/core/exc/StreamConstraintsException" error with Spark 3.5-->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+
+    <!-- google cloud bigtable dependencies -->
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-bigtable</artifactId>
@@ -42,51 +53,6 @@
       <version>${bigtable.java.version}</version>
     </dependency>
 
-    <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_${scala.binary.version}</artifactId>
-      <version>${scala-parser-combinators.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.binary.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scalap</artifactId>
-        </exclusion>
-        <!-- exclude log4j v1 transitive dependencies as we use reload4j instead -->
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.binary.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-    </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -94,19 +60,7 @@
       <version>${slf4j-reload4j.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <version>${scalatest.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
+    <!-- Spark open lineage dependencies -->
     <dependency>
       <groupId>io.openlineage</groupId>
       <artifactId>spark-extension-interfaces</artifactId>
@@ -129,6 +83,11 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>../../spark-bigtable-core/src/main/resources</directory>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>net.alchim31.maven</groupId>
@@ -149,46 +108,6 @@
         <version>3.10.1</version>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.3.0</version>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>src/main/scala</source>
-                <!-- This directory only contains test server infrastructure used in unit/integration
-                      tests, so we specify it as a source. -->
-                <source>src/test/java</source>
-                <!-- We need to put third-party code inside the `third_party` directory
-                      for licensing compliance, including them in the project here. -->
-                <source>../third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</source>
-                <!-- Included for reciprocal license compliance.-->
-                <source>${project.build.directory}/sources</source>
-              </sources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>add-test-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>src/test/scala</source>
-                <source>../third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.4.1</version>
@@ -201,16 +120,16 @@
             <configuration>
               <transformers>
                 <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                    implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                   <addHeader>false</addHeader>
                 </transformer>
                 <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                    implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
                 </transformer>
                 <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>${app.main.class}</Main-Class>
                     <X-Compile-Source-JDK>${maven.compile.source}</X-Compile-Source-JDK>
@@ -261,26 +180,6 @@
             </filter>
           </filters>
         </configuration>
-      </plugin>
-      <!-- Enable scalatest. -->
-      <plugin>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest-maven-plugin</artifactId>
-        <version>2.2.0</version>
-        <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
-          <filereports>WDF TestSuite.txt</filereports>
-          <runpath>../third_party/hbase-spark-connector/hbase-connectors/src/test</runpath>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

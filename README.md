@@ -13,11 +13,12 @@ You can access the connector in two different ways:
 1. From
    our [Maven Central repository](https://repo1.maven.org/maven2/com/google/cloud/spark/bigtable).
 2. Through a public GCS bucket, located
-   at `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
+   at `gs://spark-lib/bigtable/spark-bigtable-scala2.13-<version>.jar` or `gs://spark-lib/bigtable/spark-bigtable-scala2.12-<version>.jar`.
 
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
-connector `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>`(
+connector `com.google.cloud.spark.bigtable:spark-bigtable-scala2.13:<version>`(
+current `<version>` is `0.3.0`) or `com.google.cloud.spark.bigtable:spark-bigtable-scala2.12:<version>`(
 current `<version>` is `0.3.0`) and package it inside your application JAR using
 libraries such as Maven Shade Plugin. For PySpark applications, you can use
 the `--jars` flag to pass the GCS address of the connector when submitting it.
@@ -25,17 +26,31 @@ the `--jars` flag to pass the GCS address of the connector when submitting it.
 For Maven, you can add the following snippet to your `pom.xml` file:
 
 ```xml
+<!-- if you are using scala 2.12 -->
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.12</artifactId>
+  <artifactId>spark-bigtable-scala2.12</artifactId>
   <version>0.3.0</version>
 </dependency>
+
+<!-- if you are using scala 2.13 -->
+<dependency>
+   <groupId>com.google.cloud.spark.bigtable</groupId>
+   <artifactId>spark-bigtable-scala2.13</artifactId>
+   <version>0.3.0</version>
+</dependency>
 ```
+
 
 For sbt, you can add the following to your `build.sbt` file:
 
 ```
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.3.0"
+// for scala 2.12
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable-scala2.12" % "0.3.0"
+
+// for scala 2.13
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable-scala2.13" % "0.3.0"
+
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -43,7 +58,11 @@ Gradle:
 
 ```
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.3.0'
+// for scala 2.12
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable-scala2.12', version: '0.3.0'
+
+// for scala 2.13
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable-scala2.13', version: '0.3.0'
 }
 ```
 
@@ -94,9 +113,10 @@ You need the following depending on the environments you choose to use:
 
 The connector supports the following Spark versions **with Scala 2.12**:
 
-| Scala version | Spark versions                    | Spark Application Languages                             |
-|---------------|-----------------------------------|---------------------------------------------------------|
-| 2.12          | 2.4.8, 3.1.x, 3.2.x, 3.4.x, 3.5.x | Java, Scala, PySpark (`.py` files or Jupyter notebooks) |
+| Scala version | Spark versions                    | Spark Application Languages                              |
+|---------------|-----------------------------------|----------------------------------------------------------|
+| 2.13          | 3.1.x, 3.2.x, 3.4.x, 3.5.x        | Java, Scala, PySpark (`.py` files or Jupyter notebooks)  |                                                         |
+| 2.12          | 2.4.8, 3.1.x, 3.2.x, 3.4.x, 3.5.x | Java, Scala, PySpark (`.py` files or Jupyter notebooks)  |
 
 ## Main features
 
