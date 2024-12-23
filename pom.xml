@@ -15,7 +15,7 @@
  limitations under the License.
  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
@@ -25,7 +25,6 @@
   <name>Spark Bigtable Connector Build Parent</name>
   <description>Parent project for all the Spark Bigtable Connector artifacts</description>
   <url>https://github.com/GoogleCloudDataproc/spark-bigtable-connector</url>
-
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -52,8 +51,8 @@
   </scm>
 
   <modules>
-    <module>spark-bigtable_2.12</module>
-    <module>spark-bigtable_2.12-it</module>
+    <module>spark-bigtable</module>
+    <module>spark-bigtable-core-it</module>
   </modules>
 
   <distributionManagement>
@@ -77,8 +76,8 @@
     <bigtable.java.version>2.42.0</bigtable.java.version>
     <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>
 
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <scalatest.version>3.2.16</scalatest.version>
     <surefire.version>3.0.0-M5</surefire.version>
     <junit.version>4.13.2</junit.version>
