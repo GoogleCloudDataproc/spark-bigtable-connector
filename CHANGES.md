@@ -1,6 +1,6 @@
 # Release Notes
 
-## Next
+## 0.3.0 - 2025-01-09
 
 * PR #46: feat: Improve BigtableRDD usage. 
 * PR #44: feat: Add OpenLineage reporting support.
