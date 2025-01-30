@@ -71,8 +71,8 @@
     <gpg.skip>true</gpg.skip>
     <nexus.remote.skip>false</nexus.remote.skip>
 
-    <scala.version>2.12.14</scala.version>
-    <scala.binary.version>2.12</scala.binary.version>
+    <scala.version>2.13.14</scala.version>
+    <scala.binary.version>2.13</scala.binary.version>
     <spark.version>3.3.3</spark.version>
     <bigtable.java.version>2.42.0</bigtable.java.version>
     <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>
