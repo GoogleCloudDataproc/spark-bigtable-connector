@@ -31,7 +31,7 @@ import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, Row => SparkRow}
 import org.apache.yetus.audience.InterfaceAudience
 
 object UserAgentInformation {
-  val CONNECTOR_VERSION = "0.2.1" // ${NEXT_VERSION_FLAG}
+  val CONNECTOR_VERSION = "0.3.0" // ${NEXT_VERSION_FLAG}
   val DATA_SOURCE_VERSION = "V1"
   val DATAFRAME_TEXT = "DF/" + DATA_SOURCE_VERSION
   val RDD_TEXT = "RDD/"
