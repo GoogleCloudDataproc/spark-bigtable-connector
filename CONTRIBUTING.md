@@ -39,19 +39,24 @@ You can use the following command to compile and install the project:
 mvn clean install -DskipTests
 ```
 The connector's jar file will be located at
-`spark-bigtable_2.12/target/spark-bigtable_2.12-0.1.0.jar`.
+`spark-bigtable/spark-bigtable-scala2.12/target/spark-bigtable-scala2.12-0.2.1.jar` and `spark-bigtable/spark-bigtable-scala2.13/target/spark-bigtable-scala2.13-0.2.1.jar`.
 (Note the use of `-DskipTests`, as otherwise all tests will be run,
 which takes hours. This option still compiles the test JARs.)
 
-To run the unit tests in the `spark-bigtable_2.12` module, you can use this command:
+To run the unit tests in the `spark-bigtable-core` from `scala 2.12` and `scala 2.13`, you can use this command:
 ```shell
-mvn -pl spark-bigtable test
+mvn -pl spark-bigtable/spark-bigtable-scala2.12 test
+mvn -pl spark-bigtable/spark-bigtable-scala2.13 test
 ```
 
-To run the integration tests in the `spark-bigtable_2.12-it` module, you can use this command:
+To run the integration tests that are present in the `spark-bigtable-core-it` module, you can use this command:
 
 ```shell
-mvn -pl spark-bigtable_2.12-it failsafe:integration-test failsafe:verify -DbigtableProjectId=${BIGTABLE_PROJECT_ID} -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} -P integration
+#Run integration test with `spark-bigtable-scala2.12`
+mvn -pl spark-bigtable-core-it failsafe:integration-test failsafe:verify -DbigtableProjectId=${BIGTABLE_PROJECT_ID} -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} '-Dconnector.artifact.id=spark-bigtable-scala2.12' '-Dscala.binary.version=2.12' -P integration
+
+#Run integration test with `spark-bigtable-scala2.13` (Default to the latest scala version)
+mvn -pl spark-bigtable-core-it failsafe:integration-test failsafe:verify -DbigtableProjectId=${BIGTABLE_PROJECT_ID} -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} -P integration
 ```
 
 In the above command, you can replace `-P integration` with `-P long-running`
