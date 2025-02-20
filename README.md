@@ -18,8 +18,8 @@ You can access the connector in two different ways:
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable-scala2.13:<version>`(
-current `<version>` is `0.3.0`) or `com.google.cloud.spark.bigtable:spark-bigtable-scala2.12:<version>`(
-current `<version>` is `0.3.0`) and package it inside your application JAR using
+current `<version>` is `0.4.0-SNAPSHOT`) or `com.google.cloud.spark.bigtable:spark-bigtable-scala2.12:<version>`(
+current `<version>` is `0.4.0-SNAPSHOT`) and package it inside your application JAR using
 libraries such as Maven Shade Plugin. For PySpark applications, you can use
 the `--jars` flag to pass the GCS address of the connector when submitting it.
 
@@ -30,14 +30,14 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable-scala2.12</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0-SNAPSHOT</version>
 </dependency>
 
 <!-- if you are using scala 2.13 -->
 <dependency>
    <groupId>com.google.cloud.spark.bigtable</groupId>
    <artifactId>spark-bigtable-scala2.13</artifactId>
-   <version>0.3.0</version>
+   <version>0.4.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -46,10 +46,10 @@ For sbt, you can add the following to your `build.sbt` file:
 
 ```
 // for scala 2.12
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable-scala2.12" % "0.3.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable-scala2.12" % "0.4.0-SNAPSHOT"
 
 // for scala 2.13
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable-scala2.13" % "0.3.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable-scala2.13" % "0.4.0-SNAPSHOT"
 
 ```
 
@@ -59,10 +59,10 @@ Gradle:
 ```
 dependencies {
 // for scala 2.12
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable-scala2.12', version: '0.3.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable-scala2.12', version: '0.4.0-SNAPSHOT'
 
 // for scala 2.13
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable-scala2.13', version: '0.3.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable-scala2.13', version: '0.4.0-SNAPSHOT'
 }
 ```
 

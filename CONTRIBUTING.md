@@ -39,7 +39,7 @@ You can use the following command to compile and install the project:
 mvn clean install -DskipTests
 ```
 The connector's jar file will be located at
-`spark-bigtable/spark-bigtable-scala2.12/target/spark-bigtable-scala2.12-0.3.0.jar` and `spark-bigtable/spark-bigtable-scala2.13/target/spark-bigtable-scala2.13-0.3.0.jar`.
+`spark-bigtable/spark-bigtable-scala2.12/target/spark-bigtable-scala2.12-0.4.0-SNAPSHOT.jar` and `spark-bigtable/spark-bigtable-scala2.13/target/spark-bigtable-scala2.13-0.4.0-SNAPSHOT.jar`.
 (Note the use of `-DskipTests`, as otherwise all tests will be run,
 which takes hours. This option still compiles the test JARs.)
 

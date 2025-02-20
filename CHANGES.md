@@ -2,6 +2,10 @@
 
 ## Next
 
+## 0.4.0-SNAPSHOT - 2025-02-20
+
+* PR #52: feat: Scala Version Upgrade (2.12 -> 2.13).
+
 ## 0.3.0 - 2025-01-09
 
 * PR #46: feat: Improve BigtableRDD usage. 
