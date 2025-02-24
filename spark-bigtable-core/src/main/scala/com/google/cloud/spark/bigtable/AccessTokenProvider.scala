@@ -21,4 +21,6 @@ import java.io.IOException
 trait AccessTokenProvider extends Serializable {
   @throws(classOf[IOException])
   def getAccessToken(): AccessToken
+  @throws(classOf[IOException])
+  def refresh(): Unit
 }
