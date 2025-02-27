@@ -70,7 +70,7 @@ run_bigtable_spark_tests() {
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
-        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION}
+        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
         -P ${MAVEN_PROFILES}
     return $?
 }
