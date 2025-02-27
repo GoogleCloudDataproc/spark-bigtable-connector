@@ -29,4 +29,4 @@ set -x
 
 cd ${KOKORO_ARTIFACTS_DIR}/github/spark-bigtable-connector
 
-find spark-bigtable spark-bigtable-core spark-bigtable-core-it spark-bigtable-it -name "*.java" -type f -exec java -jar  ${KOKORO_GFILE_DIR}/google-java-format-1.7-all-deps.jar --set-exit-if-changed -n {} +
+find spark-bigtable spark-bigtable-core spark-bigtable-core-it -name "*.java" -type f -exec java -jar  ${KOKORO_GFILE_DIR}/google-java-format-1.7-all-deps.jar --set-exit-if-changed -n {} +
