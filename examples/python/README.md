@@ -20,10 +20,14 @@ Assuming you have already created a Dataproc cluster, you can
 use the following command to submit the script to the cluster:
 
 ```shell
+# 2.13 or 2.12
+SCALA_VERSION=2.12
+BIGTABLE_SPARK_VERSION=0.3.0 # ${NEXT_VERSION_FLAG}
+
 gcloud dataproc jobs submit pyspark \
 --cluster=$BIGTABLE_SPARK_DATAPROC_CLUSTER \
 --region=$BIGTABLE_SPARK_DATAPROC_REGION \
---jars=gs://spark-lib/bigtable/spark-bigtable_2.12-0.1.0.jar \
+--jars=gs://spark-lib/bigtable/spark-bigtable_${SCALA_VERSION}-${BIGTABLE_SPARK_VERSION}.jar \
 --properties='spark.jars.packages=org.slf4j:slf4j-reload4j:1.7.36' \
 /local/path/to/python/script/word_count.py \
 -- \
@@ -38,9 +42,13 @@ You can run the following command to run the example locally,
 assuming you have Spark installed on your machine:
 
 ```shell
+# 2.13 or 2.12
+SCALA_VERSION=2.12
+BIGTABLE_SPARK_VERSION=0.3.0 # ${NEXT_VERSION_FLAG}
+
 spark-submit \
 --packages=org.slf4j:slf4j-reload4j:1.7.36 \
---jars /local/path/to/connector/jar/spark-bigtable_2.12-0.1.0.jar \
+--jars /local/path/to/connector/jar/spark-bigtable_${SCALA_VERSION}-${BIGTABLE_SPARK_VERSION}.jar \
 /local/path/to/python/script/word_count.py \
 --bigtableProjectId=$BIGTABLE_SPARK_PROJECT_ID \
 --bigtableInstanceId=$BIGTABLE_SPARK_INSTANCE_ID \
