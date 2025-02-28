@@ -210,9 +210,9 @@ presubmit)
     RETURN_CODE=0
     for SCALA_VERSION in "2.12" "2.13"
     do
-        run_bigtable_spark_tests "3.3.0" "integration" ${SCALA_VERSION}
+        run_bigtable_spark_tests "3.2.0" "integration" ${SCALA_VERSION}
         RETURN_CODE=$(($RETURN_CODE || $?))
-        run_pyspark_test "3.3.0" "3.2" ${SCALA_VERSION}
+        run_pyspark_test "3.2.0" "3.2" ${SCALA_VERSION}
         RETURN_CODE=$(($RETURN_CODE || $?))
         run_unit_tests ${SCALA_VERSION}
         RETURN_CODE=$(($RETURN_CODE || $?))
