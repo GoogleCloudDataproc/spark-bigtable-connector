@@ -210,15 +210,18 @@ run_pyspark_test() {
 case ${JOB_TYPE} in
 presubmit)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-        run_bigtable_spark_tests "3.2.0" "integration" ${SCALA_VERSION}
-        RETURN_CODE=$(($RETURN_CODE || $?))
-        run_pyspark_test "3.2.0" "3.2" ${SCALA_VERSION}
-        RETURN_CODE=$(($RETURN_CODE || $?))
-        run_unit_tests ${SCALA_VERSION}
-        RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_bigtable_spark_tests "3.1.3" "integration" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_pyspark_test "3.1.3" "3.2" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_unit_tests "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_bigtable_spark_tests "3.3.0" "integration" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_pyspark_test "3.3.0" "3" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_unit_tests "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 all_versions)
     RETURN_CODE=0
