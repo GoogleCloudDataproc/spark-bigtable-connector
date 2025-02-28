@@ -71,6 +71,7 @@ run_bigtable_spark_tests() {
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
         -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dscala.binary.version=${SCALA_VERSION} \
         -P ${MAVEN_PROFILES}
     return $?
 }
@@ -166,7 +167,8 @@ run_fuzz_tests() {
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
         -DbigtableTableId="${TABLE_ID}" \
-        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION}
+        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dscala.binary.version=${SCALA_VERSION} \
         -P fuzz
     exit_code=$?
     delete_table "${BIGTABLE_PROJECT_ID}" "${BIGTABLE_INSTANCE_ID}" "${TABLE_ID}"
