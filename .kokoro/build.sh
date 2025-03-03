@@ -51,7 +51,7 @@ apt install -y google-cloud-sdk-cbt
 
 run_unit_tests() {
     SCALA_VERSION=$1
-    CONNECTOR_MODULE=spark-bigtable/spark-bigtable-scala${SCALA_VERSION}
+    CONNECTOR_MODULE=spark-bigtable_${SCALA_VERSION}
     echo "***Running connector's unit tests for ${CONNECTOR_MODULE}.***"
     ./mvnw -pl ${CONNECTOR_MODULE} -am  \
         test -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
@@ -70,7 +70,7 @@ run_bigtable_spark_tests() {
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
-        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dconnector.artifact.id=spark-bigtable_${SCALA_VERSION} \
         -Dscala.binary.version=${SCALA_VERSION} \
         -P ${MAVEN_PROFILES}
     return $?
@@ -80,7 +80,7 @@ get_bigtable_spark_jar() {
     SCALA_VERSION=$1
     # This makes the script independent of the connector's version and
     # ignores the source code JAR.
-    echo $(ls spark-bigtable/spark-bigtable-scala${SCALA_VERSION}/target/spark-bigtable-scala${SCALA_VERSION}-* | grep -v sources)
+    echo $(ls spark-bigtable_${SCALA_VERSION}/target/spark-bigtable_${SCALA_VERSION}-* | grep -v sources)
 }
 
 create_table_id() {
@@ -167,7 +167,7 @@ run_fuzz_tests() {
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
         -DbigtableTableId="${TABLE_ID}" \
-        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dconnector.artifact.id=spark-bigtable_${SCALA_VERSION} \
         -Dscala.binary.version=${SCALA_VERSION} \
         -P fuzz
     exit_code=$?
