@@ -50,8 +50,9 @@ echo "Installing the cbt CLI command."
 apt install -y google-cloud-sdk-cbt
 
 run_unit_tests() {
-    echo "***Running connector's unit tests.***"
-    CONNECTOR_MODULE="spark-bigtable_2.12"
+    SCALA_VERSION=$1
+    CONNECTOR_MODULE=spark-bigtable/spark-bigtable-scala${SCALA_VERSION}
+    echo "***Running connector's unit tests for ${CONNECTOR_MODULE}.***"
     ./mvnw -pl ${CONNECTOR_MODULE} -am  \
         test -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
     return $?
@@ -60,22 +61,26 @@ run_unit_tests() {
 run_bigtable_spark_tests() {
     SPARK_VERSION=$1
     MAVEN_PROFILES=$2
-    echo "***Running Spark-Bigtable tests for Spark ${SPARK_VERSION} and profile(s) ${MAVEN_PROFILES}.***"
-    BIGTABLE_SPARK_IT_MODULE="spark-bigtable_2.12-it"
+    SCALA_VERSION=$3
+    echo "***Running Spark-Bigtable tests for Spark ${SPARK_VERSION}, Scala ${SCALA_VERSION} and profile(s) ${MAVEN_PROFILES}.***"
+    BIGTABLE_SPARK_IT_MODULE="spark-bigtable-core-it"
     ./mvnw -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
         -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
+        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dscala.binary.version=${SCALA_VERSION} \
         -P ${MAVEN_PROFILES}
     return $?
 }
 
 get_bigtable_spark_jar() {
+    SCALA_VERSION=$1
     # This makes the script independent of the connector's version and
     # ignores the source code JAR.
-    echo $(ls spark-bigtable_2.12/target/spark-bigtable_2.12-* | grep -v sources)
+    echo $(ls spark-bigtable/spark-bigtable-scala${SCALA_VERSION}/target/spark-bigtable-scala${SCALA_VERSION}-* | grep -v sources)
 }
 
 create_table_id() {
@@ -122,11 +127,12 @@ delete_table() {
 }
 
 run_load_test() {
-    echo "***Running Load test.***"
-    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar)
+    SCALA_VERSION=$1
+    echo "***Running Load test for scala ${SCALA_VERSION}.***"
+    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
     RESULT_BUCKET_NAME="bigtable-spark-test-resources"
-    TEST_SCRIPT="spark-bigtable_2.12/test-pyspark/load_test.py"
-    BASE_SCRIPT="spark-bigtable_2.12/test-pyspark/test_base.py"
+    TEST_SCRIPT="spark-bigtable-core/test-pyspark/load_test.py"
+    BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
     TABLE_ID=$(create_table_id "load")
     gcloud dataproc jobs submit pyspark \
         --project=${BIGTABLE_PROJECT_ID} \
@@ -148,11 +154,12 @@ run_load_test() {
 # TODO: Delete all existing fuzz-test tables if there are old ones remaining.
 run_fuzz_tests() {
     SPARK_VERSION=$1
-    echo "***Running Spark-Bigtable fuzz tests for Spark ${SPARK_VERSION}.***"
+    SCALA_VERSION=$2
+    echo "***Running Spark-Bigtable fuzz tests for Spark ${SPARK_VERSION} and Scala ${SCALA_VERSION}.***"
     TABLE_ID=$(create_table_id "fuzz")
     create_table_with_random_splits \
       "${BIGTABLE_PROJECT_ID}" "${BIGTABLE_INSTANCE_ID}" "$TABLE_ID"
-    BIGTABLE_SPARK_IT_MODULE="spark-bigtable_2.12-it"
+    BIGTABLE_SPARK_IT_MODULE="spark-bigtable-core-it"
     ./mvnw -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
         -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip \
@@ -160,6 +167,8 @@ run_fuzz_tests() {
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
         -DbigtableTableId="${TABLE_ID}" \
+        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dscala.binary.version=${SCALA_VERSION} \
         -P fuzz
     exit_code=$?
     delete_table "${BIGTABLE_PROJECT_ID}" "${BIGTABLE_INSTANCE_ID}" "${TABLE_ID}"
@@ -169,15 +178,16 @@ run_fuzz_tests() {
 run_pyspark_test() {
     SPARK_VERSION=$1
     HADOOP_VERSION=$2
+    SCALA_VERSION=$3
     # TODO: Install Python 3.7 on Kokoro machines to enable PySpark 2.4.8 tests
     #   without running into the "TypeError: an integer is required" issue.
     if [[ ${SPARK_VERSION} == "2.4.8" ]]; then return; fi
 
     echo "***Running the PySpark test for Spark ${SPARK_VERSION}.***"
     SPARK_BIN_NAME="spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}"
-    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar)
-    PYSPARK_TEST_SCRIPT="spark-bigtable_2.12/test-pyspark/read_and_write_test.py"
-    BASE_SCRIPT="spark-bigtable_2.12/test-pyspark/test_base.py"
+    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
+    PYSPARK_TEST_SCRIPT="spark-bigtable-core/test-pyspark/read_and_write_test.py"
+    BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
     # Download Apache Spark on the machine from a GCS bucket, new versions
     # must be manually uploaded to the bucket first.
     # TODO: Move this logic to an env setup script/Java code for easier reproduction.
@@ -199,27 +209,37 @@ run_pyspark_test() {
 
 case ${JOB_TYPE} in
 presubmit)
-    run_bigtable_spark_tests "3.1.3" "integration"
-    RETURN_CODE=$?
-    run_pyspark_test "3.1.3" "3.2"
+    RETURN_CODE=0
+    run_bigtable_spark_tests "3.1.3" "integration" "2.12"
     RETURN_CODE=$(($RETURN_CODE || $?))
-    run_unit_tests
+    run_pyspark_test "3.1.3" "3.2" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_unit_tests "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_bigtable_spark_tests "3.3.0" "integration" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_pyspark_test "3.3.0" "3-scala2.13" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_unit_tests "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 all_versions)
     RETURN_CODE=0
-    for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
+    for SCALA_VERSION in "2.12" "2.13"
     do
-        run_bigtable_spark_tests ${SPARK_VERSION} "integration"
+        for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
+        do
+            run_bigtable_spark_tests ${SPARK_VERSION} "integration" "2.12" ${SCALA_VERSION}
+            RETURN_CODE=$(($RETURN_CODE || $?))
+        done
+        for SPARK_HADOOP_VERSIONS in "2.4.8 2.7" "3.1.3 3.2" "3.3.0 3" "3.4.2 3"
+        do
+            run_pyspark_test ${SPARK_HADOOP_VERSIONS} ${SCALA_VERSION}
+            RETURN_CODE=$(($RETURN_CODE || $?))
+        done
+        run_unit_tests ${SCALA_VERSION}
         RETURN_CODE=$(($RETURN_CODE || $?))
     done
-    for SPARK_HADOOP_VERSIONS in "2.4.8 2.7" "3.1.3 3.2" "3.3.0 3" "3.4.2 3"
-    do
-        run_pyspark_test ${SPARK_HADOOP_VERSIONS}
-        RETURN_CODE=$(($RETURN_CODE || $?))
-    done
-    run_unit_tests
-    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 # Cannot currently run PySpark tests on release machines due to version issues.
 # But it doesn't create a high risk since they are already run periodically,
@@ -228,25 +248,40 @@ all_versions)
 # TODO: Fix Python version issues and run PySpark tests before releasing.
 all_versions_no_pyspark)
     RETURN_CODE=0
-    for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
+    for SCALA_VERSION in "2.12" "2.13"
     do
-        run_bigtable_spark_tests ${SPARK_VERSION} "integration"
+        for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
+        do
+            run_bigtable_spark_tests ${SPARK_VERSION} "integration" ${SCALA_VERSION}
+            RETURN_CODE=$(($RETURN_CODE || $?))
+        done
+        run_unit_tests ${SCALA_VERSION}
         RETURN_CODE=$(($RETURN_CODE || $?))
     done
-    run_unit_tests
-    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 fuzz)
-    run_fuzz_tests "3.1.3"
-    RETURN_CODE=$?
+    RETURN_CODE=0
+    for SCALA_VERSION in "2.12" "2.13"
+    do
+      run_fuzz_tests "3.1.3" ${SCALA_VERSION}
+        RETURN_CODE=$(($RETURN_CODE || $?))
+    done
     ;;
 long_running)
-    run_bigtable_spark_tests "3.1.3" "long-running"
-    RETURN_CODE=$?
+    RETURN_CODE=0
+    for SCALA_VERSION in "2.12" "2.13"
+    do
+      run_bigtable_spark_tests "3.1.3" "long-running" ${SCALA_VERSION}
+      RETURN_CODE=$(($RETURN_CODE || $?))
+    done
     ;;
 load)
-    run_load_test
-    RETURN_CODE=$?
+    RETURN_CODE=0
+    for SCALA_VERSION in "2.12" "2.13"
+    do
+      run_load_test ${SCALA_VERSION}
+      RETURN_CODE=$(($RETURN_CODE || $?))
+    done
     ;;
 *)
     ;;

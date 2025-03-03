@@ -33,7 +33,7 @@
         -->
         <spark.version>3.5.1</spark.version>
         <reload4j.version>1.7.36</reload4j.version>
-        <spark.bigtable.version>0.4.0-SNAPSHOT</spark.bigtable.version>
+        <spark.bigtable.version>0.3.0</spark.bigtable.version> <!-- ${NEXT_VERSION_FLAG} -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>

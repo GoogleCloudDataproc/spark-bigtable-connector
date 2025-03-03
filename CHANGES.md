@@ -2,20 +2,18 @@
 
 ## Next
 
-## 0.4.0-SNAPSHOT - 2025-02-20
-
 * PR #52: feat: Scala Version Upgrade (2.12 -> 2.13).
 
 ## 0.3.0 - 2025-01-09
 
-* PR #46: feat: Improve BigtableRDD usage. 
+* PR #46: feat: Improve BigtableRDD usage.
 * PR #44: feat: Add OpenLineage reporting support.
 * PR #42: feat: Add RDD support to the connector.
 
 ## 0.2.1 - 2024-08-21
 
 * PR #36: chore: Update Bigtable Java client version to 2.42.0.
-* PR #35: test: Add testing for Data Boost. 
+* PR #35: test: Add testing for Data Boost.
 
 ## 0.2.0 - 2024-07-29
 
