@@ -127,7 +127,8 @@ delete_table() {
 }
 
 run_load_test() {
-    SCALA_VERSION=$1
+    # Hardcoded to 2.12, since 2.13 should run on serverless
+    SCALA_VERSION="2.12"
     echo "***Running Load test for scala ${SCALA_VERSION}.***"
     BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
     RESULT_BUCKET_NAME="bigtable-spark-test-resources"
@@ -149,6 +150,37 @@ run_load_test() {
     exit_code=$?
     delete_table ${BIGTABLE_PROJECT_ID} ${BIGTABLE_INSTANCE_ID} ${TABLE_ID}
     return $exit_code
+}
+
+run_load_test_serverless() {
+    # Hardcoded to 2.13 since 2.12 is running on a cluster
+    SCALA_VERSION="2.13"
+    echo "***Running Load test for scala ${SCALA_VERSION}.***"
+    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
+    DEPS_BUCKET="bigtable-spark-test-deps"
+    TEST_SCRIPT="spark-bigtable-core/test-pyspark/load_test.py"
+    BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
+    TABLE_ID=$(create_table_id "load")
+    TEST_NETWORK="spark-tests-network"
+    # Use the same name as the table id for simplicity
+    BATCH_NAME=${TABLE_ID}
+    gcloud dataproc batches submit pyspark \
+        --project=${BIGTABLE_PROJECT_ID} \
+        --batch=${BATCH_NAME} \
+        --region=${DATAPROC_CLUSTER_REGION} \
+        --deps-bucket=${DEPS_BUCKET} \
+        --jars=${BIGTABLE_SPARK_JAR} \
+        --network=${TEST_NETWORK} \
+        ${TEST_SCRIPT} \
+        --py-files=${BASE_SCRIPT} \
+        -- \
+        --bigtableProjectId=${BIGTABLE_PROJECT_ID} \
+        --bigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
+        --bigtableTableId=${TABLE_ID}
+    exit_code=$?
+    delete_table ${BIGTABLE_PROJECT_ID} ${BIGTABLE_INSTANCE_ID} ${TABLE_ID}
+    return $exit_code
+
 }
 
 # TODO: Delete all existing fuzz-test tables if there are old ones remaining.
@@ -261,27 +293,24 @@ all_versions_no_pyspark)
     ;;
 fuzz)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-      run_fuzz_tests "3.1.3" ${SCALA_VERSION}
-        RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_fuzz_tests "3.1.3" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_fuzz_tests "3.3.0" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 long_running)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-      run_bigtable_spark_tests "3.1.3" "long-running" ${SCALA_VERSION}
-      RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_bigtable_spark_tests "3.1.3" "long-running" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_bigtable_spark_tests "3.3.0" "long-running" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 load)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-      run_load_test ${SCALA_VERSION}
-      RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_load_test
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_load_test_serverless
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 *)
     ;;
