@@ -22,7 +22,7 @@ object BigtableJoinImplicit extends Serializable with Logging {
     private val DEFAULT_RANGE_PARTITION_ENABLED = "true"
     private val ALIAS_NAME = "alias.name"
     private val DEFAULT_ALIAS_NAME = ""
-    private val LEFT_JOIN = "left"
+    private val SUPPORTED_JOIN_LIST = List("inner", "left", "anti", "semi")
 
     /** Joins a DataFrame with Bigtable based on the provided parameters.
       *
@@ -59,9 +59,10 @@ object BigtableJoinImplicit extends Serializable with Logging {
 
       // Extract required parameters
       val joinType = params.getOrElse(JOIN_TYPE, DEFAULT_JOIN_TYPE).toLowerCase
-      if (!List(DEFAULT_JOIN_TYPE, LEFT_JOIN).exists(joinType.startsWith)) {
-        val errorMsg = s"$joinType: Not a valid join type - It should be either left or inner"
-        throw new RuntimeException(errorMsg)
+      if (!SUPPORTED_JOIN_LIST.exists(joinType.startsWith)) {
+        throw new RuntimeException(
+          s"This function (joinWithBigtable) supports only these joins: $SUPPORTED_JOIN_LIST"
+        )
       }
       val requiredColumns = extractRequiredColumns(params)
       val rangePartitionEnabled =
@@ -88,7 +89,9 @@ object BigtableJoinImplicit extends Serializable with Logging {
         case joinExpr: Array[String] => sortedSrcDf.join(btAliasDf, joinExpr, joinType)
         case joinExpr: Seq[String]   => sortedSrcDf.join(btAliasDf, joinExpr, joinType)
         case joinExpr: Column        => sortedSrcDf.join(btAliasDf, joinExpr, joinType)
-        case _: String               => sortedSrcDf.join(btAliasDf, srcRowKeyCol, joinType)
+        case joinExpr: String =>
+          if (joinExpr.isEmpty) sortedSrcDf.join(btAliasDf, srcRowKeyCol, joinType)
+          else sortedSrcDf.join(btAliasDf, joinExpr, joinType)
       }
     }
 
