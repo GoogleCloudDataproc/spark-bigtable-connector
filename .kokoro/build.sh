@@ -161,16 +161,16 @@ run_load_test_serverless() {
     TEST_SCRIPT="spark-bigtable-core/test-pyspark/load_test.py"
     BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
     TABLE_ID=$(create_table_id "load")
-    TEST_NETWORK="spark-tests-network"
     # Use the same name as the table id for simplicity
     BATCH_NAME=${TABLE_ID}
+    TEST_SUBNET="spark-tests-network"
     gcloud dataproc batches submit pyspark \
         --project=${BIGTABLE_PROJECT_ID} \
         --batch=${BATCH_NAME} \
         --region=${DATAPROC_CLUSTER_REGION} \
         --deps-bucket=${DEPS_BUCKET} \
         --jars=${BIGTABLE_SPARK_JAR} \
-        --network=${TEST_NETWORK} \
+        --subnet=${TEST_SUBNET} \
         ${TEST_SCRIPT} \
         --py-files=${BASE_SCRIPT} \
         -- \
@@ -257,21 +257,29 @@ presubmit)
     ;;
 all_versions)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
+    for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
     do
-        for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
-        do
-            run_bigtable_spark_tests ${SPARK_VERSION} "integration" "2.12" ${SCALA_VERSION}
-            RETURN_CODE=$(($RETURN_CODE || $?))
-        done
-        for SPARK_HADOOP_VERSIONS in "2.4.8 2.7" "3.1.3 3.2" "3.3.0 3" "3.4.2 3"
-        do
-            run_pyspark_test ${SPARK_HADOOP_VERSIONS} ${SCALA_VERSION}
-            RETURN_CODE=$(($RETURN_CODE || $?))
-        done
-        run_unit_tests ${SCALA_VERSION}
+        run_bigtable_spark_tests ${SPARK_VERSION} "integration" "2.12"
         RETURN_CODE=$(($RETURN_CODE || $?))
     done
+    for SPARK_VERSION in "3.3.0" "3.4.2"
+    do
+        run_bigtable_spark_tests ${SPARK_VERSION} "integration" "2.13"
+        RETURN_CODE=$(($RETURN_CODE || $?))
+    done
+    for SPARK_HADOOP_VERSIONS in "2.4.8 2.7" "3.1.3 3.2" "3.3.0 3" "3.4.2 3"
+    do
+        run_pyspark_test ${SPARK_HADOOP_VERSIONS} "2.12"
+        RETURN_CODE=$(($RETURN_CODE || $?))
+    done
+    for SPARK_HADOOP_VERSIONS in "3.3.0 3" "3.4.2 3"
+    do
+        run_pyspark_test ${SPARK_HADOOP_VERSIONS} "2.13"
+        RETURN_CODE=$(($RETURN_CODE || $?))
+    done
+    run_unit_tests "2.12"
+    run_unit_tests "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 # Cannot currently run PySpark tests on release machines due to version issues.
 # But it doesn't create a high risk since they are already run periodically,
@@ -280,16 +288,19 @@ all_versions)
 # TODO: Fix Python version issues and run PySpark tests before releasing.
 all_versions_no_pyspark)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
+    for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
     do
-        for SPARK_VERSION in "2.4.8" "3.1.3" "3.3.0" "3.4.2"
-        do
-            run_bigtable_spark_tests ${SPARK_VERSION} "integration" ${SCALA_VERSION}
-            RETURN_CODE=$(($RETURN_CODE || $?))
-        done
-        run_unit_tests ${SCALA_VERSION}
+        run_bigtable_spark_tests ${SPARK_VERSION} "integration" "2.12"
         RETURN_CODE=$(($RETURN_CODE || $?))
     done
+    for SPARK_VERSION in "3.3.0" "3.4.2"
+    do
+        run_bigtable_spark_tests ${SPARK_VERSION} "integration" "2.13"
+        RETURN_CODE=$(($RETURN_CODE || $?))
+    done
+    run_unit_tests "2.12"
+    run_unit_tests "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 fuzz)
     RETURN_CODE=0
