@@ -13,37 +13,63 @@ You can access the connector in two different ways:
 1. From
    our [Maven Central repository](https://repo1.maven.org/maven2/com/google/cloud/spark/bigtable).
 2. Through a public GCS bucket, located
-   at `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
+   at `gs://spark-lib/bigtable/spark-bigtable_2.13-<version>.jar` or `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
 
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
-connector `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>`(
-current `<version>` is `0.3.0`) and package it inside your application JAR using
-libraries such as Maven Shade Plugin. For PySpark applications, you can use
-the `--jars` flag to pass the GCS address of the connector when submitting it.
+connector `com.google.cloud.spark.bigtable:spark-bigtable_2.13:<version>` or
+`com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>` (current
+`<version>` is `0.4.0`) and package it inside your application JAR
+using libraries such as Maven Shade Plugin. For PySpark applications, you can
+use the `--jars` flag to pass the GCS address of the connector when submitting
+it.
 
 For Maven, you can add the following snippet to your `pom.xml` file:
 
 ```xml
+<!-- If you are using scala 2.13 -->
+<dependency>
+  <groupId>com.google.cloud.spark.bigtable</groupId>
+  <artifactId>spark-bigtable_2.13</artifactId>
+  <version>0.4.0</version>
+</dependency>
+```
+
+```xml
+<!-- If you are using scala 2.12 -->
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.12</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
 </dependency>
 ```
 
 For sbt, you can add the following to your `build.sbt` file:
 
 ```
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.3.0"
+// for scala 2.13
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.4.0"
+```
+
+```
+// for scala 2.12
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.4.0"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
 Gradle:
 
 ```
+// for scala 2.13
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.3.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.4.0'
+}
+```
+
+```
+// for scala 2.12
+dependencies {
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.4.0'
 }
 ```
 
@@ -92,10 +118,11 @@ You need the following depending on the environments you choose to use:
 
 ### Supported Spark versions
 
-The connector supports the following Spark versions **with Scala 2.12**:
+The connector supports the following Spark versions:
 
 | Scala version | Spark versions                    | Spark Application Languages                             |
 |---------------|-----------------------------------|---------------------------------------------------------|
+| 2.13          | 3.1.x, 3.2.x, 3.4.x, 3.5.x        | Java, Scala, PySpark (`.py` files or Jupyter notebooks) |
 | 2.12          | 2.4.8, 3.1.x, 3.2.x, 3.4.x, 3.5.x | Java, Scala, PySpark (`.py` files or Jupyter notebooks) |
 
 ## Main features
@@ -306,7 +333,7 @@ objects to the following function:
 
 ```scala
 bigtableRDD.writeRDD(
-   rdd: RDD[RowMutationEntry], 
+   rdd: RDD[RowMutationEntry],
    tableId: String,
    bigtableSparkConf: BigtableSparkConf
 )
@@ -326,7 +353,7 @@ corresponding to the options you want to set in your workflow. You can use the
 `BigtableSparkConfBuilder` class to create an instance of this class:
 
 ```scala
-val bigtableSparkConf: BigtableSparkConf = 
+val bigtableSparkConf: BigtableSparkConf =
    new BigtableSparkConfBuilder()
      .setProjectId(someProjectId)
      .setInstanceId(someInstanceId)
