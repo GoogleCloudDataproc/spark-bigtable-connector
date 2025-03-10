@@ -51,7 +51,7 @@ apt install -y google-cloud-sdk-cbt
 
 run_unit_tests() {
     SCALA_VERSION=$1
-    CONNECTOR_MODULE=spark-bigtable/spark-bigtable-scala${SCALA_VERSION}
+    CONNECTOR_MODULE=spark-bigtable_${SCALA_VERSION}
     echo "***Running connector's unit tests for ${CONNECTOR_MODULE}.***"
     ./mvnw -pl ${CONNECTOR_MODULE} -am  \
         test -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
@@ -70,7 +70,7 @@ run_bigtable_spark_tests() {
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
-        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dconnector.artifact.id=spark-bigtable_${SCALA_VERSION} \
         -Dscala.binary.version=${SCALA_VERSION} \
         -P ${MAVEN_PROFILES}
     return $?
@@ -80,7 +80,7 @@ get_bigtable_spark_jar() {
     SCALA_VERSION=$1
     # This makes the script independent of the connector's version and
     # ignores the source code JAR.
-    echo $(ls spark-bigtable/spark-bigtable-scala${SCALA_VERSION}/target/spark-bigtable-scala${SCALA_VERSION}-* | grep -v sources)
+    echo $(ls spark-bigtable_${SCALA_VERSION}/target/spark-bigtable_${SCALA_VERSION}-* | grep -v sources)
 }
 
 create_table_id() {
@@ -127,7 +127,8 @@ delete_table() {
 }
 
 run_load_test() {
-    SCALA_VERSION=$1
+    # Hardcoded to 2.12, since 2.13 should run on serverless
+    SCALA_VERSION="2.12"
     echo "***Running Load test for scala ${SCALA_VERSION}.***"
     BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
     RESULT_BUCKET_NAME="bigtable-spark-test-resources"
@@ -151,6 +152,37 @@ run_load_test() {
     return $exit_code
 }
 
+run_load_test_serverless() {
+    # Hardcoded to 2.13 since 2.12 is running on a cluster
+    SCALA_VERSION="2.13"
+    echo "***Running Load test for scala ${SCALA_VERSION}.***"
+    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
+    DEPS_BUCKET="bigtable-spark-test-deps"
+    TEST_SCRIPT="spark-bigtable-core/test-pyspark/load_test.py"
+    BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
+    TABLE_ID=$(create_table_id "load")
+    TEST_NETWORK="spark-tests-network"
+    # Use the same name as the table id for simplicity
+    BATCH_NAME=${TABLE_ID}
+    gcloud dataproc batches submit pyspark \
+        --project=${BIGTABLE_PROJECT_ID} \
+        --batch=${BATCH_NAME} \
+        --region=${DATAPROC_CLUSTER_REGION} \
+        --deps-bucket=${DEPS_BUCKET} \
+        --jars=${BIGTABLE_SPARK_JAR} \
+        --network=${TEST_NETWORK} \
+        ${TEST_SCRIPT} \
+        --py-files=${BASE_SCRIPT} \
+        -- \
+        --bigtableProjectId=${BIGTABLE_PROJECT_ID} \
+        --bigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
+        --bigtableTableId=${TABLE_ID}
+    exit_code=$?
+    delete_table ${BIGTABLE_PROJECT_ID} ${BIGTABLE_INSTANCE_ID} ${TABLE_ID}
+    return $exit_code
+
+}
+
 # TODO: Delete all existing fuzz-test tables if there are old ones remaining.
 run_fuzz_tests() {
     SPARK_VERSION=$1
@@ -167,7 +199,7 @@ run_fuzz_tests() {
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
         -DbigtableTableId="${TABLE_ID}" \
-        -Dconnector.artifact.id=spark-bigtable-scala${SCALA_VERSION} \
+        -Dconnector.artifact.id=spark-bigtable_${SCALA_VERSION} \
         -Dscala.binary.version=${SCALA_VERSION} \
         -P fuzz
     exit_code=$?
@@ -261,27 +293,24 @@ all_versions_no_pyspark)
     ;;
 fuzz)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-      run_fuzz_tests "3.1.3" ${SCALA_VERSION}
-        RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_fuzz_tests "3.1.3" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_fuzz_tests "3.3.0" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 long_running)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-      run_bigtable_spark_tests "3.1.3" "long-running" ${SCALA_VERSION}
-      RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_bigtable_spark_tests "3.1.3" "long-running" "2.12"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_bigtable_spark_tests "3.3.0" "long-running" "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 load)
     RETURN_CODE=0
-    for SCALA_VERSION in "2.12" "2.13"
-    do
-      run_load_test ${SCALA_VERSION}
-      RETURN_CODE=$(($RETURN_CODE || $?))
-    done
+    run_load_test
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_load_test_serverless
+    RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 *)
     ;;

@@ -19,12 +19,12 @@ You can access the connector in two different ways:
 1. From
    our [Maven Central repository](https://repo1.maven.org/maven2/com/google/cloud/spark/bigtable).
 2. Through a public GCS bucket, located
-   at `gs://spark-lib/bigtable/spark-bigtable-scala2.13-<version>.jar` or `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
+   at `gs://spark-lib/bigtable/spark-bigtable_2.13-<version>.jar` or `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
 
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable_2.13:<version>` or
-`com.google.cloud.spark.bigtable:spark-bigtable-scala2.12:<version>` (current
+`com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>` (current
 `<version>` is `${next-release-tag}`) and package it inside your application JAR
 using libraries such as Maven Shade Plugin. For PySpark applications, you can
 use the `--jars` flag to pass the GCS address of the connector when submitting
