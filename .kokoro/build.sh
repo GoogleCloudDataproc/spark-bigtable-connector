@@ -167,7 +167,7 @@ run_load_test_serverless() {
     gcloud dataproc batches submit pyspark \
         --project=${BIGTABLE_PROJECT_ID} \
         --batch=${BATCH_NAME} \
-        --region=${DATAPROC_CLUSTER_REGION} \
+        --region=${DATAPROC_SERVERLESS_REGION} \
         --deps-bucket=${DEPS_BUCKET} \
         --jars=${BIGTABLE_SPARK_JAR} \
         --subnet=${TEST_SUBNET} \
@@ -303,25 +303,28 @@ all_versions_no_pyspark)
     RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 fuzz)
-    RETURN_CODE=0
     run_fuzz_tests "3.1.3" "2.12"
-    RETURN_CODE=$(($RETURN_CODE || $?))
+    RETURN_CODE=$?
+    ;;
+fuzz-2.13)
     run_fuzz_tests "3.3.0" "2.13"
-    RETURN_CODE=$(($RETURN_CODE || $?))
+    RETURN_CODE=$?
     ;;
 long_running)
-    RETURN_CODE=0
     run_bigtable_spark_tests "3.1.3" "long-running" "2.12"
-    RETURN_CODE=$(($RETURN_CODE || $?))
+    RETURN_CODE=0
+    ;;
+long_running-2.13)
     run_bigtable_spark_tests "3.3.0" "long-running" "2.13"
-    RETURN_CODE=$(($RETURN_CODE || $?))
+    RETURN_CODE=0
     ;;
 load)
-    RETURN_CODE=0
     run_load_test
-    RETURN_CODE=$(($RETURN_CODE || $?))
+    RETURN_CODE=0
+    ;;
+load-2.13)
     run_load_test_serverless
-    RETURN_CODE=$(($RETURN_CODE || $?))
+    RETURN_CODE=0
     ;;
 *)
     ;;
