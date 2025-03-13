@@ -20,7 +20,13 @@ import com.google.api.gax.batching.{BatchingSettings, FlowControlSettings}
 import com.google.api.gax.rpc.FixedHeaderProvider
 import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTableAdminSettings}
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
+import com.google.cloud.spark.bigtable.BigtableUtil.{createVerifiedInstance, getCredentialsProvider}
 import com.google.cloud.spark.bigtable._
+import com.google.cloud.spark.bigtable.customauth.{
+  AccessTokenProvider,
+  AccessTokenProviderCredentials,
+  BigtableCredentialsProvider
+}
 import com.google.common.collect.ImmutableMap
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
 import org.apache.yetus.audience.InterfaceAudience
@@ -115,6 +121,8 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
+
+    getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
   }
 
   private def configureHeaderProvider(
@@ -242,6 +250,8 @@ object BigtableAdminClientBuilder extends Serializable {
     }.setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
 
+    getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
+
     addUserAgent(clientKey, settingsBuilder)
 
     BigtableTableAdminClient.create(settingsBuilder.build())
@@ -294,6 +304,8 @@ class BigtableClientKey(
 
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
   val batchSize: Long = bigtableSparkConf.batchMutateSize
+  val customAccessTokenProviderFQCN: Option[String] =
+    bigtableSparkConf.customAccessTokenProviderFQCN
 
   val userAgentText: String =
     ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION
