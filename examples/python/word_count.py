@@ -15,7 +15,7 @@
 import argparse
 import pyspark.sql.functions as F
 import struct
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import BinaryType
 from pyspark.sql.types import DoubleType
 
@@ -110,3 +110,22 @@ readDfWithDouble = (readDf
 
 print('Reading the DataFrame from Bigtable:')
 readDfWithDouble.show()
+
+## join push down
+bigtable_join_class = spark._jvm.com.google.cloud.spark.bigtable.join.BigtableJoin
+config_map = spark._jvm.java.util.HashMap()
+config_map.put("spark.bigtable.project.id", bigtable_project_id)
+config_map.put("spark.bigtable.instance.id", bigtable_instance_id)
+config_map.put("catalog", catalog)
+config_map.put("join.type", "inner")
+config_map.put("columns.required", "word,count")
+config_map.put("partition.count", "10")
+config_map.put("batch.rowKeySize", "100")
+config_map.put("alias.name", "bt")
+row_key = "word"
+join_expr = "word"
+result_df = bigtable_join_class.joinWithBigtable(readDf._jdf, config_map, row_key, join_expr, spark._jsparkSession)
+pyspark_result_df = DataFrame(result_df, spark)
+
+print("\nPrinting joined dataframe")
+pyspark_result_df.show()

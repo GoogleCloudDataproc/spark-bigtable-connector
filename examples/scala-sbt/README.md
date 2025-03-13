@@ -36,6 +36,16 @@ gcloud dataproc jobs submit spark \
 $BIGTABLE_SPARK_PROJECT_ID \
 $BIGTABLE_SPARK_INSTANCE_ID \
 $BIGTABLE_SPARK_TABLE_NAME
+
+gcloud dataproc jobs submit spark \
+--cluster=$BIGTABLE_SPARK_DATAPROC_CLUSTER \
+--region=$BIGTABLE_SPARK_DATAPROC_REGION \
+--class=spark.bigtable.example.JoinPushDown \
+--jars=target/scala-2.12/spark-bigtable-example-assembly-0.1.jar  \
+--  \
+$BIGTABLE_SPARK_PROJECT_ID \
+$BIGTABLE_SPARK_INSTANCE_ID \
+$BIGTABLE_SPARK_TABLE_NAME
 ```
 
 ## Using local Spark
@@ -46,6 +56,14 @@ assuming you have Spark installed on your machine:
 ```shell
 spark-submit \
 target/scala-2.12/spark-bigtable-example-assembly-0.1.jar \
+--class=spark.bigtable.example.WordCount \
+$BIGTABLE_SPARK_PROJECT_ID \
+$BIGTABLE_SPARK_INSTANCE_ID \
+$BIGTABLE_SPARK_TABLE_NAME
+
+spark-submit \
+target/scala-2.12/spark-bigtable-example-assembly-0.1.jar \
+--class=spark.bigtable.example.JoinPushDown \
 $BIGTABLE_SPARK_PROJECT_ID \
 $BIGTABLE_SPARK_INSTANCE_ID \
 $BIGTABLE_SPARK_TABLE_NAME
