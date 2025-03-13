@@ -1,6 +1,8 @@
 package com.google.cloud.spark.bigtable
 
+import com.google.cloud.spark.bigtable.customauth.{AccessToken, AccessTokenProvider}
 import org.scalatest.funsuite.AnyFunSuite
+
 import java.util.Date
 
 class TestAccessTokenProvider extends AccessTokenProvider {

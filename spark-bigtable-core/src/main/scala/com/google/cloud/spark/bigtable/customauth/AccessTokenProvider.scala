@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.cloud.spark.bigtable
+package com.google.cloud.spark.bigtable.customauth
 
-import java.util.Date
-import com.google.auth.oauth2
+import java.io.IOException
 
-/**
- * As the com.google.auth.oauth2.AccessToken class is shaded in the final jar, this class provides
- * the same functionality but maintains its package.
- */
-class AccessToken(tokenValue: String, expirationTime: Date)
-  extends oauth2.AccessToken(tokenValue, expirationTime)
+trait AccessTokenProvider extends Serializable {
+  @throws(classOf[IOException])
+  def getAccessToken(): AccessToken
+  @throws(classOf[IOException])
+  def refresh(): Unit
+}
