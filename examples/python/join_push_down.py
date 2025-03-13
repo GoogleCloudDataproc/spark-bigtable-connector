@@ -104,9 +104,16 @@ readDf = spark.read \
   .options(catalog=catalog) \
   .load()
 
-readDfWithDouble = (readDf
-                    .withColumn("frequency_double", binary_to_double_udf(F.col("frequency_binary")))
-                    .drop("frequency_binary"))
+## join push down
+bigtable_join_class = spark._jvm.com.google.cloud.spark.bigtable.join.BigtableJoin
+config_map = spark._jvm.java.util.HashMap()
+config_map.put("spark.bigtable.project.id", bigtable_project_id)
+config_map.put("spark.bigtable.instance.id", bigtable_instance_id)
+config_map.put("catalog", catalog)
+row_key = "word"
+join_expr = "word"
+result_df = bigtable_join_class.joinWithBigtable(readDf._jdf, config_map, row_key, join_expr, "inner", "", spark._jsparkSession)
+pyspark_result_df = DataFrame(result_df, spark)
 
-print('Reading the DataFrame from Bigtable:')
-readDfWithDouble.show()
+print("\nPrinting joined dataframe")
+pyspark_result_df.show()

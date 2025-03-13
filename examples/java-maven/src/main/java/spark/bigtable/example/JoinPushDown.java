@@ -16,22 +16,21 @@
 
 package spark.bigtable.example;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-
 import com.google.cloud.spark.bigtable.join.BigtableJoin;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.types.DataTypes;
 import spark.bigtable.example.model.TestRow;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.apache.spark.sql.functions.*;
+import static org.apache.spark.sql.functions.callUDF;
+import static org.apache.spark.sql.functions.expr;
 
-public class WordCount {
+public class JoinPushDown {
     private static SparkSession spark;
     private static String projectId;
     private static String instanceId;
@@ -87,15 +86,30 @@ public class WordCount {
         writeDataframeToBigtable(dfToWrite, catalog, createNewTable);
         System.out.println("DataFrame was written to Bigtable.");
 
-        Dataset<Row> readDf = readDataframeFromBigtable(catalog);
-        Dataset<Row> readDfWithDouble =
-                readDf
-                        .withColumn(
-                                "frequencyDouble", callUDF("binaryToDouble", readDf.col("frequencyBinary")))
-                        .drop("frequencyBinary");
+        //Bigtable join push down
+        Dataset<Row> srcDf = dfToWrite.sample(100.0 / 1000.0).selectExpr("word", "count as src_count");
 
-        System.out.println("Reading the DataFrame from Bigtable:");
-        readDfWithDouble.show();
+        Map<String, String> joinConfig = new HashMap<>();
+        joinConfig.put("spark.bigtable.project.id", projectId);
+        joinConfig.put("spark.bigtable.instance.id", instanceId);
+        joinConfig.put("catalog", catalog);
+
+
+        ArrayList<String> joinExpr3 = new ArrayList<>(2);
+        joinExpr3.add("word");
+
+        String[] joinExpr2 = new String[]{"word"};
+
+        Column joinExpr1 = expr("a.word = bt.word");
+
+        Dataset<Row> joinedDf1 = BigtableJoin.joinWithBigtable(srcDf.as("a"), joinConfig, "word", joinExpr1, "inner", "b", spark);
+        Dataset<Row> joinedDf2 = BigtableJoin.joinWithBigtable(srcDf.as("a"), joinConfig, "word", joinExpr2, "inner", "b", spark);
+        Dataset<Row> joinedDf3 = BigtableJoin.joinWithBigtable(srcDf.as("a"), joinConfig, "word", joinExpr3, "inner", "b", spark);
+
+        System.out.println("Printing the Joined DataFrame:");
+        joinedDf1.show();
+        joinedDf2.show();
+        joinedDf3.show();
     }
 
     private static Dataset<Row> createTestDataFrame() {
@@ -136,15 +150,5 @@ public class WordCount {
                 .option("spark.bigtable.instance.id", instanceId)
                 .option("spark.bigtable.create.new.table", createNewTable)
                 .save();
-    }
-
-    private static Dataset<Row> readDataframeFromBigtable(String catalog) {
-        return spark
-                .read()
-                .format("bigtable")
-                .option("catalog", catalog)
-                .option("spark.bigtable.project.id", projectId)
-                .option("spark.bigtable.instance.id", instanceId)
-                .load();
     }
 }
