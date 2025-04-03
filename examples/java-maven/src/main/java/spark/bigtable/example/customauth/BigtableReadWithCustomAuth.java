@@ -17,9 +17,6 @@
 package spark.bigtable.example.customauth;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -40,11 +37,8 @@ public class BigtableReadWithCustomAuth {
             .getOrCreate();
 
     CustomAccessTokenProvider tokenProvider = new CustomAccessTokenProvider();
-    String initialToken = tokenProvider.getCurrentToken();
 
     Util.createExampleBigtable(spark, projectId, instanceId, tableName, createNewTable);
-
-    tokenRefreshTest(tokenProvider, initialToken);
 
     try {
       Dataset<Row> readDf =
@@ -81,39 +75,5 @@ public class BigtableReadWithCustomAuth {
     String createNewTable = args.length > 3 ? args[3] : "false";
 
     return new String[] {projectId, instanceId, tableName, createNewTable};
-  }
-
-  /**
-   * Tests token refresh in a background thread.
-   *
-   * @param tokenProvider The token provider to test
-   * @param initialToken The initial token for comparison
-   */
-  private static void tokenRefreshTest(
-      CustomAccessTokenProvider tokenProvider, String initialToken) {
-    ExecutorService executor = Executors.newSingleThreadExecutor();
-
-    CompletableFuture.runAsync(
-            () -> {
-              try {
-                // Give main thread 20s
-                Thread.sleep(20000);
-                tokenProvider.refresh();
-
-                String refreshedToken = tokenProvider.getCurrentToken();
-
-                if (!initialToken.equals(refreshedToken)) {
-                  System.out.println("Token refresh test passed: The token has changed.");
-                } else {
-                  System.out.println("Token refresh test failed: The token has not changed.");
-                }
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
-            },
-            executor)
-        .thenAccept(v -> System.out.println("Token Refresh Test completed"));
-
-    executor.shutdown();
   }
 }

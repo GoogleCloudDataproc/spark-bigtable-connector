@@ -50,10 +50,6 @@ public class CustomAccessTokenProvider implements AccessTokenProvider {
     tokenExpiry = credentials.getAccessToken().getExpirationTime().toInstant();
   }
 
-  public String getCurrentToken() {
-    return currentToken;
-  }
-
   private boolean isTokenExpired() {
     return Instant.now().isAfter(tokenExpiry);
   }

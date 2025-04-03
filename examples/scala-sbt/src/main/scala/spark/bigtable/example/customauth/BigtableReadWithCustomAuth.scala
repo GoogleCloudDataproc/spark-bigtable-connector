@@ -20,8 +20,6 @@ import org.apache.spark.sql.SparkSession
 import spark.bigtable.example.Util
 import spark.bigtable.example.WordCount.parse
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 object BigtableReadWithCustomAuth extends App {
 
@@ -33,11 +31,8 @@ object BigtableReadWithCustomAuth extends App {
     .getOrCreate()
 
   val tokenProvider = new CustomAccessTokenProvider()
-  val initialToken = tokenProvider.getCurrentToken
 
   Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName)
-
-  tokenRefreshTest()
 
   try {
     val readDf = spark.read
@@ -56,19 +51,5 @@ object BigtableReadWithCustomAuth extends App {
       e.printStackTrace()
   } finally {
     spark.stop()
-  }
-
-  private def tokenRefreshTest(): Unit = {
-    Future {
-      Thread.sleep(20000) // Give main thread 20s
-      tokenProvider.refresh()
-    }.map { _ =>
-      val refreshedToken = tokenProvider.getCurrentToken
-      if (initialToken != refreshedToken) {
-        println("Token refresh test passed: The token has changed.")
-      } else {
-        println("Token refresh test failed: The token has not changed.")
-      }
-    }.onComplete(_ => println("Token Refresh Test completed"))
   }
 }

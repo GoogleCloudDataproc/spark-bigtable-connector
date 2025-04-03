@@ -28,9 +28,6 @@ class CustomAccessTokenProvider extends AccessTokenProvider {
     tokenExpiry = credentials.getAccessToken.getExpirationTime.toInstant
   }
 
-  @throws(classOf[IOException])
-  def getCurrentToken: String = currentToken
-
   private def isTokenExpired: Boolean = {
     Instant.now().isAfter(tokenExpiry)
   }

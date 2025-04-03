@@ -30,10 +30,45 @@ object WordCount extends App {
   val binaryToDoubleUdf =
     udf((binaryData: Array[Byte]) => binaryToDouble(binaryData))
 
-  Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName)
+  val catalog =
+    s"""{
+       |"table":{"namespace":"default", "name":"$tableName", "tableCoder":"PrimitiveType"},
+       |"rowkey":"wordCol",
+       |"columns":{
+       |  "word":{"cf":"rowkey", "col":"wordCol", "type":"string"},
+       |  "count":{"cf":"example_family", "col":"countCol", "type":"long"},
+       |  "frequency_binary":{"cf":"example_family", "col":"frequencyCol", "type":"binary"}
+       |}
+       |}""".stripMargin
+
+  import spark.implicits._
+
+  val data = (0 to 9).map(i => ("word%d".format(i), i, i / 1000.0))
+  val rdd = spark.sparkContext.parallelize(data)
+  val dfWithDouble = rdd.toDF("word", "count", "frequency_double")
+
+  println("Created the DataFrame:");
+  dfWithDouble.show()
+
+  val dfToWrite = dfWithDouble
+    .withColumn(
+      "frequency_binary",
+      doubleToBinaryUdf(dfWithDouble.col("frequency_double"))
+    )
+    .drop("frequency_double")
+
+  dfToWrite.write
+    .format("bigtable")
+    .option("catalog", catalog)
+    .option("spark.bigtable.project.id", projectId)
+    .option("spark.bigtable.instance.id", instanceId)
+    .option("spark.bigtable.create.new.table", createNewTable)
+    .save
+  println("DataFrame was written to Bigtable.")
+
   val readDf = spark.read
     .format("bigtable")
-    .option("catalog", Util.getCatalog(tableName))
+    .option("catalog", catalog)
     .option("spark.bigtable.project.id", projectId)
     .option("spark.bigtable.instance.id", instanceId)
     .load
