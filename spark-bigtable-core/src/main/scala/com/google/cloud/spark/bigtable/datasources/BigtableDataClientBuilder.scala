@@ -20,13 +20,8 @@ import com.google.api.gax.batching.{BatchingSettings, FlowControlSettings}
 import com.google.api.gax.rpc.FixedHeaderProvider
 import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTableAdminSettings}
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
-import com.google.cloud.spark.bigtable.BigtableUtil.{createVerifiedInstance, getCredentialsProvider}
+import com.google.cloud.spark.bigtable.Reflector.getCredentialsProvider
 import com.google.cloud.spark.bigtable._
-import com.google.cloud.spark.bigtable.customauth.{
-  AccessTokenProvider,
-  AccessTokenProviderCredentials,
-  BigtableCredentialsProvider
-}
 import com.google.common.collect.ImmutableMap
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
 import org.apache.yetus.audience.InterfaceAudience

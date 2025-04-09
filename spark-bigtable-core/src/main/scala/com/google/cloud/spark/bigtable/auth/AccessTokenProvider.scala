@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cloud.spark.bigtable.customauth
+package com.google.cloud.spark.bigtable.auth
 
 import java.io.IOException
 

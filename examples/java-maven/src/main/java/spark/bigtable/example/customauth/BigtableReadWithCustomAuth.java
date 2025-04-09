@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package spark.bigtable.example.customauth;
+package spark.bigtable.example.auth;
 
 import java.io.IOException;
 import org.apache.spark.sql.Dataset;

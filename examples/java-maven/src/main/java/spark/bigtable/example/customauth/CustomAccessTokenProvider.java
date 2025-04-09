@@ -1,4 +1,4 @@
-package spark.bigtable.example.customauth;
+package spark.bigtable.example.auth;
 
 /*
  * Copyright 2024 Google LLC
@@ -17,8 +17,8 @@ package spark.bigtable.example.customauth;
  */
 
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.spark.bigtable.customauth.AccessToken;
-import com.google.cloud.spark.bigtable.customauth.AccessTokenProvider;
+import com.google.cloud.spark.bigtable.auth.AccessToken;
+import com.google.cloud.spark.bigtable.auth.AccessTokenProvider;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;

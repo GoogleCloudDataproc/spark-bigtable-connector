@@ -184,7 +184,7 @@ where these configs are defined.
 
 In cases where the user has an internal service providing the Google AccessToken, a custom implementation
 can be done, creating only the AccessToken and providing its TTL. Token refresh will re-generate a new token. In order
-to use this, implement the `com.google.cloud.spark.bigtable.customauth.AccessTokenProvider` interface. The fully 
+to use this, implement the `com.google.cloud.spark.bigtable.auth.AccessTokenProvider` interface. The fully 
 qualified class name of the implementation should be provided in the `spark.bigtable.gcp.accesstoken.provider` option. 
 `AccessTokenProvider` must be implemented in Java or other JVM language such as Scala or Kotlin. It must have a 
 no-arg constructor. The jar containing the implementation should be on the cluster's classpath.
