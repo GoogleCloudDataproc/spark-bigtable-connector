@@ -18,7 +18,7 @@ package spark.bigtable.example
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.functions.col
+
 import java.nio.ByteBuffer
 
 object WordCount extends App {
@@ -42,6 +42,7 @@ object WordCount extends App {
        |}""".stripMargin
 
   import spark.implicits._
+
   val data = (0 to 9).map(i => ("word%d".format(i), i, i / 1000.0))
   val rdd = spark.sparkContext.parallelize(data)
   val dfWithDouble = rdd.toDF("word", "count", "frequency_double")

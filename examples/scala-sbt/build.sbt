@@ -40,6 +40,7 @@ libraryDependencies ++= Seq(
   "com.google.cloud.spark.bigtable" % sparkBigtable % sparkBigtableVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.slf4j" % "slf4j-reload4j" % "1.7.36",
+  "com.google.auth" % "google-auth-library-oauth2-http" % "1.33.1"
 )
 
 val scalatestVersion = "3.2.6"
