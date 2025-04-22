@@ -19,12 +19,53 @@ package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.data.v2.models.{RowCell, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field, Utils}
-import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row => SparkRow}
 
 import scala.collection.JavaConverters._
+import scala.util.matching.Regex
 
 object ReadRowConversions extends Serializable {
+
+  private def buildRowForRegex(
+      cqFields: Seq[Field],
+      bigtableRow: BigtableRow
+  ): Seq[(Field, Any)] = {
+    cqFields.map { x =>
+      val pattern: Regex = x.btColName.r
+      val allCells: List[RowCell] = bigtableRow.getCells(x.btColFamily).asScala.toList
+      val cqAllFields = allCells
+        .filter(cell => pattern.findFirstIn(cell.getQualifier.toStringUtf8).isDefined)
+        .map(cell => {
+          val qualifier = cell.getQualifier.toStringUtf8
+          val f = Field(
+            x.sparkColName,
+            x.btColFamily,
+            qualifier,
+            x.simpleType,
+            x.avroSchema,
+            x.len
+          )
+          val allCellsOfCol = bigtableRow.getCells(x.btColFamily, qualifier).asScala.toList
+          if (allCellsOfCol.isEmpty) (f, null)
+          else {
+            val latestCellValue = allCells.head.getValue.toByteArray
+            if ((x.length != -1) && (x.length != latestCellValue.length)) {
+              throw new IllegalArgumentException(
+                "The byte array in Bigtable cell [" + latestCellValue
+                  .mkString(", ") + "] has length "
+                  + latestCellValue.length + ", while column " + x + " requires length " + x.length + "."
+              )
+            }
+            (x, Utils.bigtableFieldToScalaType(x, latestCellValue, 0, latestCellValue.length))
+          }
+        })
+      val sparkFields = cqAllFields.flatMap { case (field, value) =>
+        Map(field.btColName -> value)
+      }
+      (x, sparkFields)
+    }
+  }
 
   /** Takes a Bigtable Row and extracts the fields in the rowkey from it.
     *
@@ -40,7 +81,7 @@ object ReadRowConversions extends Serializable {
       keyFields: Seq[Field],
       catalog: BigtableTableCatalog
   ): Map[Field, Any] = {
-    val row: Array[Byte] = bigtableRow.getKey().toByteArray()
+    val row: Array[Byte] = bigtableRow.getKey.toByteArray
     keyFields
       .foldLeft((0, Seq[(Field, Any)]()))((state, field) => {
         val idx = state._1
@@ -119,7 +160,8 @@ object ReadRowConversions extends Serializable {
   def buildRow(
       fields: Seq[Field],
       bigtableRow: BigtableRow,
-      catalog: BigtableTableCatalog
+      catalog: BigtableTableCatalog,
+      cqFields: Option[Seq[Field]] = None
   ): SparkRow = {
     val keySeq = parseRowKey(bigtableRow, catalog.getRowKeyColumns, catalog)
 
@@ -128,10 +170,10 @@ object ReadRowConversions extends Serializable {
       .map { x =>
         val allCells: List[RowCell] =
           bigtableRow.getCells(x.btColFamily, x.btColName).asScala.toList
-        if (allCells.size == 0) {
+        if (allCells.isEmpty) {
           (x, null)
         } else {
-          val latestCellValue = allCells(0).getValue().toByteArray()
+          val latestCellValue = allCells.head.getValue.toByteArray
           if ((x.length != -1) && (x.length != latestCellValue.length)) {
             throw new IllegalArgumentException(
               "The byte array in Bigtable cell [" + latestCellValue.mkString(
@@ -153,7 +195,12 @@ object ReadRowConversions extends Serializable {
         }
       }
       .toMap
-    val unionedRow = keySeq ++ valueSeq
-    SparkRow.fromSeq(fields.map(unionedRow.get(_).getOrElse(null)))
+    val cqRows = cqFields match {
+      case Some(f) => buildRowForRegex(f, bigtableRow).toMap
+      case None => Map.empty[Field, Any]
+    }
+    val unionedRow = keySeq ++ valueSeq ++ cqRows
+    val finalFields = if (cqFields.nonEmpty) fields ++ cqFields.get else fields
+    SparkRow.fromSeq(finalFields.map(unionedRow.get(_).orNull))
   }
 }

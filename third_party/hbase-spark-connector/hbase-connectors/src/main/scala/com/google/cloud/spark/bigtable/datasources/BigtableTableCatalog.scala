@@ -162,9 +162,12 @@ case class BigtableTableCatalog(
     name: String,
     row: RowKey,
     sMap: SchemaMap,
-    @transient params: Map[String, String]
+    @transient params: Map[String, String],
+    cqShemaMap: SchemaMap
 ) extends Logging {
+  def toCqDataType = StructType(cqShemaMap.toFields)
   def toDataType = StructType(sMap.toFields)
+  def finalDataType = ???
   def getField(name: String) = sMap.getField(name)
   // One or more columns from the DataFrame get concatenated to turn into
   // the Bigtable row key. This returns a list of those columns.
