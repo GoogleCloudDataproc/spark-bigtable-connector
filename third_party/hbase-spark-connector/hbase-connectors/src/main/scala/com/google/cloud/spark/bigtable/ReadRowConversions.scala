@@ -19,7 +19,7 @@ package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.data.v2.models.{RowCell, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field, Utils}
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Row => SparkRow}
 
 import scala.collection.JavaConverters._
@@ -38,7 +38,7 @@ object ReadRowConversions extends Serializable {
         .filter(cell => pattern.findFirstIn(cell.getQualifier.toStringUtf8).isDefined)
         .map(cell => {
           val qualifier = cell.getQualifier.toStringUtf8
-          val f = Field(
+          val cqField = Field(
             x.sparkColName,
             x.btColFamily,
             qualifier,
@@ -46,10 +46,10 @@ object ReadRowConversions extends Serializable {
             x.avroSchema,
             x.len
           )
-          val allCellsOfCol = bigtableRow.getCells(x.btColFamily, qualifier).asScala.toList
-          if (allCellsOfCol.isEmpty) (f, null)
+          val cqCells = bigtableRow.getCells(x.btColFamily, qualifier).asScala.toList
+          if (cqCells.isEmpty) (cqField, null)
           else {
-            val latestCellValue = allCells.head.getValue.toByteArray
+            val latestCellValue = cqCells.head.getValue.toByteArray
             if ((x.length != -1) && (x.length != latestCellValue.length)) {
               throw new IllegalArgumentException(
                 "The byte array in Bigtable cell [" + latestCellValue
@@ -57,13 +57,11 @@ object ReadRowConversions extends Serializable {
                   + latestCellValue.length + ", while column " + x + " requires length " + x.length + "."
               )
             }
-            (x, Utils.bigtableFieldToScalaType(x, latestCellValue, 0, latestCellValue.length))
+            (cqField, Utils.bigtableFieldToScalaType(x, latestCellValue, 0, latestCellValue.length))
           }
         })
-      val sparkFields = cqAllFields.flatMap { case (field, value) =>
-        Map(field.btColName -> value)
-      }
-      (x, sparkFields)
+      val cqValues = cqAllFields.map { case (field, value) => field.btColName -> value }
+      (x, cqValues.toMap)
     }
   }
 
@@ -160,8 +158,7 @@ object ReadRowConversions extends Serializable {
   def buildRow(
       fields: Seq[Field],
       bigtableRow: BigtableRow,
-      catalog: BigtableTableCatalog,
-      cqFields: Option[Seq[Field]] = None
+      catalog: BigtableTableCatalog
   ): SparkRow = {
     val keySeq = parseRowKey(bigtableRow, catalog.getRowKeyColumns, catalog)
 
@@ -195,12 +192,9 @@ object ReadRowConversions extends Serializable {
         }
       }
       .toMap
-    val cqRows = cqFields match {
-      case Some(f) => buildRowForRegex(f, bigtableRow).toMap
-      case None => Map.empty[Field, Any]
-    }
-    val unionedRow = keySeq ++ valueSeq ++ cqRows
-    val finalFields = if (cqFields.nonEmpty) fields ++ cqFields.get else fields
-    SparkRow.fromSeq(finalFields.map(unionedRow.get(_).orNull))
+    val cqFields = catalog.sMap.cqMap.values.toSeq
+    val cqValueSeq = buildRowForRegex(cqFields, bigtableRow).toMap
+    val unionedRow = keySeq ++ valueSeq ++ cqValueSeq
+    SparkRow.fromSeq((fields ++ cqFields).map(unionedRow.get(_).orNull))
   }
 }
