@@ -22,7 +22,7 @@
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
     <version>0.4.0</version> <!-- ${NEXT_VERSION_FLAG} -->
-    <relativePath>../</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
@@ -34,6 +34,7 @@
     <scala.version>2.12.18</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <spark.version>3.5.1</spark.version>
+    <re2j.version>1.8</re2j.version>
   </properties>
 
   <dependencies>
@@ -46,6 +47,11 @@
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
       <version>${bigtable.java.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.re2j</groupId>
+      <artifactId>re2j</artifactId>
+      <version>${re2j.version}</version>
     </dependency>
 
     <!-- To fix the "NoClassDefFoundError: com/fasterxml/jackson/core/exc/StreamConstraintsException" error with Spark 3.5-->
