@@ -20,8 +20,13 @@ import com.google.api.gax.batching.{BatchingSettings, FlowControlSettings}
 import com.google.api.gax.rpc.FixedHeaderProvider
 import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTableAdminSettings}
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
-import com.google.cloud.spark.bigtable.Reflector.getCredentialsProvider
 import com.google.cloud.spark.bigtable._
+import com.google.cloud.spark.bigtable.auth.{
+  AccessTokenProvider,
+  AccessTokenProviderCredentials,
+  SparkBigtableCredentialsProvider
+}
+import com.google.cloud.spark.bigtable.util.Reflector
 import com.google.common.collect.ImmutableMap
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
 import org.apache.yetus.audience.InterfaceAudience
@@ -117,7 +122,7 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
 
-    getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
+    CredentialProvider.getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
   }
 
   private def configureHeaderProvider(
@@ -245,7 +250,7 @@ object BigtableAdminClientBuilder extends Serializable {
     }.setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
 
-    getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
+    CredentialProvider.getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
 
     addUserAgent(clientKey, settingsBuilder)
 
@@ -262,6 +267,23 @@ object BigtableAdminClientBuilder extends Serializable {
     settingsBuilder
       .stubSettings()
       .setHeaderProvider(FixedHeaderProvider.create(headersBuilder.build()))
+  }
+}
+
+@InterfaceAudience.Private
+object CredentialProvider extends Serializable with Logging {
+
+  def getCredentialsProvider(
+      clientKey: BigtableClientKey
+  ): Option[SparkBigtableCredentialsProvider] = {
+    clientKey.customAccessTokenProviderFQCN.map { accessTokenProviderFQCN =>
+      logInfo(s"Using access token provider: $accessTokenProviderFQCN")
+      val accessTokenProviderInstance =
+        Reflector.createVerifiedInstance(accessTokenProviderFQCN, classOf[AccessTokenProvider])
+      new SparkBigtableCredentialsProvider(
+        new AccessTokenProviderCredentials(accessTokenProviderInstance)
+      )
+    }
   }
 }
 

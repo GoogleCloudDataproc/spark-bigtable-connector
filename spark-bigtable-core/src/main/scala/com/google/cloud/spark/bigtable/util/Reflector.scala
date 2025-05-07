@@ -1,28 +1,10 @@
-package com.google.cloud.spark.bigtable
+package com.google.cloud.spark.bigtable.util
 
-import com.google.cloud.spark.bigtable.auth.{
-  AccessTokenProvider,
-  AccessTokenProviderCredentials,
-  SparkBigtableCredentialsProvider
-}
-import com.google.cloud.spark.bigtable.datasources.BigtableClientKey
+import com.google.cloud.spark.bigtable.Logging
 
 import java.lang.reflect.InvocationTargetException
 
 object Reflector extends Logging {
-
-  def getCredentialsProvider(
-      clientKey: BigtableClientKey
-  ): Option[SparkBigtableCredentialsProvider] = {
-    clientKey.customAccessTokenProviderFQCN.map { accessTokenProviderFQCN =>
-      logInfo(s"Using access token provider: $accessTokenProviderFQCN")
-      val accessTokenProviderInstance =
-        createVerifiedInstance(accessTokenProviderFQCN, classOf[AccessTokenProvider])
-      new SparkBigtableCredentialsProvider(
-        new AccessTokenProviderCredentials(accessTokenProviderInstance)
-      )
-    }
-  }
 
   def createVerifiedInstance[T](
       fullyQualifiedClassName: String,

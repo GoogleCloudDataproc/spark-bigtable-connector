@@ -39,9 +39,10 @@ resolvers += Resolver.mavenLocal
 libraryDependencies ++= Seq(
   "com.google.cloud.spark.bigtable" % sparkBigtable % sparkBigtableVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
-  "org.slf4j" % "slf4j-reload4j" % "1.7.36",
-  "com.google.auth" % "google-auth-library-oauth2-http" % "1.33.1"
+  "org.slf4j" % "slf4j-reload4j" % "1.7.36"
 )
+libraryDependencies += "com.google.auth" % "google-auth-library-oauth2-http" % "1.34.0"
+dependencyOverrides += "com.google.guava" % "guava" % "33.4.8-jre"
 
 val scalatestVersion = "3.2.6"
 test in assembly := {}
