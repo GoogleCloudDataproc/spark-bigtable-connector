@@ -23,3 +23,7 @@ class SparkBigtableCredentialsProvider(private val credentials: Credentials)
     extends CredentialsProvider {
   override def getCredentials: Credentials = credentials
 }
+
+class SparkBigtableCredentialsSupplier(private val credentials: Credentials) {
+
+}

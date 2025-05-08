@@ -35,7 +35,7 @@ object UserAgentInformation {
   val DATA_SOURCE_VERSION = "V1"
   val DATAFRAME_TEXT = "DF/" + DATA_SOURCE_VERSION
   val RDD_TEXT = "RDD/"
-  val scalaVersion = util.Properties.versionNumberString
+  val scalaVersion = scala.util.Properties.versionNumberString
   // This remains unset only in unit tests where sqlContext is null.
   var sparkVersion = "UNSET_SPARK_VERSION"
 }
@@ -123,9 +123,10 @@ case class BigtableRelation(
   Option(sqlContext).foreach(context =>
     UserAgentInformation.sparkVersion = context.sparkContext.version
   )
-  private val globalConfig: Map[String, String] = sqlContext.sparkContext.getConf.getAll.toMap
+  private val globalConfig: Map[String, String] = sqlContext.getAllConfs
   val catalog: BigtableTableCatalog = BigtableTableCatalog(parameters)
-  val bigtableSparkConf: BigtableSparkConf = BigtableSparkConfBuilder().fromMap(parameters, globalConfig).build()
+  val bigtableSparkConf: BigtableSparkConf =
+    BigtableSparkConfBuilder().fromMap(parameters, globalConfig).build()
   val pushDownRowKeyFilters: Boolean = bigtableSparkConf.pushDownRowKeyFilters
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.

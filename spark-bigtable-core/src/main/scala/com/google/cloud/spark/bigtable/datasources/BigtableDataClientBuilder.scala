@@ -122,7 +122,9 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
 
-    CredentialProvider.getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
+    BtCredentialProvider
+      .getCredentialsProvider(clientKey)
+      .map(settingsBuilder.setCredentialsProvider)
   }
 
   private def configureHeaderProvider(
@@ -250,7 +252,9 @@ object BigtableAdminClientBuilder extends Serializable {
     }.setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
 
-    CredentialProvider.getCredentialsProvider(clientKey).map(settingsBuilder.setCredentialsProvider)
+    BtCredentialProvider
+      .getCredentialsProvider(clientKey)
+      .map(x => settingsBuilder.setCredentialsProvider(x))
 
     addUserAgent(clientKey, settingsBuilder)
 
@@ -271,11 +275,12 @@ object BigtableAdminClientBuilder extends Serializable {
 }
 
 @InterfaceAudience.Private
-object CredentialProvider extends Serializable with Logging {
+object BtCredentialProvider extends Serializable with Logging {
 
   def getCredentialsProvider(
       clientKey: BigtableClientKey
   ): Option[SparkBigtableCredentialsProvider] = {
+    println(clientKey.customAccessTokenProviderFQCN)
     clientKey.customAccessTokenProviderFQCN.map { accessTokenProviderFQCN =>
       logInfo(s"Using access token provider: $accessTokenProviderFQCN")
       val accessTokenProviderInstance =

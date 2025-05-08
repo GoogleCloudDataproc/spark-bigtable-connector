@@ -93,7 +93,7 @@ object BigtableSparkConf {
     "spark.bigtable.enable.batch_mutate.flow_control"
   val DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL = false
 
-  val BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER = "spark.bigtable.auth.access_token_provider"
+  val BIGTABLE_CUSTOM_ACCESS_TOKEN_PROVIDER = "spark.bigtable.gcp.accesstoken.provider"
 
   /** Used for internal testing and not officially supported. */
   private[datasources] val MAX_READ_ROWS_RETRIES =
