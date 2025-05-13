@@ -29,7 +29,7 @@ object BigtableReadWithCustomAuth extends App {
     .appName("BigtableReadWithCustomAuth")
     .getOrCreate()
 
-  val tokenProvider = new CustomAccessTokenProvider()
+  val credentilasProvider = new CustomCredentilasProvider()
 
   Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName)
 
@@ -39,7 +39,7 @@ object BigtableReadWithCustomAuth extends App {
       .option("catalog", Util.getCatalog(tableName))
       .option("spark.bigtable.project.id", projectId)
       .option("spark.bigtable.instance.id", instanceId)
-      .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass.getName)
+      .option("spark.bigtable.auth.credentials_provider", credentilasProvider.getClass.getName)
       .load()
 
     println("Reading data from Bigtable...")

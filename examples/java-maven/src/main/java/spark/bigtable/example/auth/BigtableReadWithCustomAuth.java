@@ -37,7 +37,7 @@ public class BigtableReadWithCustomAuth {
                         .appName("BigtableReadWithCustomAuth")
                         .getOrCreate();
 
-        CustomAccessTokenProvider tokenProvider = new CustomAccessTokenProvider();
+        CustomCredentialProvider credentialsProvider = new CustomCredentialProvider();
 
         Util.createExampleBigtable(spark, projectId, instanceId, tableName, createNewTable);
 
@@ -49,7 +49,7 @@ public class BigtableReadWithCustomAuth {
                             .option("catalog", Util.getCatalog(tableName))
                             .option("spark.bigtable.project.id", projectId)
                             .option("spark.bigtable.instance.id", instanceId)
-                            .option("spark.bigtable.gcp.accesstoken.provider", tokenProvider.getClass().getName())
+                            .option("spark.bigtable.auth.credentials_provider", credentialsProvider.getClass().getName())
                             .load();
 
             System.out.println("Reading data from Bigtable...");
