@@ -123,8 +123,14 @@ case class BigtableRelation(
   Option(sqlContext).foreach(context =>
     UserAgentInformation.sparkVersion = context.sparkContext.version
   )
-  val catalog: BigtableTableCatalog = BigtableTableCatalog(parameters)
-  val bigtableSparkConf: BigtableSparkConf = BigtableSparkConfBuilder().fromMap(parameters).build()
+  val authParamKey = "spark.bigtable.auth.credentials_provider"
+  val authParamValue = sqlContext.getConf(authParamKey, "")
+  val params = {
+    if (authParamValue.isEmpty) parameters
+    else Map(authParamKey -> authParamValue) ++ parameters
+  }
+  val catalog: BigtableTableCatalog = BigtableTableCatalog(params)
+  val bigtableSparkConf: BigtableSparkConf = BigtableSparkConfBuilder().fromMap(params).build()
   val pushDownRowKeyFilters: Boolean = bigtableSparkConf.pushDownRowKeyFilters
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.

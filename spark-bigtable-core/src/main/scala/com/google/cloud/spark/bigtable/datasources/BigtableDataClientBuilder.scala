@@ -22,6 +22,8 @@ import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTab
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
 import com.google.cloud.spark.bigtable._
 import com.google.common.collect.ImmutableMap
+import com.google.cloud.spark.bigtable.auth.SparkBigtableCredentialsProvider
+import com.google.cloud.spark.bigtable.util.Reflector
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
 import org.apache.yetus.audience.InterfaceAudience
 import org.threeten.bp.Duration
@@ -115,6 +117,16 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
+
+    clientKey.customAccessTokenProviderFQCN match {
+      case Some(credentialsProviderFQCN) =>
+        logInfo(s"Auth using credential provider: $credentialsProviderFQCN")
+        settingsBuilder.setCredentialsProvider(
+          Reflector.createVerifiedInstance(credentialsProviderFQCN, classOf[SparkBigtableCredentialsProvider])
+        )
+      case None => logInfo(s"Auth using default credential provider")
+
+    }
   }
 
   private def configureHeaderProvider(
@@ -219,7 +231,6 @@ object BigtableDataClientBuilder extends Serializable with Logging {
     )
   }
 }
-
 /** This class is responsible for creating BigtableAdminClient objects and
   * setting appropriate runtime configurations.
   */
@@ -294,6 +305,8 @@ class BigtableClientKey(
 
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
   val batchSize: Long = bigtableSparkConf.batchMutateSize
+  val customAccessTokenProviderFQCN: Option[String] =
+    bigtableSparkConf.customCredentialsProviderFQCN
 
   val userAgentText: String =
     ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION
