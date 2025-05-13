@@ -191,7 +191,7 @@ in those columns in Bigtable.
 
 A few caveats:
 
- - The values of all matchin columns must be deserializable to the type defined
+ - The values of all matching columns must be deserializable to the type defined
    in the catalog. If you expect to need more complex deserialization you can
    also define the type as `bytes` and run custom deserialization logic.
  - A catalog with regex columns cannot be used for writes.
