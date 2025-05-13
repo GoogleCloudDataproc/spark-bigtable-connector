@@ -104,7 +104,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":".*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":".*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -136,7 +136,7 @@ class CatalogColumnMappingTest
          |"staticCol":{"cf":"cf1", "col":"any", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":".*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":".*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -168,7 +168,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":".*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":".*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -207,8 +207,8 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":".*", "type":"string"},
-         |"anotherCol":{"cf":"cf1", "col":".*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":".*", "type":"string"},
+         |"anotherCol":{"cf":"cf1", "pattern":".*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -240,7 +240,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":"^a.*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"^a.*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -279,7 +279,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":".*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":".*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -318,7 +318,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":"^a.*", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"^a.*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -351,7 +351,7 @@ class CatalogColumnMappingTest
          |"repeated-col":{"cf":"cf1", "col":"any", "type":"string"}
          |},
          |"regexColumns":{
-         |"repeated-col":{"cf":"cf2", "col":".*", "type":"string"}
+         |"repeated-col":{"cf":"cf2", "pattern":".*", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -377,7 +377,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":"a\\va", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"a\\va", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -420,7 +420,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "col":"\\X", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"\\X", "type":"string"}
          |}
          |}""".stripMargin
 

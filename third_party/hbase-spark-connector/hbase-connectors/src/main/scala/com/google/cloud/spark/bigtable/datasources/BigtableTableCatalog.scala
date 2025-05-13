@@ -309,7 +309,7 @@ object BigtableTableCatalog {
       val f = Field(
         name,
         column(cf),
-        column(col),
+        column(pattern),
         column.get(`type`),
         sAvro,
         len

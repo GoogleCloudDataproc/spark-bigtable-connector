@@ -163,6 +163,44 @@ columns and the `id` column is used as the row key. Note that you could also
 specify *compound* row keys,
 which are created by concatenating multiple DataFrame columns together.
 
+#### Catalog with variable column definitions
+
+You can also use `regexColumns` to match multiple columns in the same column
+family to a single data frame column. This can be useful if scenarios where
+you don't know the exact column qualifiers for your data ahead of time, like
+when your column qualifier is partially composed of other pieces of data.
+
+For example this catalog:
+```
+{
+  "table": {"name": "t1"},
+  "rowkey": "id_rowkey",
+  "columns": {
+    "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
+  },
+  "regexColumns": {
+    "metadata": {"cf": "info", "pattern": "\C*", "type": "long" }
+  }
+}
+```
+
+Would match all columns in the column family "info" and the result would be a
+DataFrame column named "metadata", where it's contents would be a Map of String
+to Long with the keys being the column qualifiers and the values are the results
+in those columns in Bigtable.
+
+A few caveats:
+
+ - The values of all matchin columns must be deserializable to the type defined
+   in the catalog. If you expect to need more complex deserialization you can
+   also define the type as `bytes` and run custom deserialization logic.
+ - A catalog with regex columns cannot be used for writes.
+ - Bigtable uses [RE2](https://github.com/google/re2/wiki/Syntax) for it's regex
+   implementation, which has slight differences from other implementations.
+ - Because columns may contain arbitrary characters, including new lines, it is
+   advisable to use `\C` as the wildcard expression, since `.` will not match on
+   those
+
 ### Writing to Bigtable
 
 You can use the `bigtable` format along with specifying the Bigtable
