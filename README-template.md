@@ -166,7 +166,7 @@ which are created by concatenating multiple DataFrame columns together.
 #### Catalog with variable column definitions
 
 You can also use `regexColumns` to match multiple columns in the same column
-family to a single data frame column. This can be useful if scenarios where
+family to a single data frame column. This can be useful in scenarios where
 you don't know the exact column qualifiers for your data ahead of time, like
 when your column qualifier is partially composed of other pieces of data.
 
