@@ -268,6 +268,7 @@ object BigtableTableCatalog {
   val delimiter: Byte = 0
   val length = "length"
   val regexColumns = "regexColumns"
+  val pattern = "pattern"
 
   /** User provide table schema definition
     * {"tablename":"name", "rowkey":"key1:key2",
