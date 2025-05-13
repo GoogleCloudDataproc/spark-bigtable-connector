@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #72: feat: Dynamic column qualifier support for reading from Bigtable
+
 ## 0.4.0 - 2025-03-10
 
 * PR #52: feat: Scala Version Upgrade (2.12 -> 2.13).
