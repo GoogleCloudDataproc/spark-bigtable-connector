@@ -35,7 +35,7 @@ object UserAgentInformation {
   val DATA_SOURCE_VERSION = "V1"
   val DATAFRAME_TEXT = "DF/" + DATA_SOURCE_VERSION
   val RDD_TEXT = "RDD/"
-  val scalaVersion = util.Properties.versionNumberString
+  val scalaVersion = scala.util.Properties.versionNumberString
   // This remains unset only in unit tests where sqlContext is null.
   var sparkVersion = "UNSET_SPARK_VERSION"
 }
