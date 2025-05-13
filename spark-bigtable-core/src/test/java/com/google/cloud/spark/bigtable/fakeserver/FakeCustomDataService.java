@@ -16,15 +16,23 @@
 
 package com.google.cloud.spark.bigtable.fakeserver;
 
-import com.google.bigtable.v2.*;
-import com.google.common.collect.Queues;
+
+import com.google.bigtable.v2.BigtableGrpc;
+import com.google.bigtable.v2.ReadRowsResponse;
+import com.google.bigtable.v2.SampleRowKeysRequest;
+import com.google.bigtable.v2.SampleRowKeysResponse;
+import com.google.bigtable.v2.ReadRowsRequest;
+import com.google.bigtable.v2.RowRange;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import io.grpc.stub.StreamObserver;
 
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
