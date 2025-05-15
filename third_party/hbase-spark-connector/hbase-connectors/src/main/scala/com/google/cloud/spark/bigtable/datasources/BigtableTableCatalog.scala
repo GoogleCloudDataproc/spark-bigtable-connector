@@ -65,7 +65,7 @@ case class Field(
 
   // converter from avro to catalyst structure
   lazy val avroToCatalyst: Option[Any => Any] = {
-    schema.map(SchemaConverters.createConverterToSQL(_))
+    schema.map(SchemaConverters.createConverterToSQL)
   }
 
   // converter from catalyst to avro
@@ -146,14 +146,20 @@ case class RowKey(k: String) {
 }
 // The map between the column presented to Spark and the Bigtable field
 @InterfaceAudience.Private
-case class SchemaMap(map: mutable.HashMap[String, Field]) {
-  def toFields = map.map { case (name, field) =>
-    StructField(name, field.dt)
-  }.toSeq
+case class SchemaMap(map: mutable.HashMap[String, Field], cqMap: mutable.HashMap[String, Field]) {
+  def toFields: Seq[StructField] = {
+    val regexColumnFields = cqMap.map { case (name, field) =>
+      StructField(name, MapType(StringType, field.dt))
+    }.toSeq
+    val staticColumnFields = map.map { case (name, field) =>
+      StructField(name, field.dt)
+    }.toSeq
+    staticColumnFields ++ regexColumnFields
+  }
 
-  def fields = map.values
+  def fields = map.values ++ cqMap.values
 
-  def getField(name: String) = map(name)
+  def getField(name: String) = (map ++ cqMap)(name)
 }
 
 // The definition of Bigtable and Relation relation schema
@@ -164,13 +170,13 @@ case class BigtableTableCatalog(
     sMap: SchemaMap,
     @transient params: Map[String, String]
 ) extends Logging {
-  def toDataType = StructType(sMap.toFields)
-  def getField(name: String) = sMap.getField(name)
+  def toDataType: StructType = StructType(sMap.toFields)
+  def getField(name: String): Field = sMap.getField(name)
   // One or more columns from the DataFrame get concatenated to turn into
   // the Bigtable row key. This returns a list of those columns.
   def getRowKeyColumns: Seq[Field] = row.fields
-  def hasCompoundRowKey: Boolean = (getRowKeyColumns.size > 1)
-  def getColumnFamilies = {
+  def hasCompoundRowKey: Boolean = getRowKeyColumns.size > 1
+  def getColumnFamilies: Seq[String] = {
     sMap.fields
       .map(_.btColFamily)
       .filter(_ != BigtableTableCatalog.rowKey)
@@ -178,9 +184,9 @@ case class BigtableTableCatalog(
       .distinct
   }
 
-  def get(key: String) = params.get(key)
+  def get(key: String): Option[String] = params.get(key)
 
-  private def initRowKey() = {
+  private def initRowKey(): Unit = {
     val fields =
       sMap.fields.filter(_.btColFamily == BigtableTableCatalog.rowKey)
     if (fields.isEmpty || row.keys.isEmpty) {
@@ -199,7 +205,7 @@ case class BigtableTableCatalog(
     }
     row.fields = row.keys.flatMap(n => fields.find(_.btColName == n))
     // The length is determined at run time if it is string or binary and the length is undefined.
-    if (row.fields.filter(_.length == -1).isEmpty) {
+    if (!row.fields.exists(_.length == -1)) {
       var start = 0
       row.fields.foreach { f =>
         f.start = start
@@ -261,6 +267,8 @@ object BigtableTableCatalog {
   val avro = "avro"
   val delimiter: Byte = 0
   val length = "length"
+  val regexColumns = "regexColumns"
+  val pattern = "pattern"
 
   /** User provide table schema definition
     * {"tablename":"name", "rowkey":"key1:key2",
@@ -272,11 +280,9 @@ object BigtableTableCatalog {
     val parameters = params
     val jString = parameters(tableCatalog)
     val map = JSON.parseFull(jString).get.asInstanceOf[Map[String, _]]
-    val tableMeta = map.get(table).get.asInstanceOf[Map[String, _]]
-    val tName = tableMeta.get(tableName).get.asInstanceOf[String]
-    val cIter = map
-      .get(columns)
-      .get
+    val tableMeta = map(table).asInstanceOf[Map[String, _]]
+    val tName = tableMeta(tableName).asInstanceOf[String]
+    val cIter = map(columns)
       .asInstanceOf[Map[String, Map[String, String]]]
       .toIterator
     val schemaMap = mutable.HashMap.empty[String, Field]
@@ -286,15 +292,33 @@ object BigtableTableCatalog {
       val f = Field(
         name,
         column.getOrElse(cf, rowKey),
-        column.get(col).get,
+        column(col),
         column.get(`type`),
         sAvro,
         len
       )
       schemaMap.+=((name, f))
     }
-    val rKey = RowKey(map.get(rowKey).get.asInstanceOf[String])
-    BigtableTableCatalog(tName, rKey, SchemaMap(schemaMap), parameters)
+    val cqIter = map.get(regexColumns) match {
+      case Some(v) => v.asInstanceOf[Map[String, Map[String, String]]].iterator
+      case None    => Map.empty[String, Map[String, String]]
+    }
+    val cqSchemaMap = mutable.HashMap.empty[String, Field]
+    cqIter.foreach { case (name, column) =>
+      val len = column.get(length).map(_.toInt).getOrElse(-1)
+      val sAvro = column.get(avro).map(parameters(_))
+      val f = Field(
+        name,
+        column(cf),
+        column(pattern),
+        column.get(`type`),
+        sAvro,
+        len
+      )
+      cqSchemaMap.+=((name, f))
+    }
+    val rKey = RowKey(map(rowKey).asInstanceOf[String])
+    BigtableTableCatalog(tName, rKey, SchemaMap(schemaMap, cqSchemaMap), parameters)
   }
 
   /* Use the json based definition formated as below

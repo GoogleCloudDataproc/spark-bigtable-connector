@@ -18,13 +18,38 @@
 package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.data.v2.models.{RowCell, Row => BigtableRow}
-import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field, Utils}
+import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field, ReadRowUtil, Utils}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Row => SparkRow}
-
-import scala.collection.JavaConverters._
+import com.google.re2j.Pattern
 
 object ReadRowConversions extends Serializable {
+
+  private def buildRowForRegex(
+      cqFields: Seq[Field],
+      bigtableRow: BigtableRow
+  ): Seq[(Field, Any)] = {
+    cqFields.map { x =>
+      val pattern: Pattern = Pattern.compile(x.btColName)
+      val allCells: List[RowCell] = ReadRowUtil.getAllCells(bigtableRow, x.btColFamily)
+      val cqAllFields = allCells
+        .filter(cell => pattern.matcher(cell.getQualifier.toStringUtf8).find())
+        .map { cell =>
+          val qualifier = cell.getQualifier.toStringUtf8
+          val cqField = Field(
+            x.sparkColName,
+            x.btColFamily,
+            qualifier,
+            x.simpleType,
+            x.avroSchema,
+            x.len
+          )
+          extractValue(cqField, bigtableRow)
+        }
+      val cqValues = cqAllFields.map { case (field, value) => field.btColName -> value }
+      (x, cqValues.toMap)
+    }
+  }
 
   /** Takes a Bigtable Row and extracts the fields in the rowkey from it.
     *
@@ -40,7 +65,7 @@ object ReadRowConversions extends Serializable {
       keyFields: Seq[Field],
       catalog: BigtableTableCatalog
   ): Map[Field, Any] = {
-    val row: Array[Byte] = bigtableRow.getKey().toByteArray()
+    val row: Array[Byte] = bigtableRow.getKey.toByteArray
     keyFields
       .foldLeft((0, Seq[(Field, Any)]()))((state, field) => {
         val idx = state._1
@@ -125,35 +150,39 @@ object ReadRowConversions extends Serializable {
 
     val valueSeq = fields
       .filter(!_.isRowKey)
-      .map { x =>
-        val allCells: List[RowCell] =
-          bigtableRow.getCells(x.btColFamily, x.btColName).asScala.toList
-        if (allCells.size == 0) {
-          (x, null)
-        } else {
-          val latestCellValue = allCells(0).getValue().toByteArray()
-          if ((x.length != -1) && (x.length != latestCellValue.length)) {
-            throw new IllegalArgumentException(
-              "The byte array in Bigtable cell [" + latestCellValue.mkString(
-                ", "
-              ) +
-                "] has length " + latestCellValue.length + ", while column " + x +
-                " requires length " + x.length + "."
-            )
-          }
-          (
-            x,
-            Utils.bigtableFieldToScalaType(
-              x,
-              latestCellValue,
-              0,
-              latestCellValue.length
-            )
-          )
-        }
-      }
+      .map(field => extractValue(field, bigtableRow))
       .toMap
-    val unionedRow = keySeq ++ valueSeq
-    SparkRow.fromSeq(fields.map(unionedRow.get(_).getOrElse(null)))
+    val cqFields = catalog.sMap.cqMap.values.toSeq
+    val cqValueSeq = buildRowForRegex(cqFields, bigtableRow).toMap
+    val unionedRow = keySeq ++ valueSeq ++ cqValueSeq
+    SparkRow.fromSeq((fields ++ cqFields).map(unionedRow.get(_).orNull))
+  }
+
+  private def extractValue(field: Field, bigtableRow: BigtableRow): (Field, Any) = {
+    val allCells: List[RowCell] =
+      ReadRowUtil.getAllCells(bigtableRow, field.btColFamily, field.btColName)
+    if (allCells.isEmpty) {
+      (field, null)
+    } else {
+      val latestCellValue = allCells.head.getValue.toByteArray
+      if ((field.length != -1) && (field.length != latestCellValue.length)) {
+        throw new IllegalArgumentException(
+          "The byte array in Bigtable cell [" + latestCellValue.mkString(
+            ", "
+          ) +
+            "] has length " + latestCellValue.length + ", while column " + field +
+            " requires length " + field.length + "."
+        )
+      }
+      (
+        field,
+        Utils.bigtableFieldToScalaType(
+          field,
+          latestCellValue,
+          0,
+          latestCellValue.length
+        )
+      )
+    }
   }
 }
