@@ -118,14 +118,13 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
 
-    clientKey.customAccessTokenProviderFQCN match {
+    clientKey.customCredentialsProviderFQCN match {
       case Some(credentialsProviderFQCN) =>
         logInfo(s"Auth using credential provider: $credentialsProviderFQCN")
         settingsBuilder.setCredentialsProvider(
           Reflector.createVerifiedInstance(credentialsProviderFQCN, classOf[SparkBigtableCredentialsProvider])
         )
       case None => logInfo(s"Auth using default credential provider")
-
     }
   }
 
@@ -305,7 +304,7 @@ class BigtableClientKey(
 
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
   val batchSize: Long = bigtableSparkConf.batchMutateSize
-  val customAccessTokenProviderFQCN: Option[String] =
+  val customCredentialsProviderFQCN: Option[String] =
     bigtableSparkConf.customCredentialsProviderFQCN
 
   val userAgentText: String =
