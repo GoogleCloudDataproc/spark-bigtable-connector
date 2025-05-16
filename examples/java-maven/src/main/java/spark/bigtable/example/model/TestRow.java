@@ -16,9 +16,7 @@
 
 package spark.bigtable.example.model;
 
-/**
- * A JavaBean class for using as a DataFrame row in tests.
- */
+/** A JavaBean class for using as a DataFrame row in tests. */
 public class TestRow {
   private String word;
   private long count;
@@ -28,8 +26,7 @@ public class TestRow {
     this.count = count;
   }
 
-  public TestRow() {
-  }
+  public TestRow() {}
 
   public TestRow(String word, long count, double frequencyDouble) {
     this.word = word;
