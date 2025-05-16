@@ -18,7 +18,18 @@ package com.google.cloud.spark.bigtable.filters
 
 import com.google.cloud.spark.bigtable.datasources.BigtableTableCatalog
 import com.google.common.collect.{ImmutableRangeSet, Range, RangeSet, TreeRangeSet}
-import org.apache.spark.sql.sources.{And, EqualTo, Filter, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Or, StringStartsWith}
+import org.apache.spark.sql.sources.{
+  And,
+  EqualTo,
+  Filter,
+  GreaterThan,
+  GreaterThanOrEqual,
+  In,
+  LessThan,
+  LessThanOrEqual,
+  Or,
+  StringStartsWith
+}
 
 /** This class converts Spark SQL filters to row key ranges which
   * will be pushed down to Bigtable.
@@ -59,6 +70,18 @@ object SparkSqlFilterAdapter {
         val field = catalog.getField(attribute)
         if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
           EqualToFilterAdapter.convertValueToRangeSet(value)
+        } else {
+          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
+        }
+      case In(attribute, values) =>
+        val field = catalog.getField(attribute)
+        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
+          val unionRangeSet: RangeSet[RowKeyWrapper] =
+            TreeRangeSet.create[RowKeyWrapper]()
+          values.foreach { v =>
+            unionRangeSet.addAll(EqualToFilterAdapter.convertValueToRangeSet(v))
+          }
+          ImmutableRangeSet.copyOf(unionRangeSet)
         } else {
           ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
         }

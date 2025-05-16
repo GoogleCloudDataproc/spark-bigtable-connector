@@ -433,6 +433,33 @@ example, instead of using the class name
 as `com.google.cloud.bigtable.data.v2.BigtableDataClient`, use
 `com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.BigtableDataClient`.
 
+## Join Push down example
+
+```scala
+/**
+Joins a DataFrame with Bigtable based on the provided parameters.
+This function fetches data from Bigtable and joins it with a source DataFrame.
+The join type can be "inner", "left", "semi", "anti".
+*/
+
+val joinConfig: Map[String, String] = Map(
+  "spark.bigtable.project.id" -> projectId, // Required
+  "spark.bigtable.instance.id" -> instanceId, // Required
+  "catalog" -> catalog, // Required
+)
+
+// The following ways can be used to join a leftDf with the right bigtable df
+import com.google.cloud.spark.bigtable.join.BigtableJoinImplicit._
+
+val resDf1 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName")
+val resDf2 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName", Seq("joinKey"))
+val resDf3 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName", Array("joinKey"))
+val resDf4 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName", List("joinKey"))
+val resDf5 = srcDf.as("a").joinWithBigtable(joinConfig, "srcRowKeyColName", col("a.joinKey") === col("b.joinKey"), aliasName="b")
+val resDf6 = srcDf.as("a").joinWithBigtable(joinConfig, "srcRowKeyColName", expr("a.joinKey = b.joinKey"), aliasName="b")
+val resDf7 = srcDf.as("a").joinWithBigtable(joinConfig, "srcRowKeyColName", "joinKey")
+```
+
 ## Examples
 
 You can access examples for Java, Scala, and Python inside the `examples`

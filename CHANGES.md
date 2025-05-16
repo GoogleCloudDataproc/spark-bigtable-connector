@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #69: feat: Push down joins for reading from Bigtable
+
 ## 0.5.0 - 2025-05-16
 
 * PR #72: feat: Dynamic column qualifier support for reading from Bigtable
