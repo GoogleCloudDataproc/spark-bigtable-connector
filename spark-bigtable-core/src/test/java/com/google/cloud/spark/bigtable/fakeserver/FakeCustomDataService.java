@@ -42,7 +42,7 @@ public class FakeCustomDataService extends BigtableGrpc.BigtableImplBase {
   private final List<SampleRowKeysResponse> sampleRowKeyResponses = new ArrayList<>();
 
   private final ConcurrentHashMap<String, List<ReadRowsResponse.CellChunk>> fakeTable =
-    new ConcurrentHashMap<>();
+      new ConcurrentHashMap<>();
 
   public void addSampleRowKeyResponse(SampleRowKeysResponse sampleRowKeysResponse) {
     sampleRowKeyResponses.add(sampleRowKeysResponse);
@@ -50,7 +50,7 @@ public class FakeCustomDataService extends BigtableGrpc.BigtableImplBase {
 
   @Override
   public void sampleRowKeys(
-    SampleRowKeysRequest request, StreamObserver<SampleRowKeysResponse> responseObserver) {
+      SampleRowKeysRequest request, StreamObserver<SampleRowKeysResponse> responseObserver) {
     try {
       for (SampleRowKeysResponse response : sampleRowKeyResponses) {
         responseObserver.onNext(response);
@@ -64,20 +64,20 @@ public class FakeCustomDataService extends BigtableGrpc.BigtableImplBase {
 
   public void addRow(String rowKey, String familyName, String qualifier, String value) {
     ReadRowsResponse.CellChunk chunk =
-      ReadRowsResponse.CellChunk.newBuilder()
-        .setRowKey(ByteString.copyFromUtf8(rowKey))
-        .setFamilyName(StringValue.of(familyName))
-        .setQualifier(BytesValue.of(ByteString.copyFromUtf8(qualifier)))
-        .setValue(ByteString.copyFromUtf8(value))
-        .setCommitRow(true)
-        .build();
+        ReadRowsResponse.CellChunk.newBuilder()
+            .setRowKey(ByteString.copyFromUtf8(rowKey))
+            .setFamilyName(StringValue.of(familyName))
+            .setQualifier(BytesValue.of(ByteString.copyFromUtf8(qualifier)))
+            .setValue(ByteString.copyFromUtf8(value))
+            .setCommitRow(true)
+            .build();
 
     List<ReadRowsResponse.CellChunk> rowChunks;
     if (fakeTable.containsKey(rowKey)) {
       rowChunks = fakeTable.get(rowKey);
       rowChunks.set(
-        rowChunks.size() - 1,
-        rowChunks.get(rowChunks.size() - 1).toBuilder().setCommitRow(false).build());
+          rowChunks.size() - 1,
+          rowChunks.get(rowChunks.size() - 1).toBuilder().setCommitRow(false).build());
     } else {
       rowChunks = new ArrayList<>();
       fakeTable.put(rowKey, rowChunks);
@@ -94,9 +94,9 @@ public class FakeCustomDataService extends BigtableGrpc.BigtableImplBase {
     for (RowRange range : request.getRows().getRowRangesList()) {
       for (String key : fakeTable.keySet()) {
         if ((key.compareTo(range.getStartKeyOpen().toStringUtf8()) >= 0
-          || range.getStartKeyOpen().isEmpty())
-          && (key.compareTo(range.getEndKeyOpen().toStringUtf8()) < 0
-          || range.getEndKeyOpen().isEmpty())) {
+                || range.getStartKeyOpen().isEmpty())
+            && (key.compareTo(range.getEndKeyOpen().toStringUtf8()) < 0
+                || range.getEndKeyOpen().isEmpty())) {
           requestedKeys.add(key);
         }
       }
