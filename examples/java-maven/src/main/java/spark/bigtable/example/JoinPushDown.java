@@ -17,7 +17,11 @@
 package spark.bigtable.example;
 
 import com.google.cloud.spark.bigtable.join.BigtableJoin;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.Column;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.types.DataTypes;
 import spark.bigtable.example.model.TestRow;
@@ -42,9 +46,9 @@ public class JoinPushDown {
             throw new IllegalArgumentException(
               "Arguments Bigtable project ID, instance ID, " + "and table name must be specified");
         }
-        projectId = "my-local-project"; //args[0];
-        instanceId = "my-local-instance";//args[1];
-        tableName = "word_count"; //args[2];
+        projectId = args[0];
+        instanceId = args[1];
+        tableName = args[2];
         if (args.length > 3) {
             createNewTable = args[3];
         }
