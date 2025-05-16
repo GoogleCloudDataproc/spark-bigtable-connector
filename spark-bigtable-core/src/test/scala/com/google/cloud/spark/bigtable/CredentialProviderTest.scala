@@ -1,14 +1,14 @@
 package com.google.cloud.spark.bigtable
 
+import com.google.api.gax.core.CredentialsProvider
 import com.google.auth.Credentials
 import com.google.auth.oauth2.{AccessToken, GoogleCredentials}
-import com.google.cloud.spark.bigtable.auth.SparkBigtableCredentialsProvider
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.time.Duration
 import java.util.Date
 
-class CustomCredentialProvider extends SparkBigtableCredentialsProvider with Serializable {
+class CustomCredentialProvider extends CredentialsProvider with Serializable {
   val expirationTime = new Date(System.currentTimeMillis() + 60000)
   val testToken = new AccessToken("test-initial-token", expirationTime)
 
