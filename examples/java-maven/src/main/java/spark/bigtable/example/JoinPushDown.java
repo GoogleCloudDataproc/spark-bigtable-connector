@@ -40,7 +40,7 @@ public class JoinPushDown {
     private static void parseArguments(String[] args) throws IllegalArgumentException {
         if (args.length < 0) {
             throw new IllegalArgumentException(
-                    "Arguments Bigtable project ID, instance ID, " + "and table name must be specified");
+              "Arguments Bigtable project ID, instance ID, " + "and table name must be specified");
         }
         projectId = "my-local-project"; //args[0];
         instanceId = "my-local-instance";//args[1];
@@ -54,20 +54,20 @@ public class JoinPushDown {
         parseArguments(args);
 
         String catalog =
-                "{"
-                        + "\"table\":{\"name\":\""
-                        + tableName
-                        + "\","
-                        + "\"tableCoder\":\"PrimitiveType\"},"
-                        + "\"rowkey\":\"wordCol\","
-                        + "\"columns\":{"
-                        + "\"word\":"
-                        + "{\"cf\":\"rowkey\", \"col\":\"wordCol\", \"type\":\"string\"},"
-                        + "\"count\":"
-                        + "{\"cf\":\"example_family\", \"col\":\"countCol\", \"type\":\"long\"},"
-                        + "\"frequencyBinary\":"
-                        + "{\"cf\":\"example_family\", \"col\":\"frequencyCol\", \"type\":\"binary\"}"
-                        + "}}".replaceAll("\\s+", "");
+          "{"
+            + "\"table\":{\"name\":\""
+            + tableName
+            + "\","
+            + "\"tableCoder\":\"PrimitiveType\"},"
+            + "\"rowkey\":\"wordCol\","
+            + "\"columns\":{"
+            + "\"word\":"
+            + "{\"cf\":\"rowkey\", \"col\":\"wordCol\", \"type\":\"string\"},"
+            + "\"count\":"
+            + "{\"cf\":\"example_family\", \"col\":\"countCol\", \"type\":\"long\"},"
+            + "\"frequencyBinary\":"
+            + "{\"cf\":\"example_family\", \"col\":\"frequencyCol\", \"type\":\"binary\"}"
+            + "}}".replaceAll("\\s+", "");
 
         spark = SparkSession.builder().getOrCreate();
         spark.udf().register("doubleToBinary", new DoubleToBinaryUdf(), DataTypes.BinaryType);
@@ -78,10 +78,10 @@ public class JoinPushDown {
         dfWithDouble.show();
 
         Dataset<Row> dfToWrite =
-                dfWithDouble
-                        .withColumn(
-                                "frequencyBinary", callUDF("doubleToBinary", dfWithDouble.col("frequencyDouble")))
-                        .drop("frequencyDouble");
+          dfWithDouble
+            .withColumn(
+              "frequencyBinary", callUDF("doubleToBinary", dfWithDouble.col("frequencyDouble")))
+            .drop("frequencyDouble");
 
         writeDataframeToBigtable(dfToWrite, catalog, createNewTable);
         System.out.println("DataFrame was written to Bigtable.");
@@ -141,14 +141,14 @@ public class JoinPushDown {
     }
 
     private static void writeDataframeToBigtable(
-            Dataset<Row> dataframe, String catalog, String createNewTable) {
+      Dataset<Row> dataframe, String catalog, String createNewTable) {
         dataframe
-                .write()
-                .format("bigtable")
-                .option("catalog", catalog)
-                .option("spark.bigtable.project.id", projectId)
-                .option("spark.bigtable.instance.id", instanceId)
-                .option("spark.bigtable.create.new.table", createNewTable)
-                .save();
+          .write()
+          .format("bigtable")
+          .option("catalog", catalog)
+          .option("spark.bigtable.project.id", projectId)
+          .option("spark.bigtable.instance.id", instanceId)
+          .option("spark.bigtable.create.new.table", createNewTable)
+          .save();
     }
 }
