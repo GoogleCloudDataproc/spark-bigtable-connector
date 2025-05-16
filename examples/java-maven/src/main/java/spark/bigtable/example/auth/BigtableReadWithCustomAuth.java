@@ -25,56 +25,57 @@ import spark.bigtable.example.Util;
 
 public class BigtableReadWithCustomAuth {
 
-    public static void main(String[] args) throws IOException {
-        String[] parsedArgs = parseArgs(args);
-        String projectId = parsedArgs[0];
-        String instanceId = parsedArgs[1];
-        String tableName = parsedArgs[2];
-        String createNewTable = parsedArgs[3];
+  public static void main(String[] args) {
+    String[] parsedArgs = parseArgs(args);
+    String projectId = parsedArgs[0];
+    String instanceId = parsedArgs[1];
+    String tableName = parsedArgs[2];
+    String createNewTable = parsedArgs[3];
 
-        SparkSession spark =
-                SparkSession.builder()
-                        .appName("BigtableReadWithCustomAuth")
-                        .getOrCreate();
+    SparkSession spark =
+      SparkSession.builder()
+        .appName("BigtableReadWithCustomAuth")
+        .master("local[*]")
+        .getOrCreate();
 
-        CustomCredentialProvider credentialsProvider = new CustomCredentialProvider();
+    CustomCredentialProvider credentialsProvider = new CustomCredentialProvider();
 
-        Util.createExampleBigtable(spark, projectId, instanceId, tableName, createNewTable);
+    Util.createExampleBigtable(spark, projectId, instanceId, tableName, createNewTable);
 
-        try {
-            Dataset<Row> readDf =
-                    spark
-                            .read()
-                            .format("bigtable")
-                            .option("catalog", Util.getCatalog(tableName))
-                            .option("spark.bigtable.project.id", projectId)
-                            .option("spark.bigtable.instance.id", instanceId)
-                            .option("spark.bigtable.auth.credentials_provider", credentialsProvider.getClass().getName())
-                            .load();
+    try {
+      Dataset<Row> readDf =
+        spark
+          .read()
+          .format("bigtable")
+          .option("catalog", Util.getCatalog(tableName))
+          .option("spark.bigtable.project.id", projectId)
+          .option("spark.bigtable.instance.id", instanceId)
+          .option("spark.bigtable.auth.credentials_provider", credentialsProvider.getClass().getName())
+          .load();
 
-            System.out.println("Reading data from Bigtable...");
-            readDf.show(50);
+      System.out.println("Reading data from Bigtable...");
+      readDf.show(50);
 
-        } catch (Exception e) {
-            System.out.println("Error reading/writing data: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            spark.stop();
-        }
+    } catch (Exception e) {
+      System.out.println("Error reading/writing data: " + e.getMessage());
+      e.printStackTrace();
+    } finally {
+      spark.stop();
+    }
+  }
+
+  private static String[] parseArgs(String[] args) {
+    if (args.length < 3) {
+      throw new IllegalArgumentException(
+        "Missing command-line arguments. Required arguments: "
+          + "SPARK_BIGTABLE_PROJECT_ID SPARK_BIGTABLE_INSTANCE_ID SPARK_BIGTABLE_TABLE_NAME");
     }
 
-    private static String[] parseArgs(String[] args) {
-        if (args.length < 3) {
-            throw new IllegalArgumentException(
-                    "Missing command-line arguments. Required arguments: "
-                            + "SPARK_BIGTABLE_PROJECT_ID SPARK_BIGTABLE_INSTANCE_ID SPARK_BIGTABLE_TABLE_NAME");
-        }
+    String projectId = args[0];
+    String instanceId = args[1];
+    String tableName = args[2];
+    String createNewTable = args.length > 3 ? args[3] : "false";
 
-        String projectId = args[0];
-        String instanceId = args[1];
-        String tableName = args[2];
-        String createNewTable = args.length > 3 ? args[3] : "false";
-
-        return new String[]{projectId, instanceId, tableName, createNewTable};
-    }
+    return new String[]{projectId, instanceId, tableName, createNewTable};
+  }
 }

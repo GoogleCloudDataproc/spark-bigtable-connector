@@ -20,18 +20,21 @@ import org.apache.spark.sql.SparkSession
 import spark.bigtable.example.Util
 import spark.bigtable.example.WordCount.parse
 
+import scala.util.Try
+
 object BigtableReadWithCustomAuth extends App {
 
   val (projectId, instanceId, tableName, createNewTable) = parse(args)
 
   val spark = SparkSession
     .builder()
+    .master("local[*]")
     .appName("BigtableReadWithCustomAuth")
     .getOrCreate()
 
-  val credentilasProvider = new CustomCredentilasProvider()
+  val credentilasProvider = new CustomCredentialProvider()
 
-  Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName)
+  Try(Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName))
 
   try {
     val readDf = spark.read
