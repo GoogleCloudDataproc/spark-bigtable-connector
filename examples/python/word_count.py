@@ -15,7 +15,7 @@
 import argparse
 import pyspark.sql.functions as F
 import struct
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import SparkSession
 from pyspark.sql.types import BinaryType
 from pyspark.sql.types import DoubleType
 

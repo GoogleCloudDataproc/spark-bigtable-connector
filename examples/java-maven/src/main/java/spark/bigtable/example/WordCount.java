@@ -16,20 +16,17 @@
 
 package spark.bigtable.example;
 
+import static org.apache.spark.sql.functions.callUDF;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-
-import com.google.cloud.spark.bigtable.join.BigtableJoin;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.types.DataTypes;
 import spark.bigtable.example.model.TestRow;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.spark.sql.functions.*;
 
 public class WordCount {
     private static SparkSession spark;
@@ -39,13 +36,13 @@ public class WordCount {
     private static String createNewTable = "true";
 
     private static void parseArguments(String[] args) throws IllegalArgumentException {
-        if (args.length < 0) {
+        if (args.length < 3) {
             throw new IllegalArgumentException(
-                    "Arguments Bigtable project ID, instance ID, " + "and table name must be specified");
+              "Arguments Bigtable project ID, instance ID, " + "and table name must be specified");
         }
-        projectId = "my-local-project"; //args[0];
-        instanceId = "my-local-instance";//args[1];
-        tableName = "word_count"; //args[2];
+        projectId = args[0];
+        instanceId = args[1];
+        tableName = args[2];
         if (args.length > 3) {
             createNewTable = args[3];
         }
@@ -55,20 +52,20 @@ public class WordCount {
         parseArguments(args);
 
         String catalog =
-                "{"
-                        + "\"table\":{\"name\":\""
-                        + tableName
-                        + "\","
-                        + "\"tableCoder\":\"PrimitiveType\"},"
-                        + "\"rowkey\":\"wordCol\","
-                        + "\"columns\":{"
-                        + "\"word\":"
-                        + "{\"cf\":\"rowkey\", \"col\":\"wordCol\", \"type\":\"string\"},"
-                        + "\"count\":"
-                        + "{\"cf\":\"example_family\", \"col\":\"countCol\", \"type\":\"long\"},"
-                        + "\"frequencyBinary\":"
-                        + "{\"cf\":\"example_family\", \"col\":\"frequencyCol\", \"type\":\"binary\"}"
-                        + "}}".replaceAll("\\s+", "");
+          "{"
+            + "\"table\":{\"name\":\""
+            + tableName
+            + "\","
+            + "\"tableCoder\":\"PrimitiveType\"},"
+            + "\"rowkey\":\"wordCol\","
+            + "\"columns\":{"
+            + "\"word\":"
+            + "{\"cf\":\"rowkey\", \"col\":\"wordCol\", \"type\":\"string\"},"
+            + "\"count\":"
+            + "{\"cf\":\"example_family\", \"col\":\"countCol\", \"type\":\"long\"},"
+            + "\"frequencyBinary\":"
+            + "{\"cf\":\"example_family\", \"col\":\"frequencyCol\", \"type\":\"binary\"}"
+            + "}}".replaceAll("\\s+", "");
 
         spark = SparkSession.builder().getOrCreate();
         spark.udf().register("doubleToBinary", new DoubleToBinaryUdf(), DataTypes.BinaryType);
@@ -79,20 +76,20 @@ public class WordCount {
         dfWithDouble.show();
 
         Dataset<Row> dfToWrite =
-                dfWithDouble
-                        .withColumn(
-                                "frequencyBinary", callUDF("doubleToBinary", dfWithDouble.col("frequencyDouble")))
-                        .drop("frequencyDouble");
+          dfWithDouble
+            .withColumn(
+              "frequencyBinary", callUDF("doubleToBinary", dfWithDouble.col("frequencyDouble")))
+            .drop("frequencyDouble");
 
         writeDataframeToBigtable(dfToWrite, catalog, createNewTable);
         System.out.println("DataFrame was written to Bigtable.");
 
         Dataset<Row> readDf = readDataframeFromBigtable(catalog);
         Dataset<Row> readDfWithDouble =
-                readDf
-                        .withColumn(
-                                "frequencyDouble", callUDF("binaryToDouble", readDf.col("frequencyBinary")))
-                        .drop("frequencyBinary");
+          readDf
+            .withColumn(
+              "frequencyDouble", callUDF("binaryToDouble", readDf.col("frequencyBinary")))
+            .drop("frequencyBinary");
 
         System.out.println("Reading the DataFrame from Bigtable:");
         readDfWithDouble.show();
@@ -100,8 +97,8 @@ public class WordCount {
 
     private static Dataset<Row> createTestDataFrame() {
         ArrayList<TestRow> rows = new ArrayList<>();
-        for (int i = 0; i < 999; i++) {
-            rows.add(new TestRow(String.format("word%03d", i), i, i / 1000.0));
+        for (int i = 0; i < 10; i++) {
+            rows.add(new TestRow(String.format("word%d", i), i, i / 1000.0));
         }
         return spark.createDataset(rows, Encoders.bean(TestRow.class)).toDF();
     }
@@ -127,24 +124,24 @@ public class WordCount {
     }
 
     private static void writeDataframeToBigtable(
-            Dataset<Row> dataframe, String catalog, String createNewTable) {
+      Dataset<Row> dataframe, String catalog, String createNewTable) {
         dataframe
-                .write()
-                .format("bigtable")
-                .option("catalog", catalog)
-                .option("spark.bigtable.project.id", projectId)
-                .option("spark.bigtable.instance.id", instanceId)
-                .option("spark.bigtable.create.new.table", createNewTable)
-                .save();
+          .write()
+          .format("bigtable")
+          .option("catalog", catalog)
+          .option("spark.bigtable.project.id", projectId)
+          .option("spark.bigtable.instance.id", instanceId)
+          .option("spark.bigtable.create.new.table", createNewTable)
+          .save();
     }
 
     private static Dataset<Row> readDataframeFromBigtable(String catalog) {
         return spark
-                .read()
-                .format("bigtable")
-                .option("catalog", catalog)
-                .option("spark.bigtable.project.id", projectId)
-                .option("spark.bigtable.instance.id", instanceId)
-                .load();
+          .read()
+          .format("bigtable")
+          .option("catalog", catalog)
+          .option("spark.bigtable.project.id", projectId)
+          .option("spark.bigtable.instance.id", instanceId)
+          .load();
     }
 }
