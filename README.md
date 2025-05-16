@@ -19,7 +19,7 @@ In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable_2.13:<version>` or
 `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>` (current
-`<version>` is `0.4.0`) and package it inside your application JAR
+`<version>` is `0.5.0`) and package it inside your application JAR
 using libraries such as Maven Shade Plugin. For PySpark applications, you can
 use the `--jars` flag to pass the GCS address of the connector when submitting
 it.
@@ -31,7 +31,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.13</artifactId>
-  <version>0.4.0</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 
@@ -40,7 +40,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.12</artifactId>
-  <version>0.4.0</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 
@@ -48,12 +48,12 @@ For sbt, you can add the following to your `build.sbt` file:
 
 ```
 // for scala 2.13
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.4.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.5.0"
 ```
 
 ```
 // for scala 2.12
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.4.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.5.0"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -62,14 +62,14 @@ Gradle:
 ```
 // for scala 2.13
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.4.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.5.0'
 }
 ```
 
 ```
 // for scala 2.12
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.4.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.5.0'
 }
 ```
 
@@ -156,6 +156,44 @@ converted into Bigtable
 columns and the `id` column is used as the row key. Note that you could also
 specify *compound* row keys,
 which are created by concatenating multiple DataFrame columns together.
+
+#### Catalog with variable column definitions
+
+You can also use `regexColumns` to match multiple columns in the same column
+family to a single data frame column. This can be useful in scenarios where
+you don't know the exact column qualifiers for your data ahead of time, like
+when your column qualifier is partially composed of other pieces of data.
+
+For example this catalog:
+```
+{
+  "table": {"name": "t1"},
+  "rowkey": "id_rowkey",
+  "columns": {
+    "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
+  },
+  "regexColumns": {
+    "metadata": {"cf": "info", "pattern": "\C*", "type": "long" }
+  }
+}
+```
+
+Would match all columns in the column family "info" and the result would be a
+DataFrame column named "metadata", where it's contents would be a Map of String
+to Long with the keys being the column qualifiers and the values are the results
+in those columns in Bigtable.
+
+A few caveats:
+
+ - The values of all matching columns must be deserializable to the type defined
+   in the catalog. If you expect to need more complex deserialization you can
+   also define the type as `bytes` and run custom deserialization logic.
+ - A catalog with regex columns cannot be used for writes.
+ - Bigtable uses [RE2](https://github.com/google/re2/wiki/Syntax) for it's regex
+   implementation, which has slight differences from other implementations.
+ - Because columns may contain arbitrary characters, including new lines, it is
+   advisable to use `\C` as the wildcard expression, since `.` will not match on
+   those
 
 ### Writing to Bigtable
 
