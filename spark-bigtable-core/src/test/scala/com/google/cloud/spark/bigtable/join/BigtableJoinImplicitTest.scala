@@ -56,6 +56,19 @@ class BigtableJoinImplicitTest
        |}
        |}""".stripMargin
 
+  val basicCatalogWithDynamicColumns: String =
+    s"""{
+       |"table":{"name":"tableName"},
+       |"rowkey":"stringCol",
+       |"columns":{
+       |"id":{"cf":"rowkey", "col":"stringCol", "type":"string"},
+       |"col1":{"cf":"cf1", "col":"col1", "type":"string"}
+       |},
+       |"regexColumns":{
+       |"dyn_col1":{"cf":"cf1", "pattern":"co.*", "type":"string"}
+       |}
+       |}""".stripMargin
+
   var fakeCustomDataService: FakeCustomDataService = _
   var fakeGenericDataService: FakeGenericDataService = _
   var emulatorPort: String = _
@@ -93,8 +106,11 @@ class BigtableJoinImplicitTest
     val res2 = leftDf.joinWithBigtable(newJoinConfig1, "id", Seq("id"))
     val res3 = leftDf.joinWithBigtable(newJoinConfig1, "id", Array("id"))
     val res4 = leftDf.joinWithBigtable(newJoinConfig1, "id", List("id"))
-    val res5 = leftDf.as("a").joinWithBigtable(newJoinConfig2, "id", expr("a.id = b.id"), aliasName = "b")
-    val res6 = leftDf.as("a").joinWithBigtable(newJoinConfig2, "id", col("a.id") === col("b.id"), aliasName = "b")
+    val res5 =
+      leftDf.as("a").joinWithBigtable(newJoinConfig2, "id", expr("a.id = b.id"), aliasName = "b")
+    val res6 = leftDf
+      .as("a")
+      .joinWithBigtable(newJoinConfig2, "id", col("a.id") === col("b.id"), aliasName = "b")
     assert(res1.count == leftCount)
     assert(res2.count == leftCount)
     assert(res3.count == leftCount)
@@ -148,6 +164,14 @@ class BigtableJoinImplicitTest
       val res = leftDf.joinWithBigtable(newJoinConfig, "id", joinType = "right")
       res.count()
     }
+  }
+
+  test("Join with dynamic column") {
+    addSampleData()
+    val joinConfig = createParametersMap(basicCatalogWithDynamicColumns)
+    val newJoinConfig = joinConfig
+    val res = leftDf.joinWithBigtable(newJoinConfig, "id")
+    assert(res.columns.contains("dyn_col1"))
   }
 
   def createSampleRowKeyResponse(rowKey: Array[Byte]): SampleRowKeysResponse = {

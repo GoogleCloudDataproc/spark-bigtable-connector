@@ -21,14 +21,13 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
     * The join type can be "inner", "left", "anti", "semi".
     *
     * ### Example Usage:
-    * {{{*+
-    *
-    * val joinConfig: Map[String, String] = Map(
+    * {{{
+    *val joinConfig: Map[String, String] = Map(
     *     "spark.bigtable.project.id" -> projectId, // Required
     *     "spark.bigtable.instance.id" -> instanceId, // Required
     *     "catalog" -> catalog, // Required
     * )
-    * val joinedDf = df.as("src").joinWithBigtable(joinConfig, "col1", $"src.col1" === $"bt.col2")
+    * val joinedDf = df.as("src").joinWithBigtable(joinConfig, "col1", $"src.col1" === $"bt.col2", aliasName = "bt")
     * }}}
     *
     * @param params         Configuration parameters for the Bigtable join.
