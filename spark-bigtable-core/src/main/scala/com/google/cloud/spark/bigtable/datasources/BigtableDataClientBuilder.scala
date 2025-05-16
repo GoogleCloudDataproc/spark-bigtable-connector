@@ -17,11 +17,13 @@
 package com.google.cloud.spark.bigtable.datasources
 
 import com.google.api.gax.batching.{BatchingSettings, FlowControlSettings}
+import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.rpc.FixedHeaderProvider
 import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTableAdminSettings}
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
 import com.google.cloud.spark.bigtable._
 import com.google.common.collect.ImmutableMap
+import com.google.cloud.spark.bigtable.util.Reflector
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
 import org.apache.yetus.audience.InterfaceAudience
 import org.threeten.bp.Duration
@@ -115,6 +117,15 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       .setProjectId(clientKey.projectId)
       .setInstanceId(clientKey.instanceId)
       .setAppProfileId(clientKey.appProfileId)
+
+    clientKey.customCredentialsProviderFQCN match {
+      case Some(credentialsProviderFQCN) =>
+        logInfo(s"Authentication using custom credential provider: $credentialsProviderFQCN")
+        settingsBuilder.setCredentialsProvider(
+          Reflector.createVerifiedInstance(credentialsProviderFQCN, classOf[CredentialsProvider])
+        )
+      case None => logInfo(s"Authentication using default credential provider")
+    }
   }
 
   private def configureHeaderProvider(
@@ -219,7 +230,6 @@ object BigtableDataClientBuilder extends Serializable with Logging {
     )
   }
 }
-
 /** This class is responsible for creating BigtableAdminClient objects and
   * setting appropriate runtime configurations.
   */
@@ -294,6 +304,8 @@ class BigtableClientKey(
 
   val maxBatchSize: Long = BigtableSparkConf.BIGTABLE_MAX_BATCH_MUTATE_SIZE
   val batchSize: Long = bigtableSparkConf.batchMutateSize
+  val customCredentialsProviderFQCN: Option[String] =
+    bigtableSparkConf.customCredentialsProviderFQCN
 
   val userAgentText: String =
     ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION
@@ -316,6 +328,7 @@ class BigtableClientKey(
     result = prime * result + mutateRowsTotalTimeout.getOrElse("").hashCode
     result = prime * result + readRowsRetries.getOrElse("").hashCode
     result = prime * result + batchSize.hashCode
+    result = prime * result + customCredentialsProviderFQCN.getOrElse("").hashCode
 
     result
   }
@@ -335,7 +348,8 @@ class BigtableClientKey(
       this.mutateRowsAttemptTimeout != that.mutateRowsAttemptTimeout ||
       this.mutateRowsTotalTimeout != that.mutateRowsTotalTimeout ||
       this.readRowsRetries != that.readRowsRetries ||
-      this.batchSize != that.batchSize
+      this.batchSize != that.batchSize ||
+      this.customCredentialsProviderFQCN != that.customCredentialsProviderFQCN
     ) {
       return false
     }
@@ -354,7 +368,8 @@ class BigtableClientKey(
         | mutateRowsAttemptTimeout = $mutateRowsAttemptTimeout,
         | mutateRowsTotalTimeout = $mutateRowsTotalTimeout,
         | batchSize = $batchSize,
-        | userAgentText = $userAgentText
+        | userAgentText = $userAgentText,
+        | customCredentialsProviderFQCN = $customCredentialsProviderFQCN
         |)""".stripMargin.replaceAll("\n", " ")
   }
 }
