@@ -8,7 +8,8 @@ to connect to Bigtable.
 
 ## Unreleased Changes
 
-This Readme may include documentation for changes that haven't been released yet.  The latest release's documentation and source code are found here.
+This Readme may include documentation for changes that haven't been released yet. The latest release's documentation and
+source code are found here.
 
 https://github.com/GoogleCloudDataproc/spark-bigtable-connector/blob/main/README.md
 
@@ -19,7 +20,8 @@ You can access the connector in two different ways:
 1. From
    our [Maven Central repository](https://repo1.maven.org/maven2/com/google/cloud/spark/bigtable).
 2. Through a public GCS bucket, located
-   at `gs://spark-lib/bigtable/spark-bigtable_2.13-<version>.jar` or `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
+   at `gs://spark-lib/bigtable/spark-bigtable_2.13-<version>.jar` or
+   `gs://spark-lib/bigtable/spark-bigtable_2.12-<version>.jar`.
 
 In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
@@ -35,18 +37,18 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 ```xml
 <!-- If you are using scala 2.13 -->
 <dependency>
-  <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.13</artifactId>
-  <version>${next-release-tag}</version>
+    <groupId>com.google.cloud.spark.bigtable</groupId>
+    <artifactId>spark-bigtable_2.13</artifactId>
+    <version>${next-release-tag}</version>
 </dependency>
 ```
 
 ```xml
 <!-- If you are using scala 2.12 -->
 <dependency>
-  <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.12</artifactId>
-  <version>${next-release-tag}</version>
+    <groupId>com.google.cloud.spark.bigtable</groupId>
+    <artifactId>spark-bigtable_2.12</artifactId>
+    <version>${next-release-tag}</version>
 </dependency>
 ```
 
@@ -171,6 +173,7 @@ you don't know the exact column qualifiers for your data ahead of time, like
 when your column qualifier is partially composed of other pieces of data.
 
 For example this catalog:
+
 ```
 {
   "table": {"name": "t1"},
@@ -191,15 +194,15 @@ in those columns in Bigtable.
 
 A few caveats:
 
- - The values of all matching columns must be deserializable to the type defined
-   in the catalog. If you expect to need more complex deserialization you can
-   also define the type as `bytes` and run custom deserialization logic.
- - A catalog with regex columns cannot be used for writes.
- - Bigtable uses [RE2](https://github.com/google/re2/wiki/Syntax) for it's regex
-   implementation, which has slight differences from other implementations.
- - Because columns may contain arbitrary characters, including new lines, it is
-   advisable to use `\C` as the wildcard expression, since `.` will not match on
-   those
+- The values of all matching columns must be deserializable to the type defined
+  in the catalog. If you expect to need more complex deserialization you can
+  also define the type as `bytes` and run custom deserialization logic.
+- A catalog with regex columns cannot be used for writes.
+- Bigtable uses [RE2](https://github.com/google/re2/wiki/Syntax) for it's regex
+  implementation, which has slight differences from other implementations.
+- Because columns may contain arbitrary characters, including new lines, it is
+  advisable to use `\C` as the wildcard expression, since `.` will not match on
+  those
 
 ### Writing to Bigtable
 
@@ -212,11 +215,21 @@ to Bigtable using Java:
 Dataset<Row> dataFrame;
 // Adding some values to dataFrame.
 dataFrame
-  .write()
-  .format("bigtable")
-  .option("catalog", catalog)
-  .option("spark.bigtable.project.id", projectId)
-  .option("spark.bigtable.instance.id", instanceId);
+  .
+
+write()
+  .
+
+format("bigtable")
+  .
+
+option("catalog",catalog)
+  .
+
+option("spark.bigtable.project.id",projectId)
+  .
+
+option("spark.bigtable.instance.id",instanceId);
 ```
 
 ### Reading from Bigtable
@@ -227,12 +240,12 @@ of reading from Bigtable using Java:
 
 ```java
 Dataset<Row> dataFrame = spark
-    .read()
-    .format("bigtable")
-    .option("catalog", catalog)
-    .option("spark.bigtable.project.id", projectId)
-    .option("spark.bigtable.instance.id", instanceId)
-    .load();
+  .read()
+  .format("bigtable")
+  .option("catalog", catalog)
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .load();
 ```
 
 ### Runtime configurations
@@ -247,19 +260,91 @@ where these configs are defined.
 
 ### How do I authenticate outside GCE / Dataproc?
 
-In cases where the user has an internal service providing the Google AccessToken, a custom implementation
-can be done, creating only the AccessToken and providing its TTL. Token refresh will re-generate a new token. In order
-to use this, implement the `com.google.cloud.spark.bigtable.auth.SparkBigtableCredentialsProvider` interface. The fully
-qualified class name of the implementation should be provided in the `spark.bigtable.auth.credentials_provider` option.
-`SparkBigtableCredentialsProvider` must be implemented in Java or other JVM language such as Scala or Kotlin. It must have a
-no-arg constructor. The jar containing the implementation should be on the cluster's classpath.
+If you are running Spark outside of Google Compute Engine (GCE) or Dataproc and rely on an internal service to provide a
+Google AccessToken, you can implement custom authentication using the CredentialsProvider interface provided by the
+Spark Bigtable connector.
+
+To do this, implement the `com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.core.CredentialsProvider`
+interface. Your implementation should return a custom Credentials instance that encapsulates the AccessToken provided by
+your internal service.
+
+For example, create a class like CustomCredentialProvider:
+
+```java
+import com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.core.CredentialsProvider;
+import com.google.cloud.spark.bigtable.repackaged.com.google.auth.Credentials;
+
+import java.io.IOException;
+
+public class CustomCredentialProvider implements CredentialsProvider, java.io.Serializable {
+  @Override
+  public Credentials getCredentials() throws IOException {
+    return new CustomGoogleCredentials(); // This should internally return your AccessToken
+  }
+}
+
+import com.google.cloud.spark.bigtable.repackaged.com.google.auth.oauth2.AccessToken;
+import com.google.cloud.spark.bigtable.repackaged.com.google.auth.oauth2.GoogleCredentials;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
+
+public class CustomGoogleCredentials extends GoogleCredentials {
+  private final GoogleCredentials credentials;
+  private String currentToken;
+  private Instant tokenExpiry;
+
+  public CustomGoogleCredentials() throws IOException {
+    this.credentials = GoogleCredentials.getApplicationDefault();
+    this.currentToken = fetchInitialToken();
+    this.tokenExpiry = fetchInitialTokenExpiry();
+  }
+
+  @Override
+  public AccessToken refreshAccessToken() throws IOException {
+    credentials.refresh();
+    currentToken = credentials.getAccessToken().getTokenValue();
+    tokenExpiry = credentials.getAccessToken().getExpirationTime().toInstant();
+
+    if (isTokenExpired()) {
+      credentials.refresh();
+      currentToken = credentials.getAccessToken().getTokenValue();
+      tokenExpiry = credentials.getAccessToken().getExpirationTime().toInstant();
+    }
+
+    return new AccessToken(currentToken, Date.from(tokenExpiry));
+  }
+
+  private boolean isTokenExpired() {
+    return Instant.now().isAfter(tokenExpiry);
+  }
+
+  private String fetchInitialToken() throws IOException {
+    credentials.refreshIfExpired();
+    return credentials.getAccessToken().getTokenValue();
+  }
+
+  private Instant fetchInitialTokenExpiry() throws IOException {
+    credentials.refreshIfExpired();
+    return credentials.getAccessToken().getExpirationTime().toInstant();
+  }
+}
+```
+
+Your CustomCredentialsProvider class must extend
+`com.google.cloud.spark.bigtable.repackaged.com.google.auth.CredentialsProvider`
+and should handle returning the access
+token and its expiration time.
+
 ```
 // Per read/Write
-spark.read.format("bigtable").option("spark.bigtable.auth.credentials_provider", "com.example.ExampleSparkBigtableCredentialsProvider")
+spark.read.format("bigtable").option("spark.bigtable.auth.credentials_provider", "com.example.CustomCredentialsProvider")
 ```
+
 ```
 // Global
-SparkSession.builder().config("spark.bigtable.auth.credentials_provider", "com.example.ExampleSparkBigtableCredentialsProvider")
+SparkSession.builder().config("spark.bigtable.auth.credentials_provider", "com.example.CustomCredentialsProvider")
 ```
 
 ### Bigtable emulator support
@@ -388,19 +473,21 @@ operations (note that this feature is only supported in Java and Scala,
 not PySpark):
 
 #### Writing an RDD
+
 For writing, you need to pass in an RDD of
 [RowMutationEntry](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/com.google.cloud.bigtable.data.v2.models.RowMutationEntry)
 objects to the following function:
 
 ```scala
 bigtableRDD.writeRDD(
-   rdd: RDD[RowMutationEntry],
-   tableId: String,
-   bigtableSparkConf: BigtableSparkConf
+  rdd: RDD[RowMutationEntry],
+  tableId: String,
+  bigtableSparkConf: BigtableSparkConf
 )
 ```
 
 #### Reading an RDD
+
 When reading an RDD, you receive an RDD of Bigtable
 [Row](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/com.google.cloud.bigtable.data.v2.models.Row)
 objects after calling the following function:
@@ -415,10 +502,10 @@ corresponding to the options you want to set in your workflow. You can use the
 
 ```scala
 val bigtableSparkConf: BigtableSparkConf =
-   new BigtableSparkConfBuilder()
-     .setProjectId(someProjectId)
-     .setInstanceId(someInstanceId)
-     .build()
+  new BigtableSparkConfBuilder()
+    .setProjectId(someProjectId)
+    .setInstanceId(someInstanceId)
+    .build()
 ```
 
 A list of the setter methods for the supported configs is as follows:
