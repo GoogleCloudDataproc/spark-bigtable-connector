@@ -215,21 +215,11 @@ to Bigtable using Java:
 Dataset<Row> dataFrame;
 // Adding some values to dataFrame.
 dataFrame
-  .
-
-write()
-  .
-
-format("bigtable")
-  .
-
-option("catalog",catalog)
-  .
-
-option("spark.bigtable.project.id",projectId)
-  .
-
-option("spark.bigtable.instance.id",instanceId);
+  .write()
+  .format("bigtable")
+  .option("catalog",catalog)
+  .option("spark.bigtable.project.id",projectId)
+  .option("spark.bigtable.instance.id",instanceId);
 ```
 
 ### Reading from Bigtable
