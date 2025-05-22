@@ -127,7 +127,7 @@ case class BigtableRelation(
     UserAgentInformation.sparkVersion = context.sparkContext.version
   )
   val authParamKey = BigtableSparkConf.BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER
-  val authParamValue = sqlContext.getConf(authParamKey, "")
+  val authParamValue = Option(sqlContext).map(_.getConf(authParamKey, "")).getOrElse("")
   val params = {
     if (authParamValue.isEmpty) parameters
     else Map(authParamKey -> authParamValue) ++ parameters
