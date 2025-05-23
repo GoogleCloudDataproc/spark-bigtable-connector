@@ -241,13 +241,13 @@ Dataset<Row> dataFrame = spark
 ### Efficient joins with other data sources
 
 If you have a large DataFrame that you want to join with some Bigtable data and
-you don't want to fo a full table scan, you can use `.joinWithBigtable` to
-fetch data from Bigtable using one of your DataFrame's column as a row key
+you don't want to perform a full table scan, you can use `.joinWithBigtable` to
+fetch data from Bigtable using one of your DataFrame's columns as a row key
 filter for your Bigtable data.
 
 This method will perform reads on Bigtable on each of the source DataFrame's
 partitions separately, without the need to first collect the column containing
-your key, as long as your column is of the same type as the rowkey column on
+your key, as long as your column is of the same type as the `rowkey` column on
 your Bigtable catalog.
 
 Example:
@@ -293,7 +293,7 @@ pyspark_result_df = DataFrame(result_df, spark)
 A few important notes:
 
  - The key column on the source DataFrame must be of the same type as the row
-   key column configured on the Bigtable catalog
+   key column configured in the Bigtable catalog
  - Each partition on the source Dataframe will be fetched separately from
    Bigtable. This means you ideally want your source DataFrame to be sorted by
    the column containing the row key for more efficient Bigtable reads.
