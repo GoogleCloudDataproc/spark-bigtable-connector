@@ -3,6 +3,7 @@
 ## Next
 
 * PR #69: feat: Push down joins for reading from Bigtable
+* PR #75: feat: Support for custom authentication providers
 
 ## 0.5.0 - 2025-05-16
 
