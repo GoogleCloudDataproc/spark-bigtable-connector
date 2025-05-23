@@ -238,6 +238,66 @@ Dataset<Row> dataFrame = spark
   .load();
 ```
 
+### Efficient joins with other data sources
+
+If you have a large DataFrame that you want to join with some Bigtable data and
+you don't want to perform a full table scan, you can use `.joinWithBigtable` to
+fetch data from Bigtable using one of your DataFrame's columns as a row key
+filter for your Bigtable data.
+
+This method will perform reads on Bigtable on each of the source DataFrame's
+partitions separately, without the need to first collect the column containing
+your key, as long as your column is of the same type as the `rowkey` column on
+your Bigtable catalog.
+
+Example:
+
+```scala
+// This import provides syntatic sugar for joinWithBigtable
+import com.google.cloud.spark.bigtable.join.BigtableJoinImplicit._
+
+// SrcDf is a large dataframe from some other source that we want to join with
+// Bigtable. Let's say the column containing the bigtable key to join with is
+// called `product_id`
+val srcDf = ...;
+
+// Reader options will be passed on to the reader, refer to the section "Reading
+// from Bigtable" for more information
+val readerOptions = Map(
+  "spark.bigtable.project.id" -> projectId, // Required
+  "spark.bigtable.instance.id" -> instanceId, // Required
+  "catalog" -> catalog, // Required
+)
+
+val joinedDf = srcDf.joinWithBigtable(joinConfig, "product_id")
+```
+
+Or on pyspark:
+
+```python
+# This links to the JVM's method in spark
+bigtable_join_class = spark._jvm.com.google.cloud.spark.bigtable.join.BigtableJoin
+
+# Some other DataFrame
+srcDf = ...
+
+config_map = spark._jvm.java.util.HashMap()
+config_map.put("spark.bigtable.project.id", bigtable_project_id)
+config_map.put("spark.bigtable.instance.id", bigtable_instance_id)
+config_map.put("catalog", catalog)
+
+result_df = bigtable_join_class.joinWithBigtable(srcDf._jdf, config_map, "product_id", spark=spark._jsparkSession)
+pyspark_result_df = DataFrame(result_df, spark)
+```
+
+A few important notes:
+
+ - The key column on the source DataFrame must be of the same type as the row
+   key column configured in the Bigtable catalog
+ - Each partition on the source Dataframe will be fetched separately from
+   Bigtable. This means you ideally want your source DataFrame to be sorted by
+   the column containing the row key for more efficient Bigtable reads.
+
 ### Runtime configurations
 
 You can use `.option(<config_name>, <config_value>)` in Spark to pass different
@@ -403,6 +463,7 @@ will be added in the future.
 | `StringStartsWith`   | Yes                        |
 | `Or`                 | Yes                        |
 | `And`                | Yes                        |
+| `In`                 | Yes                        |
 | `Not`                | No                         |
 | Compound Row Key     | No                         |
 
@@ -526,33 +587,6 @@ To use the Bigtable client for Java classes, append the
 example, instead of using the class name
 as `com.google.cloud.bigtable.data.v2.BigtableDataClient`, use
 `com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.BigtableDataClient`.
-
-## Join Push down example
-
-```scala
-/**
-Joins a DataFrame with Bigtable based on the provided parameters.
-This function fetches data from Bigtable and joins it with a source DataFrame.
-The join type can be "inner", "left", "semi", "anti".
-*/
-
-val joinConfig: Map[String, String] = Map(
-  "spark.bigtable.project.id" -> projectId, // Required
-  "spark.bigtable.instance.id" -> instanceId, // Required
-  "catalog" -> catalog, // Required
-)
-
-// The following ways can be used to join a leftDf with the right bigtable df
-import com.google.cloud.spark.bigtable.join.BigtableJoinImplicit._
-
-val resDf1 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName")
-val resDf2 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName", Seq("joinKey"))
-val resDf3 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName", Array("joinKey"))
-val resDf4 = srcDf.joinWithBigtable(joinConfig, "srcRowKeyColName", List("joinKey"))
-val resDf5 = srcDf.as("a").joinWithBigtable(joinConfig, "srcRowKeyColName", col("a.joinKey") === col("b.joinKey"), aliasName="b")
-val resDf6 = srcDf.as("a").joinWithBigtable(joinConfig, "srcRowKeyColName", expr("a.joinKey = b.joinKey"), aliasName="b")
-val resDf7 = srcDf.as("a").joinWithBigtable(joinConfig, "srcRowKeyColName", "joinKey")
-```
 
 ## Examples
 
