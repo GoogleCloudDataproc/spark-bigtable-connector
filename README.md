@@ -262,7 +262,7 @@ val readerOptions = Map(
   "catalog" -> catalog, // Required
 )
 
-val joinedDf = srcDf.joinWithBigtable(joinConfig, "product_id")
+val joinedDf = srcDf.joinWithBigtable(readerOptions, "product_id")
 ```
 
 Or on pyspark:
