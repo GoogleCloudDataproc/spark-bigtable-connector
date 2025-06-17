@@ -337,6 +337,7 @@ class BigtableClientKey(
     result = prime * result + readRowsRetries.getOrElse("").hashCode
     result = prime * result + batchSize.hashCode
     result = prime * result + customCredentialsProviderFQCN.getOrElse("").hashCode
+    result = prime * result + customCredentialsProviderArgs.hashCode
 
     result
   }
@@ -357,7 +358,8 @@ class BigtableClientKey(
       this.mutateRowsTotalTimeout != that.mutateRowsTotalTimeout ||
       this.readRowsRetries != that.readRowsRetries ||
       this.batchSize != that.batchSize ||
-      this.customCredentialsProviderFQCN != that.customCredentialsProviderFQCN
+      this.customCredentialsProviderFQCN != that.customCredentialsProviderFQCN ||
+      this.customCredentialsProviderArgs != that.customCredentialsProviderArgs
     ) {
       return false
     }
