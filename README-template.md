@@ -409,10 +409,9 @@ val readDf = spark.read
   .option("spark.bigtable.project.id", projectId)
   .option("spark.bigtable.instance.id", instanceId)
   .option("spark.bigtable.auth.credentials_provider", "spark.bigtable.example.auth.CustomAuthProvider")
-  .option("spark.bigtable.auth.credentials_provider.args.param1", "some-value"),
-  .option("spark.bigtable.auth.credentials_provider.args.another_param", "some-other-value"),
+  .option("spark.bigtable.auth.credentials_provider.args.param1", "some-value")
+  .option("spark.bigtable.auth.credentials_provider.args.another_param", "some-other-value")
 ```
-
 
 ### Bigtable emulator support
 
