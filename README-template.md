@@ -308,7 +308,7 @@ For a full list of configurations, refer to
 [BigtableSparkConf.scala](spark-bigtable_2.12/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
 where these configs are defined.
 
-### How do I authenticate outside GCE / Dataproc?
+### Custom authentication
 
 If you are running Spark outside of Google Compute Engine (GCE) or Dataproc and rely on an internal service to provide a
 Google AccessToken, you can implement custom authentication using the CredentialsProvider interface provided by the
@@ -387,15 +387,32 @@ Your CustomCredentialsProvider class must extend
 and should handle returning the access
 token and its expiration time.
 
-```
-// Per read/Write
-spark.read.format("bigtable").option("spark.bigtable.auth.credentials_provider", "com.example.CustomCredentialsProvider")
+Your implementation may optionally implement a constructor with a single
+Map[String, String] parameter, and parameters can be supplied with options
+prefixed with `spark.bigtable.auth.credentials_provider.args.`. These options
+will be passed to your class constructor on initialization. For example:
+
+```scala
+class CustomAuthProvider(val params: Map[String, String]) extends CredentialsProvider {
+  val param1 = params.get("spark.bigtable.auth.credentials_provider.args.param1")
+  val anotherParam = params.get("spark.bigtable.auth.credentials_provider.args.another_param")
+
+  private val proxyProvider = NoCredentialsProvider.create()
+
+  override def getCredentials: Credentials = proxyProvider.getCredentials
+}
+
+// And when reading
+val readDf = spark.read
+  .format("bigtable")
+  .option("catalog", Util.getCatalog(tableName))
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .option("spark.bigtable.auth.credentials_provider", "spark.bigtable.example.auth.CustomAuthProvider")
+  .option("spark.bigtable.auth.credentials_provider.args.param1", "some-value"),
+  .option("spark.bigtable.auth.credentials_provider.args.another_param", "some-other-value"),
 ```
 
-```
-// Global
-SparkSession.builder().config("spark.bigtable.auth.credentials_provider", "com.example.CustomCredentialsProvider")
-```
 
 ### Bigtable emulator support
 

@@ -30,6 +30,7 @@ import org.threeten.bp.Duration
 
 import scala.collection.mutable
 import scala.math.max
+import scala.util.{Failure, Success}
 
 /** This class is responsible for creating BigtableDataClient objects, setting
   * appropriate runtime configurations, and cashing them per each Spark worker
@@ -121,9 +122,14 @@ object BigtableDataClientBuilder extends Serializable with Logging {
     clientKey.customCredentialsProviderFQCN match {
       case Some(credentialsProviderFQCN) =>
         logInfo(s"Authentication using custom credential provider: $credentialsProviderFQCN")
-        settingsBuilder.setCredentialsProvider(
-          Reflector.createVerifiedInstance(credentialsProviderFQCN, classOf[CredentialsProvider])
-        )
+
+        // First try a constructor with parameters, then an empty constructor
+        Reflector
+          .createVerifiedInstance[CredentialsProvider](credentialsProviderFQCN, clientKey.customCredentialsProviderArgs)
+          .orElse(Reflector.createVerifiedInstance[CredentialsProvider](credentialsProviderFQCN)) match {
+          case Success(provider) => settingsBuilder.setCredentialsProvider(provider)
+          case Failure(e) => throw e
+        }
       case None => logInfo(s"Authentication using default credential provider")
     }
   }
@@ -306,6 +312,8 @@ class BigtableClientKey(
   val batchSize: Long = bigtableSparkConf.batchMutateSize
   val customCredentialsProviderFQCN: Option[String] =
     bigtableSparkConf.customCredentialsProviderFQCN
+  val customCredentialsProviderArgs: Map[String, String] =
+    bigtableSparkConf.customCredentialsProviderArgs
 
   val userAgentText: String =
     ("spark-bigtable_2.12/" + UserAgentInformation.CONNECTOR_VERSION

@@ -16,6 +16,8 @@
 
 package com.google.cloud.spark.bigtable
 
+import com.google.api.gax.core.{CredentialsProvider, NoCredentialsProvider}
+import com.google.auth.Credentials
 import com.google.bigtable.v2.SampleRowKeysResponse
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.fakeserver.{FakeCustomDataService, FakeServerBuilder}
@@ -64,6 +66,7 @@ class BigtableTableScanRDDTest
     val server = new FakeServerBuilder().addService(fakeCustomDataService).start
     emulatorPort = Integer.toString(server.getPort)
     logInfo("Bigtable mock server started on port " + emulatorPort)
+    ParamsTracker.setParams.clear()
   }
 
   test("simpleStringBoundaries") {
@@ -506,6 +509,36 @@ class BigtableTableScanRDDTest
     assert(actualPartitions(1).partitionRangeSet.equals(expectedSetResult1))
   }
 
+  test("Properly pass custom authentication parameters to scan") {
+    val parametersMap = createParametersMap(basicCatalog) + (
+      "spark.bigtable.auth.credentials_provider" -> "com.google.cloud.spark.bigtable.CustomAuthProvider",
+      "spark.bigtable.auth.credentials_provider.args.param1" -> "expected",
+      "spark.bigtable.auth.credentials_provider.args.param2" -> "expected2"
+    )
+
+    fakeCustomDataService.addSampleRowKeyResponse(
+      createSampleRowKeyResponse(BytesConverter.toBytes("ccc_1"))
+    )
+
+    val filterRangeSet: RangeSet[RowKeyWrapper] = TreeRangeSet.create[RowKeyWrapper]()
+
+    val relation =
+      BigtableRelation(parametersMap, None)(sqlContext)
+    rdd = new BigtableTableScanRDD(
+      relation.clientKey,
+      filterRangeSet,
+      relation.tableId,
+      relation.sqlContext.sparkContext,
+      relation.startTimestampMicros,
+      relation.endTimestampMicros
+    )
+
+    // All we want is to validate our class was instantiated
+    val _ = rdd.getPartitions
+
+    assert(ParamsTracker.setParams == Set(Map("spark.bigtable.auth.credentials_provider.args.param1" -> "expected", "spark.bigtable.auth.credentials_provider.args.param2" -> "expected2")))
+  }
+
   def createParametersMap(catalog: String): Map[String, String] = {
     Map(
       "catalog" -> catalog,
@@ -521,4 +554,15 @@ class BigtableTableScanRDDTest
       .setRowKey(ByteString.copyFrom(rowKey))
       .build()
   }
+}
+
+object ParamsTracker {
+  val setParams: scala.collection.mutable.Set[Map[String, String]] = scala.collection.mutable.Set[Map[String, String]]()
+}
+
+class CustomAuthProvider(val params: Map[String, String]) extends CredentialsProvider {
+  ParamsTracker.setParams += params
+  private val proxyProvider = NoCredentialsProvider.create()
+
+  override def getCredentials: Credentials = proxyProvider.getCredentials
 }

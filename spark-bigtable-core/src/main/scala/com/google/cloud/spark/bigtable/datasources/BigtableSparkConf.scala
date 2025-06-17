@@ -94,6 +94,7 @@ object BigtableSparkConf {
   val DEFAULT_BIGTABLE_ENABLE_BATCH_MUTATE_FLOW_CONTROL = false
 
   val BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER = "spark.bigtable.auth.credentials_provider"
+  val BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER_ARGS = "spark.bigtable.auth.credentials_provider.args"
   /** Used for internal testing and not officially supported. */
   private[datasources] val MAX_READ_ROWS_RETRIES =
     "spark.bigtable.max.read.rows.retries"
@@ -128,6 +129,7 @@ class BigtableSparkConfBuilder extends Serializable {
   private var maxReadRowsRetries: Option[String] = None
 
   private var customCredentialsProviderFQCN: Option[String] = None
+  private var customCredentialsProviderArgs: Map[String, String] = Map()
   // This function is package-private to allow internal setup when using DataFrames
   // (since Spark SQL passes a Map<String, String> object). However, for external use with RDDs,
   // users need to use the setter methods to set the configs.
@@ -184,6 +186,8 @@ class BigtableSparkConfBuilder extends Serializable {
     this.maxReadRowsRetries = conf.get(BigtableSparkConf.MAX_READ_ROWS_RETRIES)
 
     this.customCredentialsProviderFQCN = conf.get(BigtableSparkConf.BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER)
+    this.customCredentialsProviderArgs = conf
+      .filter{case (key, _) => key.startsWith(BigtableSparkConf.BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER_ARGS + ".")}
 
     this
   }
@@ -251,7 +255,8 @@ class BigtableSparkConfBuilder extends Serializable {
       batchMutateSize,
       enableBatchMutateFlowControl,
       maxReadRowsRetries,
-      customCredentialsProviderFQCN
+      customCredentialsProviderFQCN,
+      customCredentialsProviderArgs
     )
   }
 }
@@ -277,5 +282,6 @@ class BigtableSparkConf private[datasources] (
     val batchMutateSize: Long,
     val enableBatchMutateFlowControl: Boolean,
     val maxReadRowsRetries: Option[String],
-    val customCredentialsProviderFQCN: Option[String]
+    val customCredentialsProviderFQCN: Option[String],
+    val customCredentialsProviderArgs: Map[String, String]
 ) extends Serializable
