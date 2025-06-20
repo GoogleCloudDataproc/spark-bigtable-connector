@@ -7,7 +7,9 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Column, DataFrame, SparkSession, Row => SparkRow}
 import com.google.api.gax.rpc.ServerStream
 import com.google.cloud.bigtable.data.v2.models.{Query, TableId, Row => BigtableRow}
+import com.google.cloud.spark.bigtable.datasources.config.BigtableClientConfig
 import com.google.protobuf.ByteString
+import org.apache.spark.SparkContext
 
 import java.util
 import scala.collection.JavaConverters.asScalaBufferConverter
@@ -89,8 +91,8 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
   )(implicit spark: SparkSession): DataFrame = {
     val bigtableSchema = StructType(catalog.sMap.toFields.toArray)
     // Extract required column names and configure Bigtable client
-    val (clientKey, orderedFields) =
-      getBigtableConfig(parameters, bigtableSchema, catalog)
+    val (bigtableConfig, orderedFields) =
+      getBigtableConfig(parameters, bigtableSchema, catalog, spark.sparkContext)
     val btRowKeyField = catalog.sMap.fields.find(_.isRowKey).get
     val srcRowKeyField = btRowKeyField.copy(sparkColName = srcRowKeyCol)
     // Fetch Bigtable rows based on join keys from the source DataFrame
@@ -99,7 +101,7 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
       .rdd
       .mapPartitionsWithIndex { (partitionIndex, rows) =>
         val rowKeys = rows.map(r => Utils.toBytes(r.getAs[Any](srcRowKeyCol), srcRowKeyField))
-        val btRows = fetchBigtableRows(rowKeys, clientKey, catalog.name, partitionIndex)
+        val btRows = fetchBigtableRows(rowKeys, bigtableConfig, catalog.name, partitionIndex)
         btRows.map(row => ReadRowConversions.buildRow(orderedFields, row, catalog))
       }
 
@@ -119,13 +121,17 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
   private def getBigtableConfig(
       parameters: Map[String, String],
       bigtableSchema: StructType,
-      catalog: BigtableTableCatalog
-  ): (BigtableClientKey, Seq[Field]) = {
+      catalog: BigtableTableCatalog,
+      sparkContext: SparkContext
+  ): (BigtableClientConfig, Seq[Field]) = {
     val requiredCols = bigtableSchema.map(_.name)
-    val btConfig = BigtableSparkConfBuilder().fromMap(parameters).build()
-    val clientKey = new BigtableClientKey(btConfig, UserAgentInformation.DIRECT_JOINS_TEXT)
+    val btConfig = BigtableSparkConfBuilder()
+      .setSparkVersion(sparkContext.version)
+      .setUserAgentSourceInfo(UserAgentInformation.DIRECT_JOINS_TEXT)
+      .fromMap(parameters).build()
+
     val orderedFields = requiredCols.map(catalog.sMap.getField)
-    (clientKey, orderedFields)
+    (btConfig.bigtableClientConfig, orderedFields)
   }
 
   /** Fetches rows from a Bigtable table based on the provided row keys.
@@ -139,13 +145,13 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
 
   private def fetchBigtableRows(
       rowKeys: Iterator[Array[Byte]],
-      clientKey: BigtableClientKey,
+      bigtableClientConfig: BigtableClientConfig,
       tableId: String,
       pNumber: Int
   ): Iterator[BigtableRow] = {
     try {
       val rows: util.List[ApiFuture[BigtableRow]] = new util.ArrayList[ApiFuture[BigtableRow]]()
-      val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
+      val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
       val bigtableClient = clientHandle.getClient()
       val batcher = bigtableClient.newBulkReadRowsBatcher(TableId.of(tableId))
       rowKeys.foreach { rowKey =>

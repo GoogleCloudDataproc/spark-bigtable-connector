@@ -21,6 +21,7 @@ import com.google.cloud.bigtable.data.v2.BigtableDataClient
 import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, TimestampFilter}
 import com.google.cloud.bigtable.data.v2.models.Range.ByteStringRange
 import com.google.cloud.bigtable.data.v2.models.{KeyOffset, Query, Row => BigtableRow}
+import com.google.cloud.spark.bigtable.datasources.config.BigtableClientConfig
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{BoundType, RangeSet, TreeRangeSet, Range => GuavaRange}
 import com.google.protobuf.ByteString
@@ -32,7 +33,7 @@ import scala.collection.JavaConverters._
 
 @InterfaceAudience.Private
 class BigtableTableScanRDD(
-    clientKey: BigtableClientKey,
+    bigtableClientConfig: BigtableClientConfig,
     filterRangeSet: RangeSet[RowKeyWrapper],
     tableId: String,
     sparkContext: SparkContext,
@@ -42,7 +43,7 @@ class BigtableTableScanRDD(
 
   override def getPartitions: Array[Partition] = {
     try {
-      val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
+      val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
       val bigtableDataClient = clientHandle.getClient()
 
       val keyOffsets: List[KeyOffset] =
@@ -130,7 +131,7 @@ class BigtableTableScanRDD(
       context: TaskContext
   ): Iterator[BigtableRow] = {
     try {
-      val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
+      val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
       val bigtableDataClient: BigtableDataClient = clientHandle.getClient()
 
       var query = Query.create(tableId)

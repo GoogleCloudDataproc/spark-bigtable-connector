@@ -2,7 +2,6 @@ package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.data.v2.models.{RowMutationEntry, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.{
-  BigtableClientKey,
   BigtableDataClientBuilder,
   BigtableSparkConf,
   BigtableTableScanRDD
@@ -18,9 +17,8 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
       tableId: String,
       bigtableSparkConf: BigtableSparkConf
   ): RDD[BigtableRow] = {
-    val clientKey = new BigtableClientKey(bigtableSparkConf, UserAgentInformation.RDD_TEXT)
     new BigtableTableScanRDD(
-      clientKey,
+      getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig,
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
       tableId,
       sparkContext,
@@ -34,11 +32,11 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
       tableId: String,
       bigtableSparkConf: BigtableSparkConf
   ): Unit = {
-    val clientKey = new BigtableClientKey(bigtableSparkConf, UserAgentInformation.RDD_TEXT)
+    val bigtableClientConfig = getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig
     rdd
       .foreachPartition(it => {
         if (it.nonEmpty) {
-          val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
+          val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
           val bigtableDataClient = clientHandle.getClient()
           val batcher = bigtableDataClient.newBulkMutationBatcher(tableId)
           it.foreach(batcher.add)
@@ -46,5 +44,15 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
           clientHandle.close()
         }
       })
+  }
+
+  private def getSparkConfWithUserAgent(bigtableSparkConf: BigtableSparkConf): BigtableSparkConf = {
+    val sparkConfBuilder = bigtableSparkConf
+      .toBuilder
+      .setUserAgentSourceInfo(UserAgentInformation.RDD_TEXT)
+    Option(sparkContext).foreach(context =>
+      sparkConfBuilder.setSparkVersion(context.version)
+    )
+    sparkConfBuilder.build()
   }
 }

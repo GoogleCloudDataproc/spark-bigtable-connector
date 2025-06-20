@@ -61,16 +61,13 @@ class BigtableDataClientBuilderTest extends AnyFunSuite
   // The credentials provider is hidden from the client's interface, so the
   // best we can do is check if our custom provider is instantiated,
   test("Custom authenticator without parameters is instantiated") {
-    val params = new BigtableSparkConf(
-      Some("projectId"), Some("instanceId"), "appProfileId",
-      true, None, None, None, None, true,
-      None, None, None, None, 1000,
-      true, None, Some(customParameterlessAuthProviderFqcn), Map()
-    )
+    val sparkConfig = BigtableSparkConfBuilder()
+      .setProjectId("some-project")
+      .setInstanceId("some-instance")
+      .setCustomAuthenticationProvider(customParameterlessAuthProviderFqcn)
+      .build()
 
-    val clientKey = new BigtableClientKey(params, "user-agent")
-
-    val dataClient = BigtableDataClientBuilder.getHandle(clientKey)
+    val dataClient = BigtableDataClientBuilder.getHandle(sparkConfig.bigtableClientConfig)
 
     assert(ConstructorCallTracker.constructorCalls.size == 1)
     assert(ConstructorCallTracker.constructorCalls.get(None).contains(1))
@@ -79,16 +76,13 @@ class BigtableDataClientBuilderTest extends AnyFunSuite
   // The credentials provider is hidden from the client's interface, so the
   // best we can do is check if our custom provider is instantiated,
   test("Custom authenticator with parameters is instantiated") {
-    val params = new BigtableSparkConf(
-      Some("projectId"), Some("instanceId"), "appProfileId",
-      true, None, None, None, None, true,
-      None, None, None, None, 1000,
-      true, None, Some(customMapParamConstructorAuthProviderFqcn), Map(("key", "val"))
-    )
+    val sparkConfig = BigtableSparkConfBuilder()
+      .setProjectId("some-project")
+      .setInstanceId("some-instance")
+      .setCustomAuthenticationProvider(customMapParamConstructorAuthProviderFqcn, Map(("key", "val")))
+      .build()
 
-    val clientKey = new BigtableClientKey(params, "user-agent")
-
-    val dataClient = BigtableDataClientBuilder.getHandle(clientKey)
+    val dataClient = BigtableDataClientBuilder.getHandle(sparkConfig.bigtableClientConfig)
 
     assert(ConstructorCallTracker.constructorCalls.size == 1)
     assert(ConstructorCallTracker.constructorCalls.get(Some(Map("key" -> "val"))).contains(1))
@@ -97,16 +91,13 @@ class BigtableDataClientBuilderTest extends AnyFunSuite
   // The credentials provider is hidden from the client's interface, so the
   // best we can do is check if our custom provider is instantiated,
   test("Custom authenticator with parameterless and Map constructor is called with Map constructor") {
-    val params = new BigtableSparkConf(
-      Some("projectId"), Some("instanceId"), "appProfileId",
-      true, None, None, None, None, true,
-      None, None, None, None, 1000,
-      true, None, Some(twoConstructorsAuthProviderFqcn), Map("key" -> "val")
-    )
+    val sparkConfig = BigtableSparkConfBuilder()
+      .setProjectId("some-project")
+      .setInstanceId("some-instance")
+      .setCustomAuthenticationProvider(twoConstructorsAuthProviderFqcn, Map("key" -> "val"))
+      .build()
 
-    val clientKey = new BigtableClientKey(params, "user-agent")
-
-    val dataClient = BigtableDataClientBuilder.getHandle(clientKey)
+    val dataClient = BigtableDataClientBuilder.getHandle(sparkConfig.bigtableClientConfig)
 
     assert(ConstructorCallTracker.constructorCalls.size == 1)
     assert(ConstructorCallTracker.constructorCalls.get(Some(Map("key" -> "val"))).contains(1))
