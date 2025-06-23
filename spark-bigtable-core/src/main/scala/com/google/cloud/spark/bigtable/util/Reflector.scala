@@ -2,38 +2,42 @@ package com.google.cloud.spark.bigtable.util
 
 import com.google.cloud.spark.bigtable.Logging
 
-import java.lang.reflect.InvocationTargetException
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 object Reflector extends Logging {
 
   def createVerifiedInstance[T](
       fullyQualifiedClassName: String,
-      requiredClass: Class[T],
       constructorArgs: Object*
-  ): T = {
-    try {
-      val clazz = Class.forName(fullyQualifiedClassName)
-
-      // Create an array of Class objects with the proper type
-      val parameterTypes: Array[Class[_]] = constructorArgs.map(_.getClass).toArray
-
-      val result = clazz
-        .getDeclaredConstructor(parameterTypes: _*)
-        .newInstance(constructorArgs.toArray: _*)
-
-      if (!requiredClass.isInstance(result)) {
-        throw new IllegalArgumentException(
-          s"${clazz.getCanonicalName} does not implement ${requiredClass.getCanonicalName}"
-        )
-      }
-      result.asInstanceOf[T]
-    } catch {
-      case e @ (_: ClassNotFoundException | _: InstantiationException | _: IllegalAccessException |
-          _: InvocationTargetException | _: NoSuchMethodException) =>
-        throw new IllegalArgumentException(
-          s"Could not instantiate class [$fullyQualifiedClassName], implementing ${requiredClass.getCanonicalName}",
-          e
-        )
+  )(implicit classTag: ClassTag[T]): Try[T] = {
+    // We can't use .getDeclaredConstructor since it only works for exact types,
+    // while we want to be able to use compatible types as well. Instead we loop
+    // through the list of constructors to check for assignability. The order
+    // matters since you can have multiple constructor signatures that change
+    // only the order of each type. If multiple constructors match we will
+    // use an arbitrary one.
+    Try(
+      Class.forName(fullyQualifiedClassName)
+        .getDeclaredConstructors
+        .filter(constructor => constructor.getParameterCount == constructorArgs.size)
+        .find(constructor =>
+          constructor.getParameterTypes.zip(constructorArgs).forall {
+            case (constructorArgType, constructorArg) => constructorArgType.isAssignableFrom(constructorArg.getClass)
+          })
+        .getOrElse(throw new NoSuchMethodException())
+        .newInstance(constructorArgs: _*)
+    )
+    match {
+      case Success(result) =>
+        if (classTag.runtimeClass.isInstance(result)) {
+          Try(result.asInstanceOf[T])
+        } else {
+          Failure(new ClassCastException(s"$fullyQualifiedClassName is of an unexpected type"))
+        }
+      case Failure(e) =>
+        Failure(e)
     }
   }
 }

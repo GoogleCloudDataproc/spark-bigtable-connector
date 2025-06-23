@@ -123,30 +123,33 @@ case class BigtableRelation(
     with InsertableRelation
     with Logging
     with LineageRelation {
+
+  val catalog: BigtableTableCatalog = BigtableTableCatalog(parameters)
+  private val bigtableSparkConfBuilder =
+    BigtableSparkConfBuilder()
+      .fromMap(parameters)
+      .setUserAgentSourceInfo(UserAgentInformation.DATAFRAME_TEXT)
+
   Option(sqlContext).foreach(context =>
-    UserAgentInformation.sparkVersion = context.sparkContext.version
+    bigtableSparkConfBuilder.setSparkVersion(context.sparkContext.version)
   )
-  val authParamKey = BigtableSparkConf.BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER
-  val authParamValue = Option(sqlContext).map(_.getConf(authParamKey, "")).getOrElse("")
-  val params = {
-    if (authParamValue.isEmpty) parameters
-    else Map(authParamKey -> authParamValue) ++ parameters
-  }
-  val catalog: BigtableTableCatalog = BigtableTableCatalog(params)
-  val bigtableSparkConf: BigtableSparkConf = BigtableSparkConfBuilder().fromMap(params).build()
-  val pushDownRowKeyFilters: Boolean = bigtableSparkConf.pushDownRowKeyFilters
+  val bigtableSparkConf: BigtableSparkConf = bigtableSparkConfBuilder.build()
+
+  val pushDownRowKeyFilters: Boolean = bigtableSparkConf.appConfig.sparkScanConfig.pushDownRowKeyFilters
+
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.
   val startTimestampMicros: Option[Long] =
-    bigtableSparkConf.timeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
+    bigtableSparkConf.appConfig.sparkScanConfig.timeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
   val endTimestampMicros: Option[Long] =
-    bigtableSparkConf.timeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
-  val writeTimestampMicros: Long = bigtableSparkConf.writeTimestamp
+    bigtableSparkConf.appConfig.sparkScanConfig.timeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
+
+  val writeTimestampMicros: Long = bigtableSparkConf.appConfig.sparkWritesConfig.writeTimestamp
     .map(timestamp => Math.multiplyExact(timestamp, 1000L))
     .getOrElse(Math.multiplyExact(System.currentTimeMillis(), 1000L))
 
   def tableId = s"${catalog.name}"
-  val clientKey = new BigtableClientKey(bigtableSparkConf, UserAgentInformation.DATAFRAME_TEXT)
+  val clientKey = bigtableSparkConf.bigtableClientConfig
 
   override val schema: StructType =
     userSpecifiedSchema.getOrElse(catalog.toDataType)
@@ -155,7 +158,7 @@ case class BigtableRelation(
     *  (throw exception if a table with that name already exists).
     */
   def createTableIfNeeded(): Unit = {
-    val createNewTable: Boolean = bigtableSparkConf.createNewTable
+    val createNewTable: Boolean = bigtableSparkConf.appConfig.sparkWritesConfig.createNewTable
     if (createNewTable) {
       val bigtableAdminClient: BigtableTableAdminClient =
         BigtableAdminClientBuilder.getAdminClient(clientKey)
