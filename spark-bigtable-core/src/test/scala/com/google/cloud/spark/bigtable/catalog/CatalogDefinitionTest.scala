@@ -206,4 +206,110 @@ class CatalogDefinitionTest extends AnyFunSuite with Logging {
 
     assertThrows[IllegalArgumentException](CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog)))
   }
+
+  test("Works with only minimum required settings") {
+    val catalog =
+      s"""{
+         |"table": {
+         |  "name": "expected-table-name"
+         |},
+         |"rowkey": "expected-row-key",
+         |"columns": {
+         |  "some-col": {
+         |    "col": "col1"
+         |  }
+         |}
+         |}""".stripMargin
+
+    val actualDefinition = CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog))
+
+    assert(actualDefinition.table.name == "expected-table-name")
+    assert(actualDefinition.rowkey == "expected-row-key")
+    assert(actualDefinition.columns == ColumnsDefinition(
+      Map(
+        "some-col" -> ColumnDefinition(
+          None,
+          "col1",
+          None,
+          None,
+          None
+        ),
+      )
+    ))
+  }
+
+  test("Missing table setting throws exception") {
+    val catalog =
+      s"""{
+         |"rowkey": "expected-row-key",
+         |"columns": {
+         |  "some-col": {
+         |    "cf": "cf1",
+         |    "col": "col1"
+         |  }
+         |}
+         |}""".stripMargin
+
+    assertThrows[IllegalArgumentException](CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog)))
+  }
+
+  test("Missing table name throws exception") {
+    val catalog =
+      s"""{
+         |"table": {
+         |},
+         |"rowkey": "expected-row-key",
+         |"columns": {
+         |  "some-col": {
+         |    "col": "col1"
+         |  }
+         |}
+         |}""".stripMargin
+
+    assertThrows[IllegalArgumentException](CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog)))
+  }
+
+  test("Missing rowkey throws exception") {
+    val catalog =
+      s"""{
+         |"table": {
+         |  "name": "expected-table-name"
+         |},
+         |"columns": {
+         |  "some-col": {
+         |    "col": "col1"
+         |  }
+         |}
+         |}""".stripMargin
+
+    assertThrows[IllegalArgumentException](CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog)))
+  }
+
+  test("Missing columns throws exception") {
+    val catalog =
+      s"""{
+         |"table": {
+         |  "name": "expected-table-name"
+         |},
+         |"rowkey": "row"
+         |}""".stripMargin
+
+    assertThrows[IllegalArgumentException](CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog)))
+  }
+
+  test("Column without qualifier throws exception") {
+    val catalog =
+      s"""{
+         |"table": {
+         |  "name": "expected-table-name"
+         |},
+         |"rowkey": "row",
+         |"columns": {
+         |  "some-col": {
+         |  }
+         |}
+         |}""".stripMargin
+
+    assertThrows[IllegalArgumentException](CatalogDefinition(Map(CatalogDefinition.CATALOG_KEY -> catalog)))
+  }
 }
