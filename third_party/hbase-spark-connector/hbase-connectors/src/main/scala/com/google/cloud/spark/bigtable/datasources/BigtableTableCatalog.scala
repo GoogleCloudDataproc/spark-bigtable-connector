@@ -18,6 +18,7 @@
 package com.google.cloud.spark.bigtable.datasources
 
 import com.google.cloud.spark.bigtable.Logging
+import com.google.cloud.spark.bigtable.catalog.CatalogDefinition
 import org.apache.avro.Schema
 import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
@@ -271,86 +272,48 @@ object BigtableTableCatalog {
   val pattern = "pattern"
 
   /** User provide table schema definition
-    * {"tablename":"name", "rowkey":"key1:key2",
-    * "columns":{"col1":{"cf":"cf1", "col":"col1", "type":"type1"},
-    * "col2":{"cf":"cf2", "col":"col2", "type":"type2"}}}
-    * Note that any col in the rowKey, there has to be one corresponding col defined in columns
-    */
-  def apply(params: Map[String, String]): BigtableTableCatalog = {
-    val parameters = params
-    val jString = parameters(tableCatalog)
-    val map = JSON.parseFull(jString).get.asInstanceOf[Map[String, _]]
-    val tableMeta = map(table).asInstanceOf[Map[String, _]]
-    val tName = tableMeta(tableName).asInstanceOf[String]
-    val cIter = map(columns)
-      .asInstanceOf[Map[String, Map[String, String]]]
-      .toIterator
-    val schemaMap = mutable.HashMap.empty[String, Field]
-    cIter.foreach { case (name, column) =>
-      val len = column.get(length).map(_.toInt).getOrElse(-1)
-      val sAvro = column.get(avro).map(parameters(_))
-      val f = Field(
-        name,
-        column.getOrElse(cf, rowKey),
-        column(col),
-        column.get(`type`),
-        sAvro,
-        len
-      )
-      schemaMap.+=((name, f))
-    }
-    val cqIter = map.get(regexColumns) match {
-      case Some(v) => v.asInstanceOf[Map[String, Map[String, String]]].iterator
-      case None    => Map.empty[String, Map[String, String]]
-    }
-    val cqSchemaMap = mutable.HashMap.empty[String, Field]
-    cqIter.foreach { case (name, column) =>
-      val len = column.get(length).map(_.toInt).getOrElse(-1)
-      val sAvro = column.get(avro).map(parameters(_))
-      val f = Field(
-        name,
-        column(cf),
-        column(pattern),
-        column.get(`type`),
-        sAvro,
-        len
-      )
-      cqSchemaMap.+=((name, f))
-    }
-    val rKey = RowKey(map(rowKey).asInstanceOf[String])
-    BigtableTableCatalog(tName, rKey, SchemaMap(schemaMap, cqSchemaMap), parameters)
-  }
-
-  /* Use the json based definition formated as below
-       (currently only long, string, and binary are supported)
-    val catalog = s"""{
-                      |"table":{"name":"bttable"},
-                      |"rowkey":"key1:key2",
-                      |"columns":{
-                      |"col1":{"cf":"rowkey", "col":"key1", "type":"string"},
-                      |"col2":{"cf":"rowkey", "col":"key2", "type":"double"},
-                      |"col3":{"cf":"cf1", "col":"col2", "type":"binary"},
-                      |"col4":{"cf":"cf1", "col":"col3", "type":"timestamp"},
-                      |"col5":{"cf":"cf1", "col":"col4", "type":"double"},
-                      |"col6":{"cf":"cf1", "col":"col5", "type":"$map"},
-                      |"col7":{"cf":"cf1", "col":"col6", "type":"$array"},
-                      |"col8":{"cf":"cf1", "col":"col7", "type":"$arrayMap"}
-                      |}
-                      |}""".stripMargin
+   * {"tablename":"name", "rowkey":"key1:key2",
+   * "columns":{"col1":{"cf":"cf1", "col":"col1", "type":"type1"},
+   * "col2":{"cf":"cf2", "col":"col2", "type":"type2"}}}
+   * Note that any col in the rowKey, there has to be one corresponding col defined in columns
    */
-}
+  def apply(params: Map[String, String]): BigtableTableCatalog = {
+    val catalogDefinition = CatalogDefinition(params)
 
-/** Construct to contains column data that spend SparkSQL and Bigtable
-  *
-  * @param columnName   SparkSQL column name
-  * @param colType      SparkSQL column type
-  * @param columnFamily Bigtable column family
-  * @param qualifier    Bigtable qualifier name
-  */
-@InterfaceAudience.Private
-case class SchemaQualifierDefinition(
-    columnName: String,
-    colType: String,
-    columnFamily: String,
-    qualifier: String
-)
+    val schemaMap = mutable.HashMap.empty[String, Field]
+    catalogDefinition.columns.columns.foreach {
+      case (name, column) =>
+        val f = Field(
+          name,
+          column.cf.getOrElse(rowKey),
+          column.col,
+          column.`type`,
+          column.avro.map(params(_)),
+          column.length.getOrElse(-1)
+        )
+        schemaMap.+=((name, f))
+    }
+
+    val cqSchemaMap = mutable.HashMap.empty[String, Field]
+    catalogDefinition.regexColumns.foreach(regexColumns =>
+      regexColumns.columns.foreach {
+        case (name, column) =>
+          val f = Field(
+            name,
+            column.cf,
+            column.pattern,
+            column.`type`,
+            column.avro.map(params(_)),
+            column.length.getOrElse(-1)
+          )
+          cqSchemaMap.+=((name, f))
+      }
+    )
+    val rKey = RowKey(catalogDefinition.rowkey)
+    BigtableTableCatalog(
+      catalogDefinition.table.name,
+      rKey,
+      SchemaMap(schemaMap, cqSchemaMap),
+      params)
+  }
+}
