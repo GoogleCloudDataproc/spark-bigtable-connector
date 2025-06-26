@@ -272,9 +272,22 @@ object BigtableTableCatalog {
   val pattern: String = CatalogDefinition.REGEX_COLUMNS.REGEX_PATTERN_KEY
 
   /** User provide table schema definition
-   * {"tablename":"name", "rowkey":"key1:key2",
-   * "columns":{"col1":{"cf":"cf1", "col":"col1", "type":"type1"},
-   * "col2":{"cf":"cf2", "col":"col2", "type":"type2"}}}
+   * {
+   *   "tablename": "name",
+   *   "rowkey": "key1:key2",
+   *   "columns": {
+   *     "col1": {
+   *       "cf": "cf1",
+   *       "col": "col1",
+   *       "type": "type1"
+   *     },
+   *     "col2": {
+   *       "cf": "cf2",
+   *       "col": "col2",
+   *       "type": "type2"
+   *     }
+   *   }
+   * }
    * Note that any col in the rowKey, there has to be one corresponding col defined in columns
    */
   def apply(params: Map[String, String]): BigtableTableCatalog = {
