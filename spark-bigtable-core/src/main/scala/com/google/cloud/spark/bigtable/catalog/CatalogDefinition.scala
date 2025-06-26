@@ -79,7 +79,7 @@ object CatalogDefinition {
 case class CatalogDefinition(table: TableDefinition,
                              rowkey: RowKeyDefinition,
                              columns: ColumnsDefinition,
-                             regexColumns: RegexColumnsDefinition)
+                             regexColumns: Option[RegexColumnsDefinition])
 
 case class TableDefinition(name: String)
 
