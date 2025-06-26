@@ -35,6 +35,7 @@
     <scala.binary.version>2.12</scala.binary.version>
     <spark.version>3.5.1</spark.version>
     <re2j.version>1.8</re2j.version>
+    <json4s.version>3.7.0-M11</json4s.version>
   </properties>
 
   <dependencies>
@@ -52,6 +53,12 @@
       <groupId>com.google.re2j</groupId>
       <artifactId>re2j</artifactId>
       <version>${re2j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-native_${scala.binary.version}</artifactId>
+      <version>${json4s.version}</version>
     </dependency>
 
     <!-- To fix the "NoClassDefFoundError: com/fasterxml/jackson/core/exc/StreamConstraintsException" error with Spark 3.5-->

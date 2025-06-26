@@ -49,42 +49,41 @@ class CatalogDefinitionTest extends AnyFunSuite with Logging {
 
     assert(actualDefinition.table.name == "expected-table-name")
     assert(actualDefinition.rowkey == "expected-row-key")
-    assert(actualDefinition.columns == ColumnsDefinition(
+    assert(actualDefinition.columns ==
       Map(
         "expected-col-1" -> ColumnDefinition(
           Some("expected-cf-1"),
           "expected-col-1",
           Some("expected-type-1"),
           Some("expected-avro-1"),
-          Some(1)
+          Some("1")
         ),
         "expected-col-2" -> ColumnDefinition(
           Some("expected-cf-2"),
           "expected-col-2",
           Some("expected-type-2"),
           Some("expected-avro-2"),
-          Some(2)
+          Some("2")
         )
-      )
     ))
-    assert(actualDefinition.regexColumns.contains(RegexColumnsDefinition(
+    assert(actualDefinition.regexColumns.contains(
       Map(
         "expected-regex-col-1" -> RegexColumnDefinition(
           "expected-regex-cf-1",
           "expected-regex-col-1",
           Some("expected-regex-type-1"),
           Some("expected-avro-3"),
-          Some(3)
+          Some("3")
         ),
         "expected-regex-col-2" -> RegexColumnDefinition(
           "expected-regex-cf-2",
           "expected-regex-col-2",
           Some("expected-regex-type-2"),
           Some("expected-avro-4"),
-          Some(4)
+          Some("4")
         )
       )
-    )))
+    ))
   }
 
   test("Works with only minimum required settings") {
@@ -105,8 +104,7 @@ class CatalogDefinitionTest extends AnyFunSuite with Logging {
 
     assert(actualDefinition.table.name == "expected-table-name")
     assert(actualDefinition.rowkey == "expected-row-key")
-    assert(actualDefinition.columns == ColumnsDefinition(
-      Map(
+    assert(actualDefinition.columns == Map(
         "some-col" -> ColumnDefinition(
           None,
           "col1",
@@ -115,7 +113,7 @@ class CatalogDefinitionTest extends AnyFunSuite with Logging {
           None
         ),
       )
-    ))
+    )
   }
 
   test("Missing table setting throws exception") {

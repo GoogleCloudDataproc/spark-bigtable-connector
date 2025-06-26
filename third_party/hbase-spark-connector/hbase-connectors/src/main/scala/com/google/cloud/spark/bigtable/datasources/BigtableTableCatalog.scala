@@ -294,7 +294,7 @@ object BigtableTableCatalog {
     val catalogDefinition = CatalogDefinition(params)
 
     val schemaMap = mutable.HashMap.empty[String, Field]
-    catalogDefinition.columns.columns.foreach {
+    catalogDefinition.columns.foreach {
       case (name, column) =>
         val f = Field(
           name,
@@ -302,26 +302,24 @@ object BigtableTableCatalog {
           column.col,
           column.`type`,
           column.avro.map(params(_)),
-          column.length.getOrElse(-1)
+          column.length.map(_.toInt).getOrElse(-1)
         )
         schemaMap.+=((name, f))
     }
 
     val cqSchemaMap = mutable.HashMap.empty[String, Field]
-    catalogDefinition.regexColumns.foreach(regexColumns =>
-      regexColumns.columns.foreach {
-        case (name, column) =>
-          val f = Field(
-            name,
-            column.cf,
-            column.pattern,
-            column.`type`,
-            column.avro.map(params(_)),
-            column.length.getOrElse(-1)
-          )
-          cqSchemaMap.+=((name, f))
-      }
-    )
+    catalogDefinition.regexColumns.foreach(_.foreach {
+      case (name, column) =>
+        val f = Field(
+          name,
+          column.cf,
+          column.pattern,
+          column.`type`,
+          column.avro.map(params(_)),
+          column.length.map(_.toInt).getOrElse(-1)
+        )
+        cqSchemaMap.+=((name, f))
+    })
     val rKey = RowKey(catalogDefinition.rowkey)
     BigtableTableCatalog(
       catalogDefinition.table.name,
