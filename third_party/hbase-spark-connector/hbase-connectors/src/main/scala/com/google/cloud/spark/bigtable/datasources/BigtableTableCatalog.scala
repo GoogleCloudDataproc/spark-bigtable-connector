@@ -252,24 +252,24 @@ case class BigtableTableCatalog(
 
 @InterfaceAudience.Public
 object BigtableTableCatalog {
-  val tableCatalog = "catalog"
+  val tableCatalog: String = CatalogDefinition.CATALOG_KEY
   // The row key with format key1:key2 specifying table row key
-  val rowKey = "rowkey"
+  val rowKey: String = CatalogDefinition.ROW_KEY
   // The key for Bigtable table whose value specify table name (and potential future settings)
-  val table = "table"
+  val table: String = CatalogDefinition.TABLE.KEY
   // The name of Bigtable table
-  val tableName = "name"
+  val tableName: String = CatalogDefinition.TABLE.TABLE_NAME_KEY
   // The name of columns in Bigtable catalog
-  val columns = "columns"
-  val cf = "cf"
-  val col = "col"
-  val `type` = "type"
+  val columns: String = CatalogDefinition.COLUMNS.KEY
+  val cf: String = CatalogDefinition.COLUMNS.COLUMN_FAMILY_KEY
+  val col: String = CatalogDefinition.COLUMNS.COLUMN_QUALIFIER_KEY
+  val `type`: String = CatalogDefinition.COLUMNS.TYPE_KEY
   // the name of avro schema json string
-  val avro = "avro"
+  val avro: String = CatalogDefinition.COLUMNS.AVRO_TYPE_NAME_KEY
   val delimiter: Byte = 0
-  val length = "length"
-  val regexColumns = "regexColumns"
-  val pattern = "pattern"
+  val length: String = CatalogDefinition.COLUMNS.LENGTH_KEY
+  val regexColumns: String = CatalogDefinition.REGEX_COLUMNS.KEY
+  val pattern: String = CatalogDefinition.REGEX_COLUMNS.REGEX_PATTERN_KEY
 
   /** User provide table schema definition
    * {"tablename":"name", "rowkey":"key1:key2",
