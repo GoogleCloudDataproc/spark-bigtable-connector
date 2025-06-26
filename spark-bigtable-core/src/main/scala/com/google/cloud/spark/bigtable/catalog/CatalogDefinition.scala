@@ -16,7 +16,7 @@
 
 package com.google.cloud.spark.bigtable.catalog
 
-import com.google.cloud.spark.bigtable.catalog.CatalogDefinition.RowKeyDefinition
+import com.google.cloud.spark.bigtable.catalog.CatalogDefinition.{ColumnsDefinition, RegexColumnsDefinition, RowKeyDefinition}
 import org.json4s.{DefaultFormats, Formats}
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -72,12 +72,14 @@ object CatalogDefinition {
   }
 
   type RowKeyDefinition = String
+  type ColumnsDefinition = Map[String, ColumnDefinition]
+  type RegexColumnsDefinition = Map[String, RegexColumnDefinition]
 }
 
 case class CatalogDefinition(table: TableDefinition,
                              rowkey: RowKeyDefinition,
-                             columns: Map[String, ColumnDefinition],
-                             regexColumns: Option[Map[String, RegexColumnDefinition]])
+                             columns: ColumnsDefinition,
+                             regexColumns: RegexColumnsDefinition)
 
 case class TableDefinition(name: String)
 
