@@ -17,8 +17,7 @@
 package com.google.cloud.spark.bigtable.catalog
 
 import com.google.cloud.spark.bigtable.catalog.CatalogDefinition.{ColumnsDefinition, RegexColumnsDefinition, RowKeyDefinition}
-import org.json4s.{DefaultFormats, Extraction, Formats}
-import org.json4s.native.JsonMethods
+import upickle.default.Reader
 
 import scala.util.{Failure, Success, Try}
 
@@ -57,16 +56,17 @@ object CatalogDefinition {
       params.getOrElse(CATALOG_KEY, throw new IllegalArgumentException(
         "Bigtable catalog definition not found"))
 
-    val json = JsonMethods.parse(catalogDefinitionJsonString)
 
-    implicit val formats: Formats = new DefaultFormats {
-      override val strictOptionParsing = true
-    }
+    implicit val tableReader: Reader[TableDefinition] = upickle.default.macroR[TableDefinition]
+    implicit val columnDefinitionReader: Reader[ColumnDefinition] = upickle.default.macroR[ColumnDefinition]
+    implicit val regexColumnDefinitionReader: Reader[RegexColumnDefinition] = upickle.default.macroR[RegexColumnDefinition]
+    implicit val catalogReader: Reader[CatalogDefinition] = upickle.default.macroR[CatalogDefinition]
 
-    Try(Extraction.extract[CatalogDefinition](json)) match {
+    Try(upickle.default.read[CatalogDefinition](catalogDefinitionJsonString)) match {
       case Success(result) => result
       case Failure(exception) => throw new IllegalArgumentException(
-        "Error when parsing the Bigtable catalog", exception)
+        "Error when parsing the bigtable catalog configuration", exception
+      )
     }
   }
 
@@ -78,18 +78,18 @@ object CatalogDefinition {
 case class CatalogDefinition(table: TableDefinition,
                              rowkey: RowKeyDefinition,
                              columns: ColumnsDefinition,
-                             regexColumns: Option[RegexColumnsDefinition])
+                             regexColumns: Option[RegexColumnsDefinition] = None)
 
 case class TableDefinition(name: String)
 
-case class ColumnDefinition(cf: Option[String],
+case class ColumnDefinition(cf: Option[String] = None,
                             col: String,
-                            `type`: Option[String],
-                            avro: Option[String],
-                            length: Option[String])
+                            `type`: Option[String] = None,
+                            avro: Option[String] = None,
+                            length: Option[String] = None)
 
 case class RegexColumnDefinition(cf: String,
                        pattern: String,
-                       `type`: Option[String],
-                       avro: Option[String],
-                       length: Option[String])
+                       `type`: Option[String] = None,
+                       avro: Option[String] = None,
+                       length: Option[String] = None)

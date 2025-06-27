@@ -425,7 +425,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "pattern":"\\X", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"\\\\X", "type":"string"}
          |}
          |}""".stripMargin
 
