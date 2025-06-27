@@ -369,6 +369,11 @@ class CatalogColumnMappingTest
     // To test we are using re2 we exercise some of the intentional differences
     // from re2 syntax to other regex flavors listed at
     // https://swtch.com/~rsc/regexp/regexp3.html#caveats as of May 9 2025
+    // Note that we are escaping the pattern twice: We want the json to look
+    // like: `"pattern": "a\\va"` since json cannot have unescaped control
+    // characters in strings, so we use `a\\\\va' with 2 escapes: `a{\\}{\\}va`
+    // which will result in `a\\va`, so that the control character `\v` is
+    // escaped at the json string
     val catalog =
       s"""{
          |"table":{"name":"tableName"},
@@ -377,7 +382,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "pattern":"a\\va", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"a\\\\va", "type":"string"}
          |}
          |}""".stripMargin
 
@@ -420,7 +425,7 @@ class CatalogColumnMappingTest
          |"key":{"cf":"rowkey", "col":"row-key", "type":"string"}
          |},
          |"regexColumns":{
-         |"someCol":{"cf":"cf1", "pattern":"\\X", "type":"string"}
+         |"someCol":{"cf":"cf1", "pattern":"\\\\X", "type":"string"}
          |}
          |}""".stripMargin
 
