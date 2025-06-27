@@ -18,7 +18,7 @@ package com.google.cloud.spark.bigtable.catalog
 
 import com.google.cloud.spark.bigtable.catalog.CatalogDefinition.{ColumnsDefinition, RegexColumnsDefinition, RowKeyDefinition}
 import org.json4s.{DefaultFormats, Extraction, Formats}
-import org.json4s.jackson.JsonMethods
+import org.json4s.native.JsonMethods
 
 import scala.util.{Failure, Success, Try}
 

@@ -57,7 +57,7 @@
 
     <dependency>
       <groupId>org.json4s</groupId>
-      <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
+      <artifactId>json4s-native_${scala.binary.version}</artifactId>
       <version>${json4s.version}</version>
     </dependency>
 
