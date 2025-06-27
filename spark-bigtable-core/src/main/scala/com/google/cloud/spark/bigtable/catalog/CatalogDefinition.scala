@@ -17,9 +17,8 @@
 package com.google.cloud.spark.bigtable.catalog
 
 import com.google.cloud.spark.bigtable.catalog.CatalogDefinition.{ColumnsDefinition, RegexColumnsDefinition, RowKeyDefinition}
-import org.json4s.{DefaultFormats, Formats}
-import org.json4s._
-import org.json4s.native.JsonMethods._
+import org.json4s.{DefaultFormats, Extraction, Formats}
+import org.json4s.jackson.JsonMethods
 
 import scala.util.{Failure, Success, Try}
 
@@ -58,13 +57,13 @@ object CatalogDefinition {
       params.getOrElse(CATALOG_KEY, throw new IllegalArgumentException(
         "Bigtable catalog definition not found"))
 
-    val json = parse(catalogDefinitionJsonString)
+    val json = JsonMethods.parse(catalogDefinitionJsonString)
 
     implicit val formats: Formats = new DefaultFormats {
       override val strictOptionParsing = true
     }
 
-    Try(json.extract[CatalogDefinition]) match {
+    Try(Extraction.extract[CatalogDefinition](json)) match {
       case Success(result) => result
       case Failure(exception) => throw new IllegalArgumentException(
         "Error when parsing the Bigtable catalog", exception)

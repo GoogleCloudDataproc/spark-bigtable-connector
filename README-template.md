@@ -182,7 +182,7 @@ For example this catalog:
     "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
   },
   "regexColumns": {
-    "metadata": {"cf": "info", "pattern": "\C*", "type": "long" }
+    "metadata": {"cf": "info", "pattern": "\\C*", "type": "long" }
   }
 }
 ```
@@ -203,6 +203,7 @@ A few caveats:
 - Because columns may contain arbitrary characters, including new lines, it is
   advisable to use `\C` as the wildcard expression, since `.` will not match on
   those
+- Control characters must be escaped
 
 ### Writing to Bigtable
 
