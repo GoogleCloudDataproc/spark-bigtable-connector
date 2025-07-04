@@ -224,9 +224,8 @@ case class BigtableRelation(
         endTimestampMicros
       )
 
-    val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
     readRdd.map { r =>
-      ReadRowConversions.buildRow(fieldsOrdered, r, catalog)
+      ReadRowConversions.buildRow(requiredColumns, r, catalog)
     }
   }
 

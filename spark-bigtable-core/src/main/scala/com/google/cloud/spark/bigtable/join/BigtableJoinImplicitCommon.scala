@@ -89,20 +89,18 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
       srcRowKeyCol: String,
       catalog: BigtableTableCatalog
   )(implicit spark: SparkSession): DataFrame = {
-    val bigtableSchema = StructType(catalog.sMap.toFields.toArray)
+    val bigtableSchema = catalog.toDataType
     // Extract required column names and configure Bigtable client
-    val (bigtableConfig, orderedFields) =
-      getBigtableConfig(parameters, bigtableSchema, catalog, spark.sparkContext)
-    val btRowKeyField = catalog.sMap.fields.find(_.isRowKey).get
-    val srcRowKeyField = btRowKeyField.copy(sparkColName = srcRowKeyCol)
+    val bigtableConfig =
+      getBigtableConfig(parameters, spark.sparkContext)
     // Fetch Bigtable rows based on join keys from the source DataFrame
     val bigtableRdd = srcDf
       .select(srcRowKeyCol)
       .rdd
       .mapPartitionsWithIndex { (partitionIndex, rows) =>
-        val rowKeys = rows.map(r => srcRowKeyField.scalaValueToBigtable(r.getAs[Any](srcRowKeyCol)))
+        val rowKeys = rows.map(r => catalog.row.getBtRowKeyBytes(r, srcDf.schema))
         val btRows = fetchBigtableRows(rowKeys, bigtableConfig, catalog.name, partitionIndex)
-        btRows.map(row => ReadRowConversions.buildRow(orderedFields, row, catalog))
+        btRows.map(row => ReadRowConversions.buildRow(catalog.toDataType.fields.map(_.name).toSeq, row, catalog))
       }
 
     // Convert RDD to DataFrame and return
@@ -112,26 +110,20 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
   /** Extracts and initializes the Bigtable client configuration.
     *
     * @param parameters Configuration parameters for Bigtable.
-    * @param bigtableSchema Schema of the Bigtable table.
-    * @param catalog Bigtable catalog containing schema mappings.
     * @return A tuple containing:
     *         - BigtableClientKey for authentication and interaction.
     *         - Array of ordered fields mapped from the schema.
     */
   private def getBigtableConfig(
       parameters: Map[String, String],
-      bigtableSchema: StructType,
-      catalog: BigtableTableCatalog,
       sparkContext: SparkContext
-  ): (BigtableClientConfig, Seq[Field]) = {
-    val requiredCols = bigtableSchema.map(_.name)
+  ): BigtableClientConfig = {
     val btConfig = BigtableSparkConfBuilder()
       .setSparkVersion(sparkContext.version)
       .setUserAgentSourceInfo(UserAgentInformation.DIRECT_JOINS_TEXT)
       .fromMap(parameters).build()
 
-    val orderedFields = requiredCols.map(catalog.sMap.getField)
-    (btConfig.bigtableClientConfig, orderedFields)
+    btConfig.bigtableClientConfig
   }
 
   /** Fetches rows from a Bigtable table based on the provided row keys.

@@ -19,13 +19,16 @@ package com.google.cloud.spark.bigtable.datasources
 
 import com.google.cloud.spark.bigtable.Logging
 import com.google.cloud.spark.bigtable.catalog.{CatalogDefinition, RowKey}
+import com.google.cloud.bigtable.data.v2.models.{RowMutationEntry, Row => BigtableRow}
+import com.google.protobuf.ByteString
+import com.google.re2j.Pattern
 import org.apache.avro.Schema
+import org.apache.spark.sql.{Row => SparkRow}
 import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
 
 import java.sql.{Date, Timestamp}
 import scala.collection.mutable
-import scala.util.parsing.json.JSON
 
 // As we finalize the encoding of different types, we add support for them.
 object SupportedDataTypes {
@@ -215,10 +218,6 @@ case class BigtableTableCatalog(
 ) extends Logging {
   def toDataType: StructType = StructType(sMap.toFields)
   def getField(name: String): Field = sMap.getField(name)
-  // One or more columns from the DataFrame get concatenated to turn into
-  // the Bigtable row key. This returns a list of those columns.
-  def getRowKeyColumns: Seq[Field] = row.sortedFields
-  def hasCompoundRowKey: Boolean = getRowKeyColumns.size > 1
   def getColumnFamilies: Seq[String] = {
     sMap.fields
       .map(_.btColFamily)
@@ -228,6 +227,99 @@ case class BigtableTableCatalog(
   }
 
   def get(key: String): Option[String] = params.get(key)
+
+  def convertBtRowToSparkRow(btRow: BigtableRow, requestedSparkCols: Seq[String]): SparkRow = {
+    val rowKeyFields = row.parseFieldsFromBtRow(btRow)
+    val requestedStaticColFields = requestedSparkCols
+      .flatMap(sMap.map.get)
+      .filter(!_.isRowKey)
+      .map(field => {
+        val cells = btRow.getCells(field.btColFamily, field.btColName)
+        if (cells.isEmpty) {
+          (field, None)
+        } else {
+          val latestCell = cells.get(0).getValue.toByteArray
+          if (field.length != -1 && field.length != latestCell.length) {
+            throw new IllegalArgumentException(
+              "The byte array in Bigtable cell [" + latestCell.mkString(
+                ", "
+              ) +
+                "] has length " + latestCell.length + ", while column " + field +
+                " requires length " + field.length + "."
+            )
+          }
+
+          (
+            field,
+            field.bigtableToScalaValue(latestCell, 0, latestCell.length)
+          )
+        }
+      }).toMap
+
+    val requestedRegexColFields = requestedSparkCols
+      .flatMap(sMap.cqMap.get)
+      .filter(!_.isRowKey)
+      .map(field => {
+        val pattern: Pattern = Pattern.compile(field.btColName)
+        val cells = ReadRowUtil.getAllCells(btRow, field.btColFamily)
+          .filter(cell => pattern.matcher(cell.getQualifier.toStringUtf8).find())
+
+        if (cells.isEmpty) {
+          (field, Seq())
+        } else {
+          val latestCells = cells
+            .groupBy(cell => cell.getQualifier.toStringUtf8)
+            .map(_._2.head.getValue.toByteArray)
+
+          (
+            field,
+            latestCells.map(cell => {
+              if (field.length != -1 && cell.length != field.length) {
+                throw new IllegalArgumentException(
+                  "The byte array in Bigtable cell [" + cell.mkString(
+                    ", "
+                  ) +
+                    "] has length " + cell.length + ", while column " + field +
+                    " requires length " + field.length + "."
+                )
+              }
+              field.bigtableToScalaValue(cell, 0, cell.length)
+            }).toSeq
+          )
+        }
+      }).toMap
+
+    val combinedFields = (rowKeyFields ++ requestedStaticColFields ++ requestedRegexColFields)
+      .map(fieldAndValue => (fieldAndValue._1.sparkColName, fieldAndValue._2))
+    SparkRow.fromSeq(
+      requestedSparkCols
+        .map(col => combinedFields.getOrElse(col, null))
+    )
+  }
+
+  def createMutationsForSparkRow(sparkRow: SparkRow, schema: StructType, writeTimestampMicros: Long): RowMutationEntry = {
+    val rowKeyBytes: Seq[Byte] = row.getBtRowKeyBytes(sparkRow, schema)
+    val mutation = RowMutationEntry.create(ByteString.copyFrom(rowKeyBytes.toArray))
+    sMap.fields
+      .filter(!_.isRowKey)
+      .map(field => {
+        val fieldIndex = schema.fieldIndex(field.sparkColName)
+        (field, sparkRow(fieldIndex))
+      })
+      .foreach {
+        case (field, fieldValue) =>
+          val cellValue = field.scalaValueToBigtable(fieldValue)
+          val columnNameBytes = BytesConverter.toBytes(field.btColName)
+          mutation.setCell(
+            field.btColFamily,
+            ByteString.copyFrom(columnNameBytes),
+            writeTimestampMicros,
+            ByteString.copyFrom(cellValue)
+          )
+      }
+
+    mutation
+  }
 }
 
 @InterfaceAudience.Public

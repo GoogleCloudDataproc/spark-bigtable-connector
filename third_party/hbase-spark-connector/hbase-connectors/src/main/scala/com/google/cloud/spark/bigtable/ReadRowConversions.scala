@@ -17,40 +17,11 @@
 
 package com.google.cloud.spark.bigtable
 
-import com.google.cloud.bigtable.data.v2.models.{RowCell, Row => BigtableRow}
-import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field, ReadRowUtil, Utils}
-import org.apache.spark.sql.types.StringType
+import com.google.cloud.bigtable.data.v2.models.{Row => BigtableRow}
+import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field}
 import org.apache.spark.sql.{Row => SparkRow}
-import com.google.re2j.Pattern
 
 object ReadRowConversions extends Serializable {
-
-  private def buildRowForRegex(
-      cqFields: Seq[Field],
-      bigtableRow: BigtableRow
-  ): Seq[(Field, Any)] = {
-    cqFields.map { x =>
-      val pattern: Pattern = Pattern.compile(x.btColName)
-      val allCells: List[RowCell] = ReadRowUtil.getAllCells(bigtableRow, x.btColFamily)
-      val cqAllFields = allCells
-        .filter(cell => pattern.matcher(cell.getQualifier.toStringUtf8).find())
-        .map { cell =>
-          val qualifier = cell.getQualifier.toStringUtf8
-          val cqField = Field(
-            x.sparkColName,
-            x.btColFamily,
-            qualifier,
-            x.simpleType,
-            x.avroSchema,
-            x.len
-          )
-          extractValue(cqField, bigtableRow)
-        }
-      val cqValues = cqAllFields.map { case (field, value) => field.btColName -> value }
-      (x, cqValues.toMap)
-    }
-  }
-
   /** Converts a Bigtable Row to a Spark SQL Row.
     *
     * @param fields       The fields required by Spark
@@ -60,42 +31,10 @@ object ReadRowConversions extends Serializable {
     * @return             A Spark SQL row containing all of the required columns
     */
   def buildRow(
-      fields: Seq[Field],
+      fields: Seq[String],
       bigtableRow: BigtableRow,
       catalog: BigtableTableCatalog
   ): SparkRow = {
-    val keySeq = catalog.row.parseFieldsFromBtRow(bigtableRow)
-
-    val valueSeq = fields
-      .filter(!_.isRowKey)
-      .map(field => extractValue(field, bigtableRow))
-      .toMap
-    val cqFields = catalog.sMap.cqMap.values.toSeq
-    val cqValueSeq = buildRowForRegex(cqFields, bigtableRow).toMap
-    val unionedRow = keySeq ++ valueSeq ++ cqValueSeq
-    SparkRow.fromSeq((fields ++ cqFields).map(unionedRow.get(_).orNull))
-  }
-
-  private def extractValue(field: Field, bigtableRow: BigtableRow): (Field, Any) = {
-    val allCells: List[RowCell] =
-      ReadRowUtil.getAllCells(bigtableRow, field.btColFamily, field.btColName)
-    if (allCells.isEmpty) {
-      (field, null)
-    } else {
-      val latestCellValue = allCells.head.getValue.toByteArray
-      if ((field.length != -1) && (field.length != latestCellValue.length)) {
-        throw new IllegalArgumentException(
-          "The byte array in Bigtable cell [" + latestCellValue.mkString(
-            ", "
-          ) +
-            "] has length " + latestCellValue.length + ", while column " + field +
-            " requires length " + field.length + "."
-        )
-      }
-      (
-        field,
-        field.bigtableToScalaValue(latestCellValue, 0, latestCellValue.length)
-      )
-    }
+    catalog.convertBtRowToSparkRow(bigtableRow, fields)
   }
 }
