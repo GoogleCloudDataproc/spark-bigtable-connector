@@ -163,7 +163,15 @@ Here, the columns `name`, `birthYear`, and `address` from the DataFrame are
 converted into Bigtable
 columns and the `id` column is used as the row key. Note that you could also
 specify *compound* row keys,
-which are created by concatenating multiple DataFrame columns together.
+which are created by concatenating multiple DataFrame columns together. When
+using compound row keys keep the following restrictions in mind:
+
+- A binary field of variable length may only occur as the last field in the
+  row key
+- Values for a string field of variable length that are part of a compound row
+  key must always terminate on a unicode null character byte (`U+0000`), and
+  when reading a row key the presence of this byte will be considered the end
+  of that string value.
 
 #### Catalog with variable column definitions
 
