@@ -18,11 +18,12 @@
 package com.google.cloud.spark.bigtable.datasources
 
 import com.google.cloud.spark.bigtable.Logging
-import com.google.cloud.spark.bigtable.catalog.CatalogDefinition
+import com.google.cloud.spark.bigtable.catalog.{CatalogDefinition, RowKey}
 import org.apache.avro.Schema
 import org.apache.spark.sql.types._
 import org.apache.yetus.audience.InterfaceAudience
 
+import java.sql.{Date, Timestamp}
 import scala.collection.mutable
 import scala.util.parsing.json.JSON
 
@@ -55,7 +56,7 @@ case class Field(
 ) extends Logging {
   override def toString = s"$sparkColName $btColFamily $btColName"
   val isRowKey = btColFamily == BigtableTableCatalog.rowKey
-  var start: Int = _
+
   def schema: Option[Schema] = avroSchema.map { x =>
     logDebug(s"avro: $x")
     val p = new Schema.Parser
@@ -118,7 +119,6 @@ case class Field(
     } else {
       len
     }
-
   }
 
   override def equals(other: Any): Boolean = other match {
@@ -126,25 +126,67 @@ case class Field(
       sparkColName == that.sparkColName && btColFamily == that.btColFamily && btColName == that.btColName
     case _ => false
   }
-}
 
-// The row key definition, with each key refer to the col defined in Field, e.g.,
-// key1:key2:key3
-@InterfaceAudience.Private
-case class RowKey(k: String) {
-  val keys = k.split(":")
-  var fields: Seq[Field] = _
-  var varLength = false
-  def length = {
-    if (varLength) {
-      -1
+  // This will be cleaned up in an upcoming pr
+  def bigtableToScalaValue(cellValue: Array[Byte], offset: Int, len: Int): Any = {
+    if (exeSchema.isDefined) {
+      // If we have avro schema defined, use it to get record, and then convert them to catalyst data type
+      val m = AvroSerdes.deserialize(cellValue, exeSchema.get)
+      val n = avroToCatalyst.map(_(m))
+      n.get
     } else {
-      fields.foldLeft(0) { case (x, y) =>
-        x + y.length
+      // Fall back to atomic type
+      dt match {
+        case BooleanType   => BytesConverter.toBoolean(cellValue, offset)
+        case ByteType      => cellValue(offset)
+        case ShortType     => BytesConverter.toShort(cellValue, offset)
+        case IntegerType   => BytesConverter.toInt(cellValue, offset)
+        case LongType      => BytesConverter.toLong(cellValue, offset)
+        case FloatType     => BytesConverter.toFloat(cellValue, offset)
+        case DoubleType    => BytesConverter.toDouble(cellValue, offset)
+        case DateType      => new Date(BytesConverter.toLong(cellValue, offset))
+        case TimestampType => new Timestamp(BytesConverter.toLong(cellValue, offset))
+        case StringType =>
+          BytesConverter.toString(cellValue.slice(offset, offset + len))
+        case BinaryType =>
+          val newArray = new Array[Byte](len)
+          System.arraycopy(cellValue, offset, newArray, 0, len)
+          newArray
+        // TODO: SparkSqlSerializer.deserialize[Any](src)
+        case _ => throw new Exception(s"unsupported data type ${dt}")
+      }
+    }
+  }
+
+  def scalaValueToBigtable(input: Any): Array[Byte] = {
+    if (schema.isDefined) {
+      // Here we assume the top level type is structType
+      val record = catalystToAvro(input)
+      AvroSerdes.serialize(record, schema.get)
+    } else {
+      dt match {
+        case BooleanType => BytesConverter.toBytes(input.asInstanceOf[Boolean])
+        case ByteType    => Array(input.asInstanceOf[Number].byteValue)
+        case ShortType =>
+          BytesConverter.toBytes(input.asInstanceOf[Number].shortValue)
+        case IntegerType =>
+          BytesConverter.toBytes(input.asInstanceOf[Number].intValue)
+        case LongType =>
+          BytesConverter.toBytes(input.asInstanceOf[Number].longValue)
+        case FloatType =>
+          BytesConverter.toBytes(input.asInstanceOf[Number].floatValue)
+        case DoubleType =>
+          BytesConverter.toBytes(input.asInstanceOf[Number].doubleValue)
+        case DateType | TimestampType =>
+          BytesConverter.toBytes(input.asInstanceOf[java.util.Date].getTime)
+        case StringType => BytesConverter.toBytes(input.toString)
+        case BinaryType => input.asInstanceOf[Array[Byte]]
+        case _          => throw new Exception(s"unsupported data type ${dt}")
       }
     }
   }
 }
+
 // The map between the column presented to Spark and the Bigtable field
 @InterfaceAudience.Private
 case class SchemaMap(map: mutable.HashMap[String, Field], cqMap: mutable.HashMap[String, Field]) {
@@ -175,7 +217,7 @@ case class BigtableTableCatalog(
   def getField(name: String): Field = sMap.getField(name)
   // One or more columns from the DataFrame get concatenated to turn into
   // the Bigtable row key. This returns a list of those columns.
-  def getRowKeyColumns: Seq[Field] = row.fields
+  def getRowKeyColumns: Seq[Field] = row.sortedFields
   def hasCompoundRowKey: Boolean = getRowKeyColumns.size > 1
   def getColumnFamilies: Seq[String] = {
     sMap.fields
@@ -186,68 +228,6 @@ case class BigtableTableCatalog(
   }
 
   def get(key: String): Option[String] = params.get(key)
-
-  private def initRowKey(): Unit = {
-    val fields =
-      sMap.fields.filter(_.btColFamily == BigtableTableCatalog.rowKey)
-    if (fields.isEmpty || row.keys.isEmpty) {
-      throw new IllegalArgumentException(
-        "No DataFrame columns defined as row key."
-      )
-    }
-    if (fields.size != row.keys.length) {
-      throw new IllegalArgumentException(
-        "Row key specified in the catalog has "
-          + row.keys.length
-          + " columns, while "
-          + fields.size
-          + " columns are defined as row key."
-      )
-    }
-    row.fields = row.keys.flatMap(n => fields.find(_.btColName == n))
-    // The length is determined at run time if it is string or binary and the length is undefined.
-    if (!row.fields.exists(_.length == -1)) {
-      var start = 0
-      row.fields.foreach { f =>
-        f.start = start
-        start += f.length
-      }
-    } else {
-      row.varLength = true
-    }
-  }
-
-  private def validateCompoundRowKey(): Unit = {
-    if (!hasCompoundRowKey) {
-      return
-    }
-    var i = 0
-    row.fields.foreach { field =>
-      if (field.length == -1) {
-        field.dt match {
-          case BinaryType => {
-            if (i != row.fields.length - 1) {
-              throw new IllegalArgumentException(
-                "Error with DataFrame column " + field + ". "
-                  + "When using compound row keys, a binary type should have a "
-                  + "fixed length or be the last column in the appended row key."
-              )
-            }
-          }
-          case StringType =>
-          case _ =>
-            throw new IllegalArgumentException(
-              "Error with DataFrame column " + field + ". Type " + field.dt
-                + " is not accepted when using compound row keys."
-            )
-        }
-      }
-      i += 1
-    }
-  }
-
-  initRowKey()
-  validateCompoundRowKey()
 }
 
 @InterfaceAudience.Public
@@ -320,7 +300,7 @@ object BigtableTableCatalog {
         )
         cqSchemaMap.+=((name, f))
     })
-    val rKey = RowKey(catalogDefinition.rowkey)
+    val rKey = RowKey(catalogDefinition.rowkey, schemaMap.filter(_._2.isRowKey).values.toSeq)
     BigtableTableCatalog(
       catalogDefinition.table.name,
       rKey,

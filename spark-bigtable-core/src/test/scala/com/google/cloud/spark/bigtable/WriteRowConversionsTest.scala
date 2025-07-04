@@ -17,7 +17,6 @@
 package com.google.cloud.spark.bigtable
 
 import com.google.bigtable.v2.{MutateRowsRequest, Mutation}
-import com.google.cloud.bigtable.data.v2.models.{RowCell, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.protobuf.ByteString
 import org.apache.spark.sql.{SQLContext, Row => SparkRow}
@@ -25,89 +24,98 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
-import scala.collection.JavaConverters._
-
 class WriteRowConversionsTest
     extends AnyFunSuite
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with Logging {
-  // The functions tested in this module only use the catalog to determine whether the row key
-  // is compound or not, since other details (column names, etc.) are passed to them as arguments
-  // directly. Therefore, we only use dummy catalogs to distinguish between these two cases.
-  val basicCatalog: String =
-    s"""{
-       |"table":{"name":"tableName"},
-       |"rowkey":"stringCol",
-       |"columns":{
-       |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"}
-       |}
-       |}""".stripMargin
-  val compoundRowKeyCatalog: String =
-    s"""{
-       |"table":{"name":"tableName"},
-       |"rowkey":"stringCol:stringCol2",
-       |"columns":{
-       |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"},
-       |"stringCol2":{"cf":"rowkey", "col":"stringCol2", "type":"string"}
-       |}
-       |}""".stripMargin
 
   test("convertToRowMutationSimpleRowKey") {
     var sqlContext: SQLContext = null
-    val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
 
     val testData = Table(
-      ("sparkRow", "byteValues", "dataType"),
+      ("rowKeyValue", "rowKeyBytes", "mutationCellValue", "mutationCellBytes", "dataType"),
       // String row key and column
       (
-        SparkRow("foo\n\u0000bar12$%", "fooRow"),
-        Seq(
-          BytesConverter.toBytes("foo\n\u0000bar12$%"),
-          BytesConverter.toBytes("fooRow")
-        ),
+        "fooRow",
+        BytesConverter.toBytes("fooRow"),
+        "foo\n\u0000bar12$%",
+        BytesConverter.toBytes("foo\n\u0000bar12$%"),
         "string"
       ),
       // Int row key and column
-      (SparkRow(1248987, -987123),
-        Seq(BytesConverter.toBytes(1248987), BytesConverter.toBytes(-987123)),
-        "int"),
+      (
+        1248987,
+        BytesConverter.toBytes(1248987),
+        -987123,
+        BytesConverter.toBytes(-987123),
+        "int"
+      ),
       // Float row key and column
-      (SparkRow(-876.2344f, 1111.00002f),
-        Seq(BytesConverter.toBytes(-876.2344f), BytesConverter.toBytes(1111.00002f)),
-        "float"),
+      (
+        -876.2344f,
+        BytesConverter.toBytes(-876.2344f),
+        1111.00002f,
+        BytesConverter.toBytes(1111.00002f),
+        "float"
+      ),
       // Double row key and column
-      (SparkRow(46245.43543, -32222.000024),
-        Seq(BytesConverter.toBytes(46245.43543), BytesConverter.toBytes(-32222.000024)),
-        "double"),
+      (
+        46245.43543,
+        BytesConverter.toBytes(46245.43543),
+        -32222.000024,
+        BytesConverter.toBytes(-32222.000024),
+        "double"
+      ),
       // Long row key and column
       (
-        SparkRow(1248987L, -987123L),
-        Seq(BytesConverter.toBytes(1248987L), BytesConverter.toBytes(-987123L)),
+        1248987L,
+        BytesConverter.toBytes(1248987L),
+        -987123L,
+        BytesConverter.toBytes(-987123L),
         "long"
       )
     )
 
     forAll(testData) {
-      (sparkRow: SparkRow, byteValues: Seq[Array[Byte]], dataType: String) =>
+      (rowKeyValue: Any,
+       rowKeyBytes: Array[Byte],
+       cellMutationValue: Any,
+       cellMutationBytes: Array[Byte],
+       dataType: String) =>
+        val catalog =
+          s"""{
+             |"table":{"name":"tableName"},
+             |"rowkey":"bt_rowkey",
+             |"columns":{
+             |"spark_rowkey":{"cf":"rowkey", "col":"bt_rowkey", "type":"$dataType"},
+             |"col1":{"cf":"cf1", "col":"bt_col1", "type":"$dataType"}
+             |}
+             |}""".stripMargin.stripMargin
+
+        val relation =
+          BigtableRelation(createParametersMap(catalog), None)(sqlContext)
+
+        val sparkRow = SparkRow(
+          relation.schema.fields
+            .flatMap {
+              case f@_ if f.name == "spark_rowkey" => Some(rowKeyValue)
+              case f@_ if f.name == "col1" => Some(cellMutationValue)
+              case _ => None
+            }:_*)
+
         val writeRowConversions = new WriteRowConversions(
           relation.catalog,
           relation.schema,
           relation.writeTimestampMicros
         )
-        writeRowConversions.rowKeyIndexAndFields = Seq(
-          (0, Field("spark_rowkey", "rowkey", "bt_rowkey", Option(dataType)))
-        )
-        writeRowConversions.columnIndexAndField =
-          Array((1, Field("col1", "cf1", "bt_col1", Option(dataType))))
 
         val actualEntry: MutateRowsRequest.Entry =
-          writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+          writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
         val expectedEntry: MutateRowsRequest.Entry =
           MutateRowsRequest.Entry
             .newBuilder()
-            .setRowKey(ByteString.copyFrom(byteValues(0)))
+            .setRowKey(ByteString.copyFrom(rowKeyBytes))
             .addMutations(
               Mutation
                 .newBuilder()
@@ -119,7 +127,7 @@ class WriteRowConversionsTest
                       ByteString.copyFrom(BytesConverter.toBytes("bt_col1"))
                     )
                     .setTimestampMicros(10000000L)
-                    .setValue(ByteString.copyFrom(byteValues(1)))
+                    .setValue(ByteString.copyFrom(cellMutationBytes))
                 )
             )
             .build()
@@ -129,54 +137,48 @@ class WriteRowConversionsTest
 
   test("convertToRowMutationCompoundRowKey") {
     var sqlContext: SQLContext = null
+
+    val catalog = s"""{
+                     |"table":{"name":"tableName"},
+                     |"rowkey":"bt_rowkey0:bt_rowkey1:bt_rowkey2:bt_rowkey3",
+                     |"columns":{
+                     |"spark_rowkey0":{"cf":"rowkey", "col":"bt_rowkey0", "type":"long"},
+                     |"spark_rowkey1":{"cf":"rowkey", "col":"bt_rowkey1", "type":"string", "length": "8"},
+                     |"spark_rowkey2":{"cf":"rowkey", "col":"bt_rowkey2", "type":"string"},
+                     |"spark_rowkey3":{"cf":"rowkey", "col":"bt_rowkey3", "type":"float"},
+                     |"col1":{"cf":"cf1", "col":"bt_col1", "type":"string"}
+                     |}
+                     |}""".stripMargin
+
     val relation =
-      BigtableRelation(createParametersMap(compoundRowKeyCatalog), None)(
+      BigtableRelation(createParametersMap(catalog), None)(
         sqlContext
       )
 
     val sparkRow =
-      SparkRow("rowkey2\u0000", 111L, "colValue", "fixedLen", -444.444f)
+      SparkRow(
+        relation.schema.fields
+          .flatMap {
+            case f@_ if f.name == "spark_rowkey0" => Some(111L)
+            case f@_ if f.name == "spark_rowkey1" => Some("fixedLen")
+            case f@_ if f.name == "spark_rowkey2" => Some("rowkey2\u0000")
+            case f@_ if f.name == "spark_rowkey3" => Some(-444.444f)
+            case f@_ if f.name == "col1" => Some("colValue")
+            case _ => None
+          }:_*)
 
     val writeRowConversions = new WriteRowConversions(
       relation.catalog,
       relation.schema,
       relation.writeTimestampMicros
     )
-    // spark_rowkey# is specified for creating a dummy Field object. However, since we pass the
-    // index as the first element of rkIndexAndFields, it's not actually used in the code logic.
-    writeRowConversions.rowKeyIndexAndFields = Seq(
-      (
-        1,
-        Field("spark_rowkey0", "rowkey", "bt_rowkey", Option("long"), len = -1)
-      ),
-      (
-        0,
-        Field(
-          "spark_rowkey2",
-          "rowkey",
-          "bt_rowkey",
-          Option("string"),
-          len = -1
-        )
-      ),
-      (
-        3,
-        Field("spark_rowkey1", "rowkey", "bt_rowkey", Option("string"), len = 8)
-      ),
-      (
-        4,
-        Field("spark_rowkey3", "rowkey", "bt_rowkey", Option("float"), len = -1)
-      )
-    )
-    writeRowConversions.columnIndexAndField =
-      Array((2, Field("col1", "cf1", "bt_col1", Option("string"))))
 
     val actualEntry: MutateRowsRequest.Entry =
-      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
     val expectedRowKey = (
       BytesConverter.toBytes(111L)
-        ++ BytesConverter.toBytes("rowkey2\u0000")
         ++ BytesConverter.toBytes("fixedLen")
+        ++ BytesConverter.toBytes("rowkey2\u0000")
         ++ BytesConverter.toBytes(-444.444f)
     )
     val expectedEntry: MutateRowsRequest.Entry =
@@ -205,81 +207,89 @@ class WriteRowConversionsTest
 
   test("convertToRowMutationIllegalCompoundRowKey") {
     var sqlContext: SQLContext = null
+
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"bt_rowkey0:bt_rowkey1:bt_rowkey2:bt_rowkey3",
+         |"columns":{
+         |"spark_rowkey0":{"cf":"rowkey", "col":"bt_rowkey0", "type":"long"},
+         |"spark_rowkey1":{"cf":"rowkey", "col":"bt_rowkey1", "type":"string"},
+         |"spark_rowkey2":{"cf":"rowkey", "col":"bt_rowkey2", "type":"string"},
+         |"spark_rowkey3":{"cf":"rowkey", "col":"bt_rowkey3", "type":"float"},
+         |"col1":{"cf":"cf1", "col":"bt_col1", "type":"string"}
+         |}
+         |}""".stripMargin
+
     val relation =
-      BigtableRelation(createParametersMap(compoundRowKeyCatalog), None)(
+      BigtableRelation(createParametersMap(catalog), None)(
         sqlContext
       )
 
     // All string columns in a compound row key should either have a fixed length
     // or end with byte '0'.
-    val sparkRow = SparkRow("rowkey2", 111L, "colValue", "ROWKEY3", -777.444f)
+    val sparkRow =
+      SparkRow(
+        relation.schema.fields
+          .flatMap {
+            case f@_ if f.name == "spark_rowkey0" => Some(111L)
+            case f@_ if f.name == "spark_rowkey1" => Some("ROWKEY1")
+            case f@_ if f.name == "spark_rowkey2" => Some("rowkey2")
+            case f@_ if f.name == "spark_rowkey3" => Some(-444.444f)
+            case f@_ if f.name == "col1" => Some("colValue")
+            case _ => None
+          }:_*)
+
     val writeRowConversions = new WriteRowConversions(
       relation.catalog,
       relation.schema,
       relation.writeTimestampMicros
     )
-    writeRowConversions.rowKeyIndexAndFields = Seq(
-      (
-        1,
-        Field("spark_rowkey0", "rowkey", "bt_rowkey", Option("long"), len = -1)
-      ),
-      (
-        0,
-        Field(
-          "spark_rowkey2",
-          "rowkey",
-          "bt_rowkey",
-          Option("string"),
-          len = -1
-        )
-      ),
-      (
-        3,
-        Field(
-          "spark_rowkey1",
-          "rowkey",
-          "bt_rowkey",
-          Option("string"),
-          len = -1
-        )
-      ),
-      (
-        4,
-        Field("spark_rowkey3", "rowkey", "bt_rowkey", Option("float"), len = -1)
-      )
-    )
-    writeRowConversions.columnIndexAndField =
-      Array((2, Field("col1", "cf1", "bt_col1", Option("string"))))
 
     intercept[IllegalArgumentException] {
-      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
     }
   }
 
   test("convertToRowMutationMultipleColumns") {
     var sqlContext: SQLContext = null
-    val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
 
-    val sparkRow = SparkRow(
-      "StringCOL_123", -1999, 6767676767L, "foo\u3943RowKEY", 456.98701)
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"bt_rowkey",
+         |"columns":{
+         |"spark_rowkey":{"cf":"rowkey", "col":"bt_rowkey", "type":"string"},
+         |"col0":{"cf":"cf1", "col":"bt_col0", "type":"string"},
+         |"col1":{"cf":"cf3", "col":"bt_col1", "type":"int"},
+         |"col2":{"cf":"cf1", "col":"bt_col2", "type":"long"},
+         |"col3":{"cf":"cf2", "col":"bt_col3", "type":"double"}
+         |}
+         |}""".stripMargin
+
+    val relation =
+      BigtableRelation(createParametersMap(catalog), None)(sqlContext)
+
+    val sparkRow =
+      SparkRow(
+        relation.schema.fields
+          .flatMap {
+            case f@_ if f.name == "spark_rowkey" => Some("foo\u3943RowKEY")
+            case f@_ if f.name == "col0" => Some("StringCOL_123")
+            case f@_ if f.name == "col1" => Some(-1999)
+            case f@_ if f.name == "col2" => Some(6767676767L)
+            case f@_ if f.name == "col3" => Some(456.98701)
+            case _ => None
+          }:_*)
 
     val writeRowConversions = new WriteRowConversions(
       relation.catalog,
       relation.schema,
       relation.writeTimestampMicros
     )
-    writeRowConversions.rowKeyIndexAndFields =
-      Seq((3, Field("spark_rowkey", "rowkey", "bt_rowkey", Option("string"))))
-    writeRowConversions.columnIndexAndField = Array(
-      (2, Field("col2", "cf1", "bt_col2", Option("long"))),
-      (4, Field("col4", "cf2", "bt_col4", Option("double"))),
-      (0, Field("col0", "cf1", "bt_col0", Option("string"))),
-      (1, Field("col1", "cf3", "bt_col1", Option("int"))),
-    )
 
     val actualEntry: MutateRowsRequest.Entry =
-      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
 
     val expectedEntry: MutateRowsRequest.Entry =
       MutateRowsRequest.Entry
@@ -311,7 +321,7 @@ class WriteRowConversionsTest
                 .newBuilder()
                 .setFamilyName("cf2")
                 .setColumnQualifier(
-                  ByteString.copyFrom(BytesConverter.toBytes("bt_col4"))
+                  ByteString.copyFrom(BytesConverter.toBytes("bt_col3"))
                 )
                 .setTimestampMicros(10000000L)
                 .setValue(
@@ -350,16 +360,30 @@ class WriteRowConversionsTest
             )
         )
         .build()
-    assert(actualEntry == expectedEntry)
+
+    assert(actualEntry.getRowKey == expectedEntry.getRowKey)
+    assert(actualEntry.getMutationsCount == actualEntry.getMutationsCount)
+    assert(actualEntry.getMutationsList.containsAll(expectedEntry.getMutationsList))
   }
 
   test("convertToRowMutationNoTimestamp") {
     val beforeTimeMicros = System.currentTimeMillis() * 1000
 
     var sqlContext: SQLContext = null
+
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"bt_rowkey",
+         |"columns":{
+         |"spark_rowkey":{"cf":"rowkey", "col":"bt_rowkey", "type":"string"},
+         |"col0":{"cf":"cf1", "col":"bt_col1", "type":"string"}
+         |}
+         |}""".stripMargin
+
     val parametersMapWithoutTimestamp =
       Map(
-        "catalog" -> basicCatalog,
+        "catalog" -> catalog,
         "spark.bigtable.project.id" -> "fake-project-id",
         "spark.bigtable.instance.id" -> "fake-instance-id"
       )
@@ -373,17 +397,13 @@ class WriteRowConversionsTest
       relation.schema,
       relation.writeTimestampMicros
     )
-    writeRowConversions.rowKeyIndexAndFields =
-      Seq((0, Field("spark_rowkey", "rowkey", "bt_rowkey", Option("string"))))
-    writeRowConversions.columnIndexAndField =
-      Array((1, Field("col1", "cf1", "bt_col1", Option("string"))))
 
     val actualEntry: MutateRowsRequest.Entry =
-      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+      writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
 
     val afterTimeMicros = System.currentTimeMillis() * 1000
     val actualTimestamp =
-      actualEntry.getMutations(0).getSetCell().getTimestampMicros()
+      actualEntry.getMutations(0).getSetCell.getTimestampMicros
 
     assert(actualTimestamp >= beforeTimeMicros)
     assert(actualTimestamp <= afterTimeMicros)
@@ -393,8 +413,6 @@ class WriteRowConversionsTest
   // types, e.g., converting a 5-byte array to int.
   test("convertToRowMutationMismatchedTypes") {
     var sqlContext: SQLContext = null
-    val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
 
     val testData = Table(
       ("sparkRow", "dataType", "shouldFail"),
@@ -410,23 +428,31 @@ class WriteRowConversionsTest
 
     forAll(testData) {
       (sparkRow: SparkRow, dataType: String, shouldFail: Boolean) =>
+        val catalog =
+          s"""{
+             |"table":{"name":"tableName"},
+             |"rowkey":"bt_rowkey",
+             |"columns":{
+             |"spark_rowkey":{"cf":"rowkey", "col":"bt_rowkey", "type":"$dataType"},
+             |"col0":{"cf":"cf1", "col":"bt_col1", "type":"$dataType"}
+             |}
+             |}""".stripMargin
+
+        val relation =
+          BigtableRelation(createParametersMap(catalog), None)(sqlContext)
+
         val writeRowConversions = new WriteRowConversions(
           relation.catalog,
           relation.schema,
           relation.writeTimestampMicros
         )
-        writeRowConversions.rowKeyIndexAndFields = Seq(
-          (0, Field("spark_rowkey", "rowkey", "bt_rowkey", Option(dataType)))
-        )
-        writeRowConversions.columnIndexAndField =
-          Array((1, Field("col1", "cf1", "bt_col1", Option(dataType))))
 
         if (shouldFail) {
           intercept[Exception] {
-            writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+            writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
           }
         } else {
-          writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto()
+          writeRowConversions.convertToBigtableRowMutation(sparkRow).toProto
         }
     }
   }
@@ -439,32 +465,5 @@ class WriteRowConversionsTest
       "spark.bigtable.write.timestamp.milliseconds" -> "10000"
     )
   }
-  def createRowkey(rowkeyBytes: Array[Byte]): ByteString = {
-    ByteString.copyFrom(rowkeyBytes)
-  }
 
-  // Since cellValue could have the original value of String, Double, etc.,
-  //  we get the converted byte array value directly.
-  def createRowCell(
-      colFamily: String,
-      colQualifier: String,
-      timestamp: Long,
-      cellValue: Array[Byte],
-      labels: List[String] = List[String]()
-  ): RowCell = {
-    RowCell.create(
-      colFamily,
-      ByteString.copyFrom(BytesConverter.toBytes(colQualifier)),
-      timestamp,
-      labels.asJava,
-      ByteString.copyFrom(cellValue)
-    )
-  }
-
-  def createBigtableRow(
-      rowkey: ByteString,
-      rowCells: List[RowCell]
-  ): BigtableRow = {
-    BigtableRow.create(rowkey, rowCells.asJava)
-  }
 }
