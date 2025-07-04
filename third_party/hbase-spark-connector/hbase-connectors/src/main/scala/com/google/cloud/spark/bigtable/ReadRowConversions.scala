@@ -51,88 +51,6 @@ object ReadRowConversions extends Serializable {
     }
   }
 
-  /** Takes a Bigtable Row and extracts the fields in the rowkey from it.
-    *
-    * @param bigtableRow  The Bigtable row
-    * @param keyFields    The fields in the row key, ordered by their
-    *                       order of appearance in the catalog
-    * @param catalog      The catalog for converting from Spark SQL
-    *                       DataFrame to a Bigtable table
-    * @return             A map from fields in the rowkey to the their value
-    */
-  def parseRowKey(
-      bigtableRow: BigtableRow,
-      keyFields: Seq[Field],
-      catalog: BigtableTableCatalog
-  ): Map[Field, Any] = {
-    val row: Array[Byte] = bigtableRow.getKey.toByteArray
-    keyFields
-      .foldLeft((0, Seq[(Field, Any)]()))((state, field) => {
-        val idx = state._1
-        val parsed = state._2
-        if (field.length != -1) {
-          val value =
-            Utils.bigtableFieldToScalaType(field, row, idx, field.length)
-          (idx + field.length, parsed ++ Seq((field, value)))
-        } else {
-          field.dt match {
-            // String columns in the row key without a fixed length should end with byte '0' to indicate the delimiter.
-            case StringType =>
-              if (!catalog.hasCompoundRowKey) {
-                // If the row key is simple (i.e., non-compound), consider the entire row key bytes
-                // (i.e., starting at index `idx` with length `row.length - idx`)
-                // Example: row key = bytes("foo\u0000bar\u0000")
-                val value = Utils
-                  .bigtableFieldToScalaType(field, row, idx, row.length - idx)
-                (row.length + 1, parsed ++ Seq((field, value)))
-              } else {
-                val pos = row.indexOf(BigtableTableCatalog.delimiter, idx)
-                if (pos == -1 || pos > row.length) {
-                  throw new IllegalArgumentException(
-                    "Error when parsing row key [" + row.mkString(
-                      ", "
-                    ) + "] to DataFrame column "
-                      + field + ". " + "When using compound row keys, a String type column "
-                      + "should have a fixed length or have *exactly one* delimiter character "
-                      + "(byte '0') at the end."
-                  )
-                } else {
-                  // For compound row keys, if the string column (with variable length) ends
-                  // in the delimiter, the bytes starting at `idx` with with length
-                  // `pos - idx + 1` correspond to the column value.
-                  // Example: row key = bytes("foo\u0000") + bytes(100) + bytes("foobar\u0000")
-                  val value = Utils
-                    .bigtableFieldToScalaType(field, row, idx, pos - idx + 1)
-                  (pos + 1, parsed ++ Seq((field, value)))
-                }
-              }
-            // The only non-string type with variable column length supported by
-            // `bigtableFieldToScalaType()` is BinaryType. In this case, consider the rest of
-            // the row key bytes (i.e., starting at index `idx` with length `row.length - idx`)
-            // as the column value.
-            // Example: row key = bytes(100) + bytes(200.0) + Array[Byte](11, 22, 33)
-            case _ =>
-              (
-                row.length + 1,
-                parsed ++ Seq(
-                  (
-                    field,
-                    Utils.bigtableFieldToScalaType(
-                      field,
-                      row,
-                      idx,
-                      row.length - idx
-                    )
-                  )
-                )
-              )
-          }
-        }
-      })
-      ._2
-      .toMap
-  }
-
   /** Converts a Bigtable Row to a Spark SQL Row.
     *
     * @param fields       The fields required by Spark
@@ -146,7 +64,7 @@ object ReadRowConversions extends Serializable {
       bigtableRow: BigtableRow,
       catalog: BigtableTableCatalog
   ): SparkRow = {
-    val keySeq = parseRowKey(bigtableRow, catalog.getRowKeyColumns, catalog)
+    val keySeq = catalog.row.parseFieldsFromBtRow(bigtableRow)
 
     val valueSeq = fields
       .filter(!_.isRowKey)
@@ -176,12 +94,7 @@ object ReadRowConversions extends Serializable {
       }
       (
         field,
-        Utils.bigtableFieldToScalaType(
-          field,
-          latestCellValue,
-          0,
-          latestCellValue.length
-        )
+        field.bigtableToScalaValue(latestCellValue, 0, latestCellValue.length)
       )
     }
   }

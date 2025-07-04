@@ -52,98 +52,12 @@ object SparkSqlFilterAdapter {
       rangeSetResult.add(Range.all[RowKeyWrapper]())
       filters.foreach(x =>
         rangeSetResult.removeAll(
-          convertFilterToRangeSet(x, catalog).complement()
+          catalog.row.convertFilterToRangeSet(x).complement()
         )
       )
       ImmutableRangeSet.copyOf(rangeSetResult)
     } else {
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-    }
-  }
-
-  private def convertFilterToRangeSet(
-      filter: Filter,
-      catalog: BigtableTableCatalog
-  ): RangeSet[RowKeyWrapper] = {
-    filter match {
-      case EqualTo(attribute, value) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          EqualToFilterAdapter.convertValueToRangeSet(value)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case In(attribute, values) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          val unionRangeSet: RangeSet[RowKeyWrapper] =
-            TreeRangeSet.create[RowKeyWrapper]()
-          values.foreach { v =>
-            unionRangeSet.addAll(EqualToFilterAdapter.convertValueToRangeSet(v))
-          }
-          ImmutableRangeSet.copyOf(unionRangeSet)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case LessThan(attribute, value) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          LessThanFilterAdapter.convertValueToRangeSet(value)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case LessThanOrEqual(attribute, value) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          LessThanOrEqualFilterAdapter.convertValueToRangeSet(value)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case GreaterThan(attribute, value) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          GreaterThanFilterAdapter.convertValueToRangeSet(value)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case GreaterThanOrEqual(attribute, value) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          GreaterThanOrEqualFilterAdapter.convertValueToRangeSet(value)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case StringStartsWith(attribute, value) =>
-        val field = catalog.getField(attribute)
-        if (field != null && field.isRowKey && !catalog.hasCompoundRowKey) {
-          StringStartsWithFilterAdapter.convertValueToRangeSet(value)
-        } else {
-          ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
-        }
-      case And(left, right) =>
-        val leftRangeSet: RangeSet[RowKeyWrapper] =
-          convertFilterToRangeSet(left, catalog)
-        val rightRangeSet: RangeSet[RowKeyWrapper] =
-          convertFilterToRangeSet(right, catalog)
-
-        val intersectionRange: RangeSet[RowKeyWrapper] =
-          TreeRangeSet.create[RowKeyWrapper]()
-        intersectionRange.addAll(leftRangeSet)
-        intersectionRange.removeAll(rightRangeSet.complement())
-        ImmutableRangeSet.copyOf(intersectionRange)
-      case Or(left, right) =>
-        val leftRangeSet: RangeSet[RowKeyWrapper] =
-          convertFilterToRangeSet(left, catalog)
-        val rightRangeSet: RangeSet[RowKeyWrapper] =
-          convertFilterToRangeSet(right, catalog)
-
-        val unionRange: RangeSet[RowKeyWrapper] =
-          TreeRangeSet.create[RowKeyWrapper]()
-        unionRange.addAll(leftRangeSet)
-        unionRange.addAll(rightRangeSet)
-        ImmutableRangeSet.copyOf(unionRange)
-      case _ =>
-        ImmutableRangeSet.of(Range.all[RowKeyWrapper]())
     }
   }
 }

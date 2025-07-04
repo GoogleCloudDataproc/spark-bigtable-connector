@@ -100,7 +100,7 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
       .select(srcRowKeyCol)
       .rdd
       .mapPartitionsWithIndex { (partitionIndex, rows) =>
-        val rowKeys = rows.map(r => Utils.toBytes(r.getAs[Any](srcRowKeyCol), srcRowKeyField))
+        val rowKeys = rows.map(r => srcRowKeyField.scalaValueToBigtable(r.getAs[Any](srcRowKeyCol)))
         val btRows = fetchBigtableRows(rowKeys, bigtableConfig, catalog.name, partitionIndex)
         btRows.map(row => ReadRowConversions.buildRow(orderedFields, row, catalog))
       }
