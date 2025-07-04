@@ -69,7 +69,7 @@ object RowKey {
     rowKeyfields
       .filter(field => !sortedKeys.contains(field.btColName))
       .foreach(field => throw new IllegalArgumentException(
-        f"Column definition for row key without a segment: ${field}"
+        f"Column definition for row key without a segment: $field"
       ))
   }
 }
