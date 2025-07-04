@@ -31,31 +31,26 @@ class ReadRowConversionsTest
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with Logging {
-  // The functions tested in this module only use the catalog to determine whether the row key
-  // is compound or not, since other details (column names, etc.) are passed to them as arguments
-  // directly. Therefore, we only use dummy catalogs to distinguish between these two cases.
-  val basicCatalog: String =
-    s"""{
-       |"table":{"name":"tableName"},
-       |"rowkey":"stringCol",
-       |"columns":{
-       |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"}
-       |}
-       |}""".stripMargin
-  val compoundRowKeyCatalog: String =
-    s"""{
-       |"table":{"name":"tableName"},
-       |"rowkey":"stringCol:stringCol2",
-       |"columns":{
-       |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"},
-       |"stringCol2":{"cf":"rowkey", "col":"stringCol2", "type":"string"}
-       |}
-       |}""".stripMargin
 
   test("buildSimpleRow") {
     var sqlContext: SQLContext = null
+
+    val catalog = s"""{
+                     |"table":{"name":"tableName"},
+                     |"rowkey":"stringCol",
+                     |"columns":{
+                     |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"},
+                     |"s_col1":{"cf":"cf1", "col":"c1", "type":"int"},
+                     |"s_col2":{"cf":"cf1", "col":"c2", "type":"string"},
+                     |"s_col3":{"cf":"cf1", "col":"c3", "type":"long"},
+                     |"s_col4":{"cf":"cf2", "col":"c4", "type":"double"},
+                     |"s_col5":{"cf":"cf3", "col":"c5", "type":"byte"},
+                     |"s_col6":{"cf":"cf3", "col":"c6", "type":"binary"}
+                     |}
+                     |}""".stripMargin
+
     val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
+      BigtableRelation(createParametersMap(catalog), None)(sqlContext)
 
     // We just use a simple row key value since that logic is covered in parseRowKey tests
     val rowkey: ByteString =
@@ -73,13 +68,13 @@ class ReadRowConversionsTest
     // For row key field we have to use the same name as the one in basicCatalog
     // since buildRow gets these columns from catalog.getRowKeyColumns
     val fields = Seq(
-      Field("stringCol", "rowkey", "stringCol", Option("string")),
-      Field("s_col1", "cf1", "c1", Option("int")),
-      Field("s_col2", "cf1", "c2", Option("string")),
-      Field("s_col3", "cf1", "c3", Option("long")),
-      Field("s_col4", "cf2", "c4", Option("double")),
-      Field("s_col5", "cf3", "c5", Option("byte")),
-      Field("s_col6", "cf3", "c6", Option("binary"))
+      "stringCol",
+      "s_col1",
+      "s_col2",
+      "s_col3",
+      "s_col4",
+      "s_col5",
+      "s_col6"
     )
     val actualSparkRow: SparkRow =
       ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
@@ -100,8 +95,18 @@ class ReadRowConversionsTest
 
   test("buildRowAdditionalTimestampsAndColumns") {
     var sqlContext: SQLContext = null
+
+    val catalog = s"""{
+                     |"table":{"name":"tableName"},
+                     |"rowkey":"stringCol",
+                     |"columns":{
+                     |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"},
+                     |"s_col1":{"cf":"cf1", "col":"c1", "type":"string"}
+                     |}
+                     |}""".stripMargin
+
     val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
+      BigtableRelation(createParametersMap(catalog), None)(sqlContext)
 
     // We just use a simple row key value since that logic is covered in parseRowKey tests
     val rowkey: ByteString =
@@ -124,8 +129,8 @@ class ReadRowConversionsTest
     val bigtableRow: BigtableRow = createBigtableRow(rowkey, cells)
 
     val fields = Seq(
-      Field("s_col1", "cf1", "c1", Option("string")),
-      Field("stringCol", "rowkey", "stringCol", Option("string"))
+      "s_col1",
+      "stringCol"
     )
     val actualSparkRow: SparkRow =
       ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
@@ -136,8 +141,18 @@ class ReadRowConversionsTest
 
   test("buildRowNonexistent") {
     var sqlContext: SQLContext = null
+
+    val catalog: String =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"stringCol",
+         |"columns":{
+         |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"}
+         |}
+         |}""".stripMargin
+
     val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
+      BigtableRelation(createParametersMap(catalog), None)(sqlContext)
 
     // We just use a simple row key value since that logic is covered in parseRowKey tests
     val rowkey: ByteString =
@@ -148,9 +163,9 @@ class ReadRowConversionsTest
     val bigtableRow: BigtableRow = createBigtableRow(rowkey, cells)
 
     val fields = Seq(
-      Field("s_col1", "cf1", "nonexistentColumn", Option("string")),
-      Field("stringCol", "rowkey", "stringCol", Option("string")),
-      Field("s_col1", "nonexistentCf", "c1", Option("string"))
+      "s_col1",
+      "stringCol",
+      "s_col1"
     )
     val actualSparkRow: SparkRow =
       ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
@@ -162,9 +177,6 @@ class ReadRowConversionsTest
 
   test("buildRowWithMismatchingTypeLengths") {
     var sqlContext: SQLContext = null
-    // The parseRowKey method does not use the catalog, just use a dummy one.
-    val relation =
-      BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
 
     val testData = Table(
       ("rowCellBytes", "colType", "colLength"),
@@ -199,8 +211,18 @@ class ReadRowConversionsTest
     forAll(testData) {
       (rowCellBytes: Array[Byte], colType: String, colLength: Int) =>
         var sqlContext: SQLContext = null
+
+        val catalog = s"""{
+                         |"table":{"name":"tableName"},
+                         |"rowkey":"stringCol",
+                         |"columns":{
+                         |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"},
+                         |"s_col1":{"cf":"cf1", "col":"c1", "type":"$colType", "length":$colLength}
+                         |}
+                         |}""".stripMargin
+
         val relation =
-          BigtableRelation(createParametersMap(basicCatalog), None)(sqlContext)
+          BigtableRelation(createParametersMap(catalog), None)(sqlContext)
 
         // We just use a simple row key value since that logic is covered in parseRowKey tests
         val rowkey: ByteString =
@@ -211,8 +233,8 @@ class ReadRowConversionsTest
         val bigtableRow: BigtableRow = createBigtableRow(rowkey, cells)
 
         val fields = Seq(
-          Field("stringCol", "rowkey", "stringCol", Option("string")),
-          Field("s_col1", "cf1", "c1", Option(colType), len = colLength)
+          "stringCol",
+          "s_col1"
         )
         intercept[IllegalArgumentException] {
           ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
@@ -227,9 +249,6 @@ class ReadRowConversionsTest
       "spark.bigtable.instance.id" -> "fake-instance-id",
       "spark.bigtable.write.timestamp.milliseconds" -> "10000"
     )
-  }
-  def createRowkey(rowkeyBytes: Array[Byte]): ByteString = {
-    ByteString.copyFrom(rowkeyBytes)
   }
 
   // Since cellValue could have the original value of String, Double, etc.,
