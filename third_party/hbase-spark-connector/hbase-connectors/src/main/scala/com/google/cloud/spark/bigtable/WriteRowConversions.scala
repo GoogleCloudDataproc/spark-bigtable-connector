@@ -46,7 +46,7 @@ class WriteRowConversions(
     * @return          A RowMutationEntry corresponding to the Spark SQL Row
     */
   def convertToBigtableRowMutation(row: SparkRow): RowMutationEntry = {
-    val rowKeyBytes: Seq[Byte] = catalog.row.getBtRowKeyBytes(row, catalog.toDataType)
+    val rowKeyBytes: Seq[Byte] = catalog.row.getBtRowKeyBytes(row, schema)
 
     val mutation = RowMutationEntry.create(ByteString.copyFrom(rowKeyBytes.toArray))
     columnIndexAndField.map { case (index, field) =>
