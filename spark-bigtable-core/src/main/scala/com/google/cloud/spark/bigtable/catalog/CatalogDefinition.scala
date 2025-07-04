@@ -20,7 +20,6 @@ import com.google.cloud.spark.bigtable.catalog.CatalogDefinition.{ColumnsDefinit
 import upickle.default.Reader
 
 import scala.util.{Failure, Success, Try}
-import scala.util.parsing.json.JSON
 
 object CatalogDefinition {
   // This is the key for defining a bigtable catalog on Spark's configuration
