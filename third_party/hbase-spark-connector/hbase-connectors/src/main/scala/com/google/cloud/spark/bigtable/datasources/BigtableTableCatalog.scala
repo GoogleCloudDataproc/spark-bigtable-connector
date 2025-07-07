@@ -293,7 +293,7 @@ case class BigtableTableCatalog(
       .map(fieldAndValue => (fieldAndValue._1.sparkColName, fieldAndValue._2))
     SparkRow.fromSeq(
       requestedSparkCols
-        .map(col => combinedFields.getOrElse(col, null))
+        .map(col => combinedFields.get(col).orNull)
     )
   }
 
