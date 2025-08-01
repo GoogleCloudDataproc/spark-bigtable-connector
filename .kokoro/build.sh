@@ -251,7 +251,7 @@ presubmit)
     RETURN_CODE=$(($RETURN_CODE || $?))
     run_bigtable_spark_tests "3.3.0" "integration" "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
-    run_pyspark_test "3.3.0" "3-scala2.13" "2.13"
+    run_pyspark_test "3.3.0" "3" "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
     run_unit_tests "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
