@@ -217,6 +217,7 @@ run_pyspark_test() {
 
     echo "***Running the PySpark test for Spark ${SPARK_VERSION}.***"
     SPARK_BIN_NAME="spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}"
+    if [[ ${SCALA_VERSION}} == "2.13" ]]; then SPARK_BIN_NAME="${SPARK_BIN_NAME}-${SCALA_VERSION}"; fi
     BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
     PYSPARK_TEST_SCRIPT="spark-bigtable-core/test-pyspark/read_and_write_test.py"
     BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
