@@ -33,36 +33,12 @@ class WriteRowConversions(
     writeTimestampMicros: Long
 ) extends Serializable {
 
-  private val columnIndexAndField: Array[(Int, Field)] = catalog
-    .sMap
-    .fields
-    .filter(!_.isRowKey)
-    .map(field => (schema.fieldIndex(field.sparkColName), field))
-    .toArray
-
   /** Converts a Spark SQL Row to a Bigtable RowMutationEntry.
     *
     * @param row       The Spark SQL row
     * @return          A RowMutationEntry corresponding to the Spark SQL Row
     */
   def convertToBigtableRowMutation(row: SparkRow): RowMutationEntry = {
-    val rowKeyBytes: Seq[Byte] = catalog.row.getBtRowKeyBytes(row, schema)
-
-    val mutation = RowMutationEntry.create(ByteString.copyFrom(rowKeyBytes.toArray))
-    columnIndexAndField.map { case (index, field) =>
-      val columnValue = row(index)
-      if (columnValue != null) {
-        val columnValueBytes = field.scalaValueToBigtable(columnValue)
-
-        val columnNameBytes = BytesConverter.toBytes(field.btColName)
-        mutation.setCell(
-          field.btColFamily,
-          ByteString.copyFrom(columnNameBytes),
-          writeTimestampMicros,
-          ByteString.copyFrom(columnValueBytes)
-        )
-      }
-    }
-    mutation
+    catalog.createMutationsForSparkRow(row, schema, writeTimestampMicros)
   }
 }
