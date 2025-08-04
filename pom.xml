@@ -56,17 +56,6 @@
     <module>spark-bigtable-core-it</module>
   </modules>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
-
   <properties>
     <gpg.skip>true</gpg.skip>
     <nexus.remote.skip>false</nexus.remote.skip>
@@ -105,15 +94,15 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>${nexus-staging-maven-plugin.version}</version>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.8.0</version>
             <extensions>true</extensions>
             <configuration>
-              <serverId>ossrh</serverId>
-              <nexusUrl>https://ossrh-staging-api.central.sonatype.com/</nexusUrl>
-              <autoReleaseAfterClose>false</autoReleaseAfterClose>
-              <skipRemoteStaging>${nexus.remote.skip}</skipRemoteStaging>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+              <checksums>all</checksums>
+              <skipPublishing>${nexus.remote.skip}</skipPublishing>
             </configuration>
           </plugin>
           <plugin>
