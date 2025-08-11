@@ -21,7 +21,7 @@
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable-connector</artifactId>
   <packaging>pom</packaging>
-  <version>0.6.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.7.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
   <name>Spark Bigtable Connector Build Parent</name>
   <description>Parent project for all the Spark Bigtable Connector artifacts</description>
   <url>https://github.com/GoogleCloudDataproc/spark-bigtable-connector</url>
@@ -55,17 +55,6 @@
     <module>spark-bigtable_2.13</module>
     <module>spark-bigtable-core-it</module>
   </modules>
-
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
 
   <properties>
     <gpg.skip>true</gpg.skip>
@@ -105,15 +94,15 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>${nexus-staging-maven-plugin.version}</version>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.8.0</version>
             <extensions>true</extensions>
             <configuration>
-              <serverId>ossrh</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-              <autoReleaseAfterClose>false</autoReleaseAfterClose>
-              <skipRemoteStaging>${nexus.remote.skip}</skipRemoteStaging>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+              <checksums>all</checksums>
+              <skipPublishing>${nexus.remote.skip}</skipPublishing>
             </configuration>
           </plugin>
           <plugin>

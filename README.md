@@ -20,7 +20,7 @@ In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable_2.13:<version>` or
 `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>` (current
-`<version>` is `0.6.0`) and package it inside your application JAR
+`<version>` is `0.7.0`) and package it inside your application JAR
 using libraries such as Maven Shade Plugin. For PySpark applications, you can
 use the `--jars` flag to pass the GCS address of the connector when submitting
 it.
@@ -32,7 +32,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable_2.13</artifactId>
-    <version>0.6.0</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 
@@ -41,7 +41,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable_2.12</artifactId>
-    <version>0.6.0</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 
@@ -49,12 +49,12 @@ For sbt, you can add the following to your `build.sbt` file:
 
 ```
 // for scala 2.13
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.6.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.7.0"
 ```
 
 ```
 // for scala 2.12
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.6.0"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.7.0"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -63,14 +63,14 @@ Gradle:
 ```
 // for scala 2.13
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.6.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.7.0'
 }
 ```
 
 ```
 // for scala 2.12
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.6.0'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.7.0'
 }
 ```
 
@@ -156,7 +156,15 @@ Here, the columns `name`, `birthYear`, and `address` from the DataFrame are
 converted into Bigtable
 columns and the `id` column is used as the row key. Note that you could also
 specify *compound* row keys,
-which are created by concatenating multiple DataFrame columns together.
+which are created by concatenating multiple DataFrame columns together. When
+using compound row keys keep the following restrictions in mind:
+
+- A binary field of variable length may only occur as the last field in the
+  row key
+- Values for a string field of variable length that are part of a compound row
+  key must always terminate on a unicode null character byte (`U+0000`), and
+  when reading a row key the presence of this byte will be considered the end
+  of that string value.
 
 #### Catalog with variable column definitions
 
@@ -175,7 +183,7 @@ For example this catalog:
     "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
   },
   "regexColumns": {
-    "metadata": {"cf": "info", "pattern": "\C*", "type": "long" }
+    "metadata": {"cf": "info", "pattern": "\\C*", "type": "long" }
   }
 }
 ```
@@ -196,6 +204,7 @@ A few caveats:
 - Because columns may contain arbitrary characters, including new lines, it is
   advisable to use `\C` as the wildcard expression, since `.` will not match on
   those
+- Control characters must be escaped
 
 ### Writing to Bigtable
 
@@ -301,7 +310,7 @@ For a full list of configurations, refer to
 [BigtableSparkConf.scala](spark-bigtable_2.12/src/main/scala/com/google/cloud/spark/bigtable/datasources/BigtableSparkConf.scala),
 where these configs are defined.
 
-### How do I authenticate outside GCE / Dataproc?
+### Custom authentication
 
 If you are running Spark outside of Google Compute Engine (GCE) or Dataproc and rely on an internal service to provide a
 Google AccessToken, you can implement custom authentication using the CredentialsProvider interface provided by the
@@ -380,14 +389,30 @@ Your CustomCredentialsProvider class must extend
 and should handle returning the access
 token and its expiration time.
 
-```
-// Per read/Write
-spark.read.format("bigtable").option("spark.bigtable.auth.credentials_provider", "com.example.CustomCredentialsProvider")
-```
+Your implementation may optionally implement a constructor with a single
+Map[String, String] parameter, and parameters can be supplied with options
+prefixed with `spark.bigtable.auth.credentials_provider.args.`. These options
+will be passed to your class constructor on initialization. For example:
 
-```
-// Global
-SparkSession.builder().config("spark.bigtable.auth.credentials_provider", "com.example.CustomCredentialsProvider")
+```scala
+class CustomAuthProvider(val params: Map[String, String]) extends CredentialsProvider {
+  val param1 = params.get("spark.bigtable.auth.credentials_provider.args.param1")
+  val anotherParam = params.get("spark.bigtable.auth.credentials_provider.args.another_param")
+
+  private val proxyProvider = NoCredentialsProvider.create()
+
+  override def getCredentials: Credentials = proxyProvider.getCredentials
+}
+
+// And when reading
+val readDf = spark.read
+  .format("bigtable")
+  .option("catalog", Util.getCatalog(tableName))
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .option("spark.bigtable.auth.credentials_provider", "spark.bigtable.example.auth.CustomAuthProvider")
+  .option("spark.bigtable.auth.credentials_provider.args.param1", "some-value")
+  .option("spark.bigtable.auth.credentials_provider.args.another_param", "some-other-value")
 ```
 
 ### Bigtable emulator support

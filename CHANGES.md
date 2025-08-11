@@ -2,6 +2,8 @@
 
 ## Next
 
+## 0.7.0 - 2025-08-11
+
 * PR #81: feat: Support parameters on custom authentication providers
 
 ## 0.6.0 - 2025-05-23

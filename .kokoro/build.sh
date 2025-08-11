@@ -217,6 +217,7 @@ run_pyspark_test() {
 
     echo "***Running the PySpark test for Spark ${SPARK_VERSION}.***"
     SPARK_BIN_NAME="spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}"
+    if [[ ${SCALA_VERSION} == "2.13" ]]; then SPARK_BIN_NAME="${SPARK_BIN_NAME}-scala${SCALA_VERSION}"; fi
     BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
     PYSPARK_TEST_SCRIPT="spark-bigtable-core/test-pyspark/read_and_write_test.py"
     BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
@@ -250,7 +251,7 @@ presubmit)
     RETURN_CODE=$(($RETURN_CODE || $?))
     run_bigtable_spark_tests "3.3.0" "integration" "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
-    run_pyspark_test "3.3.0" "3-scala2.13" "2.13"
+    run_pyspark_test "3.3.0" "3" "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
     run_unit_tests "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
