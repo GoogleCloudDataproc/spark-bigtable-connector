@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableMap
 import io.grpc.internal.GrpcUtil.USER_AGENT_KEY
 
 object UserAgentConfig {
-  private val CONNECTOR_VERSION = "0.6.0" // ${NEXT_VERSION_FLAG}
+  private val CONNECTOR_VERSION = "0.7.0" // ${NEXT_VERSION_FLAG}
   private val CONNECTOR_ID = "spark-bigtable"
 
   def apply(): UserAgentConfig = new UserAgentConfig(
