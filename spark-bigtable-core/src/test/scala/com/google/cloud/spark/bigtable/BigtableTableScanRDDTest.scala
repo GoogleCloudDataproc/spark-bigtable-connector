@@ -110,7 +110,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -185,7 +186,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -262,7 +264,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -342,7 +345,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -418,7 +422,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -484,7 +489,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -530,7 +536,8 @@ class BigtableTableScanRDDTest
       relation.tableId,
       relation.sqlContext.sparkContext,
       relation.startTimestampMicros,
-      relation.endTimestampMicros
+      relation.endTimestampMicros,
+      None
     )
 
     // All we want is to validate our class was instantiated

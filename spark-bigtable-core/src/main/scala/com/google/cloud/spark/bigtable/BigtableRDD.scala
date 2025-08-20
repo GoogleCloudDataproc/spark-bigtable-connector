@@ -23,6 +23,7 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
       tableId,
       sparkContext,
       None,
+      None,
       None
     )
   }

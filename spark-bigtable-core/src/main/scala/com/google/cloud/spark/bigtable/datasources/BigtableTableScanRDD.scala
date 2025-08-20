@@ -38,7 +38,8 @@ class BigtableTableScanRDD(
     tableId: String,
     sparkContext: SparkContext,
     startTimestampMicros: Option[Long],
-    endTimestampMicros: Option[Long]
+    endTimestampMicros: Option[Long],
+    maxVersions: Option[Int]
 ) extends RDD[BigtableRow](sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
@@ -141,6 +142,7 @@ class BigtableTableScanRDD(
         .asRanges()
         .forEach(applyRangeToQuery(_, query))
       query = addTimestampFilter(query)
+      query = addMaxVersionsLimit(query)
 
       val stream: ServerStream[BigtableRow] = bigtableDataClient.readRows(query)
       streamToIterator(stream, clientHandle)
@@ -214,6 +216,18 @@ class BigtableTableScanRDD(
       case (Some(startStamp), None) =>
         query.filter(timestampFilter.range().startClosed(startStamp))
       case (None, None) => query
+    }
+  }
+
+  private def addMaxVersionsLimit(query: Query): Query = {
+    maxVersions match {
+  // NOTE: Query.limit(N) limits ROWS, not cell versions. To limit cell
+  // versions per column we must apply a limit() filter with cellsPerColumn.
+  // This ensures we only retrieve the most recent 'versions' cells for each
+  // column and avoid large rows caused by many historical versions.
+      case Some(versions) =>
+        query.filter(FILTERS.limit().cellsPerColumn(versions))
+      case None => query
     }
   }
 }

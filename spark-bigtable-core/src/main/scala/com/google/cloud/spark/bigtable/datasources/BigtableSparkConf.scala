@@ -69,6 +69,9 @@ object BigtableSparkConf {
   @ObsoleteApi("This field is obsolete is will be removed on a future version. To use a default configuration simply leave it unset")
   val DEFAULT_BIGTABLE_PUSH_DOWN_FILTERS = true
 
+  /** The maximum number of cell versions to return per column. */
+  val BIGTABLE_MAX_VERSIONS: String = SparkScanConfig.MAX_VERSIONS_CONFIG_KEY
+
   /** The timeout duration for read rows request attempts. */
   val BIGTABLE_READ_ROWS_ATTEMPT_TIMEOUT_MS: String = ReadRowsRpcConfig.ATTEMPT_TIMEOUT_MS_CONFIG_KEY
 
@@ -229,6 +232,11 @@ class BigtableSparkConfBuilder extends Serializable {
   def setCustomAuthenticationProvider(className: String,
                                       params: Map[String, String] = Map()): BigtableSparkConfBuilder = {
     customAuthConf = CustomAuthConfig(Some(className), params)
+    this
+  }
+
+  def setMaxVersions(value: Int): BigtableSparkConfBuilder = {
+    scanConf = scanConf.copy(maxVersions = Some(value))
     this
   }
 
