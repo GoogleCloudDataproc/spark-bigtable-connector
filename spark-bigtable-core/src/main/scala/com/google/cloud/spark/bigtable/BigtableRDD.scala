@@ -17,14 +17,16 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
       tableId: String,
       bigtableSparkConf: BigtableSparkConf
   ): RDD[BigtableRow] = {
+    val confWithUA = getSparkConfWithUserAgent(bigtableSparkConf)
+    val scanConf = confWithUA.appConfig.sparkScanConfig
     new BigtableTableScanRDD(
-      getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig,
+      confWithUA.bigtableClientConfig,
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
       tableId,
       sparkContext,
-      None,
-      None,
-      None
+      scanConf.timeRangeStart,
+      scanConf.timeRangeEnd,
+      scanConf.maxVersions
     )
   }
 

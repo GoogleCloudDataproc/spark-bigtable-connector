@@ -66,4 +66,25 @@ class MaxVersionsFeatureTest extends AnyFunSuite {
 
     assert(conf.appConfig.sparkScanConfig.maxVersions === Some(3))
   }
+
+  test("BigtableRDD.readRDD should propagate maxVersions to BigtableTableScanRDD") {
+    val conf = new BigtableSparkConfBuilder()
+      .setProjectId("p")
+      .setInstanceId("i")
+      .setMaxVersions(4)
+      .build()
+    val sc = new org.apache.spark.SparkContext("local[1]", "test")
+    try {
+      val rddApi = new BigtableRDD(sc)
+      val underlying = rddApi.readRDD("tbl", conf)
+      // Reflection to access private field 'maxVersions' in BigtableTableScanRDD; if structure changes update this test.
+      val clazz = underlying.getClass
+      val field = clazz.getDeclaredField("maxVersions")
+      field.setAccessible(true)
+      val value = field.get(underlying).asInstanceOf[Option[Int]]
+      assert(value.contains(4))
+    } finally {
+      sc.stop()
+    }
+  }
 }
