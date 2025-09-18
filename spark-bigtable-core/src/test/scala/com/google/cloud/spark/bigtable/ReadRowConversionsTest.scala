@@ -82,7 +82,7 @@ class ReadRowConversionsTest
       Field("s_col6", "cf3", "c6", Option("binary"))
     )
     val actualSparkRow: SparkRow =
-      ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
+      ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog).get
 
     assert(actualSparkRow.getAs[String](0) == "fooRowKey")
     assert(actualSparkRow.getAs[Int](1) == 678)
@@ -128,7 +128,7 @@ class ReadRowConversionsTest
       Field("stringCol", "rowkey", "stringCol", Option("string"))
     )
     val actualSparkRow: SparkRow =
-      ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
+      ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog).get
 
     assert(actualSparkRow.getAs[String](0) == "correctValue")
     assert(actualSparkRow.getAs[String](1) == "fooRowKey")
@@ -153,7 +153,7 @@ class ReadRowConversionsTest
       Field("s_col1", "nonexistentCf", "c1", Option("string"))
     )
     val actualSparkRow: SparkRow =
-      ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
+      ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog).get
 
     assert(actualSparkRow.get(0) == null)
     assert(actualSparkRow.getAs[String](1) == "fooRowKey")
@@ -218,6 +218,131 @@ class ReadRowConversionsTest
           ReadRowConversions.buildRow(fields, bigtableRow, relation.catalog)
         }
     }
+  }
+
+  test("buildRowWithRegexQualifier") {
+    val catalog =
+      s"""{
+         |"table":{"name":"tableName"},
+         |"rowkey":"stringCol",
+         |"columns":{
+         |"stringCol":{"cf":"rowkey", "col":"stringCol", "type":"string"}
+         |},
+         |"regexColumns": {
+         |  "s_col1": {
+         |    "cf": "cf1",
+         |    "pattern": "(?i)attr.*",
+         |    "type": "string"
+         |  }
+         |}
+         |}""".stripMargin
+    val params = createParametersMap(catalog)
+    var sqlContext: SQLContext = null
+    val relation = BigtableRelation(params, None)(sqlContext)
+
+    val testRowsMap = Map(
+      "user123" -> createBigtableRow(
+        ByteString.copyFrom(BytesConverter.toBytes("user123")),
+        List(
+          createRowCell(
+            "cf1",
+            "attr~ABC~DEF~ATtR~345",
+            0,
+            BytesConverter.toBytes("abcd")
+          ),
+          createRowCell(
+            "cf1",
+            "attr~ABC~DEF~ATTR~123",
+            0,
+            BytesConverter.toBytes("abc")
+          )
+        )
+      ),
+      "user124" -> createBigtableRow(
+        ByteString.copyFrom(BytesConverter.toBytes("user124")),
+        List(
+          createRowCell(
+            "cf1",
+            "attr~ABC~DEF~AtTR~567",
+            0,
+            BytesConverter.toBytes("abcde")
+          ),
+          createRowCell(
+            "cf1",
+            "attr~BCA~DEF~ATTr~123",
+            0,
+            BytesConverter.toBytes("abcde1")
+          )
+        )
+      ),
+      "user125" -> createBigtableRow(
+        ByteString.copyFrom(BytesConverter.toBytes("user125")),
+        List(
+          createRowCell(
+            "cf1",
+            "attr~BCA~DEF~ATTR~345",
+            0,
+            BytesConverter.toBytes("abcde2")
+          ),
+          createRowCell(
+            "cf1",
+            "attr~BCA~DEF~ATTR~567",
+            0,
+            BytesConverter.toBytes("abcde3")
+          )
+        )
+      ),
+      "user126" -> createBigtableRow(
+        ByteString.copyFrom(BytesConverter.toBytes("user126")),
+        List(
+          createRowCell(
+            "cf1",
+            "mbr~BCA~DEF~ATTR~345",
+            0,
+            BytesConverter.toBytes("abcde2")
+          ),
+          createRowCell(
+            "cf1",
+            "mbr~BCA~DEF~ATTR~567",
+            0,
+            BytesConverter.toBytes("abcde3")
+          )
+        )
+      )
+    )
+
+    val fields = Seq(
+      Field("stringCol", "rowkey", "stringCol", Option("string")),
+      Field("s_col1", "cf1", "(?i)attr.*", Option("string"))
+    )
+
+    val user123SparkRow: SparkRow =
+      ReadRowConversions.buildRow(fields, testRowsMap("user123"), relation.catalog).get
+    assert(user123SparkRow.getAs[String](0) == "user123")
+    val user123Map = user123SparkRow.getMap[String, String](1)
+    assert(user123Map.size == 2)
+    assert(user123Map("attr~ABC~DEF~ATtR~345") == "abcd")
+    assert(user123Map("attr~ABC~DEF~ATTR~123") == "abc")
+
+    val user124SparkRow: SparkRow =
+      ReadRowConversions.buildRow(fields, testRowsMap("user124"), relation.catalog).get
+    assert(user124SparkRow.getAs[String](0) == "user124")
+    val user124Map = user124SparkRow.getMap[String, String](1)
+    assert(user124Map.size == 2)
+    assert(user124Map("attr~ABC~DEF~AtTR~567") == "abcde")
+    assert(user124Map("attr~BCA~DEF~ATTr~123") == "abcde1")
+
+    val user125SparkRow: SparkRow =
+      ReadRowConversions.buildRow(fields, testRowsMap("user125"), relation.catalog).get
+    assert(user125SparkRow.getAs[String](0) == "user125")
+    val user125Map = user125SparkRow.getMap[String, String](1)
+    assert(user125Map.size == 2)
+    assert(user125Map("attr~BCA~DEF~ATTR~345") == "abcde2")
+    assert(user125Map("attr~BCA~DEF~ATTR~567") == "abcde3")
+
+    val user126SparkRowOption: Option[SparkRow] =
+      ReadRowConversions.buildRow(fields, testRowsMap("user126"), relation.catalog)
+    assert(user126SparkRowOption.isEmpty)
   }
 
   def createParametersMap(catalog: String): Map[String, String] = {
