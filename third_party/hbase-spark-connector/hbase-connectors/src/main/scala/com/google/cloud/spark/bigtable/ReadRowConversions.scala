@@ -22,8 +22,16 @@ import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field,
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Row => SparkRow}
 import com.google.re2j.Pattern
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.CacheBuilder
 
 object ReadRowConversions extends Serializable {
+
+  @transient private lazy val patternCache = CacheBuilder.newBuilder()
+    .maximumSize(1000)
+    .build(new CacheLoader[String, Pattern]() {
+    def load(key: String) = Pattern.compile(key)
+  })
 
   private def buildRowForRegex(
       cqFields: Seq[Field],
