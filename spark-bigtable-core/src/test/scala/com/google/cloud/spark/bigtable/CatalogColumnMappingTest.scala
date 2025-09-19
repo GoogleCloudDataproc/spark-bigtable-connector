@@ -309,7 +309,7 @@ class CatalogColumnMappingTest
     assert(!result.first().getAs[Map[String, String]]("someCol").contains("any2"))
   }
 
-  test("if no bt column matches the regex we should have an empty map") {
+  test("if no bt column matches the regex the result should be empty") {
     val catalog =
       s"""{
          |"table":{"name":"tableName"},
@@ -337,7 +337,7 @@ class CatalogColumnMappingTest
       .options(createParametersMap(catalog))
       .load()
 
-    assert(result.first().getAs[Map[String, String]]("someCol").isEmpty)
+    assert(result.isEmpty)
   }
 
 
