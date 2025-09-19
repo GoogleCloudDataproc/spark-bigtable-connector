@@ -174,6 +174,38 @@ class BigtableJoinImplicitTest
     assert(res.columns.contains("dyn_col1"))
   }
 
+  test("Join with missing rows in Bigtable") {
+    // Add data for row1 and row3 in the correct column family
+    fakeCustomDataService.addRow("row1", "cf1", "col1", "bt_value1")
+    fakeCustomDataService.addRow("row3", "cf1", "col1", "bt_value3")
+    // Add the "missing" row but with a different, irrelevant column family.
+    // This ensures the row key exists, avoiding the fake server crash,
+    // but it will have no data for the columns requested in the join.
+    fakeCustomDataService.addRow("row_missing", "cf2", "col_other", "some_other_value")
+
+    val leftDfWithMissingRow = Seq(
+      ("row1", "value1_left"),
+      ("row_missing", "value_missing_left"),
+      ("row3", "value3_left")
+    ).toDF("id", "left_col1")
+
+    val joinConfig = createParametersMap(basicCatalog)
+    val resultDf =
+      leftDfWithMissingRow.joinWithBigtable(joinConfig, "id", joinType = "left")
+
+    val expectedData = Seq(
+      ("row1", "value1_left", "bt_value1"),
+      ("row_missing", "value_missing_left", null),
+      ("row3", "value3_left", "bt_value3")
+    )
+    val expectedDf = expectedData.toDF("id", "left_col1", "col1")
+
+    // The code should not crash and the result should match the expected DataFrame.
+    assert(resultDf.count() == expectedDf.count())
+    assert(resultDf.except(expectedDf).count() == 0)
+    assert(expectedDf.except(resultDf).count() == 0)
+  }
+
   def createSampleRowKeyResponse(rowKey: Array[Byte]): SampleRowKeysResponse = {
     SampleRowKeysResponse
       .newBuilder()
