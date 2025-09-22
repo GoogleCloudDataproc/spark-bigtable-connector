@@ -20,6 +20,7 @@ import org.apache.spark.sql.SparkSession
 import spark.bigtable.example.Util
 import spark.bigtable.example.WordCount.parse
 import com.google.api.gax.core.{CredentialsProvider, NoCredentialsProvider}
+import com.google.auth.Credentials
 
 import scala.util.Try
 
@@ -32,8 +33,6 @@ object BigtableReadWithCustomAuth extends App {
     .master("local[*]")
     .appName("BigtableReadWithCustomAuth")
     .getOrCreate()
-
-  val credentilasProvider = new CustomCredentialProvider()
 
   Try(Util.createExampleBigtable(spark, createNewTable, projectId, instanceId, tableName))
 

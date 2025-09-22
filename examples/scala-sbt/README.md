@@ -30,8 +30,9 @@ To run the job using dataproc, you can run the following command:
 gcloud dataproc jobs submit spark \
 --cluster=$BIGTABLE_SPARK_DATAPROC_CLUSTER \
 --region=$BIGTABLE_SPARK_DATAPROC_REGION \
+--project=$BIGTABLE_SPARK_PROJECT_ID \
 --class=spark.bigtable.example.WordCount \
---jars=target/scala-2.12/spark-bigtable-example-assembly-0.1.jar  \
+--jars=target/scala-2.12/spark-bigtable-example-scala2.12-assembly-0.1.jar  \
 --  \
 $BIGTABLE_SPARK_PROJECT_ID \
 $BIGTABLE_SPARK_INSTANCE_ID \

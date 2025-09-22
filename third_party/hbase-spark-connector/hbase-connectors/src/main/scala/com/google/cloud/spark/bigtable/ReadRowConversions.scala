@@ -22,32 +22,33 @@ import com.google.cloud.spark.bigtable.datasources.{BigtableTableCatalog, Field,
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{Row => SparkRow}
 import com.google.re2j.Pattern
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.CacheBuilder
 
 object ReadRowConversions extends Serializable {
+
+  @transient private lazy val patternCache = CacheBuilder.newBuilder()
+    .maximumSize(1000)
+    .build(new CacheLoader[String, Pattern]() {
+    def load(key: String) = Pattern.compile(key)
+  })
 
   private def buildRowForRegex(
       cqFields: Seq[Field],
       bigtableRow: BigtableRow
-  ): Seq[(Field, Any)] = {
+  ): Seq[(Field, Map[String, Any])] = {
     cqFields.map { x =>
       val pattern: Pattern = Pattern.compile(x.btColName)
       val allCells: List[RowCell] = ReadRowUtil.getAllCells(bigtableRow, x.btColFamily)
       val cqAllFields = allCells
-        .filter(cell => pattern.matcher(cell.getQualifier.toStringUtf8).find())
+        .filter(cell => pattern.matcher(cell.getQualifier.toStringUtf8).matches())
         .map { cell =>
           val qualifier = cell.getQualifier.toStringUtf8
-          val cqField = Field(
-            x.sparkColName,
-            x.btColFamily,
-            qualifier,
-            x.simpleType,
-            x.avroSchema,
-            x.len
-          )
-          extractValue(cqField, bigtableRow)
+          val cellValue = cell.getValue.toByteArray
+          val value = x.bigtableToScalaValue(cellValue, 0, cellValue.length)
+          (qualifier, value)
         }
-      val cqValues = cqAllFields.map { case (field, value) => field.btColName -> value }
-      (x, cqValues.toMap)
+      (x, cqAllFields.toMap)
     }
   }
 
@@ -63,17 +64,27 @@ object ReadRowConversions extends Serializable {
       fields: Seq[Field],
       bigtableRow: BigtableRow,
       catalog: BigtableTableCatalog
-  ): SparkRow = {
+  ): Option[SparkRow] = {
     val keySeq = catalog.row.parseFieldsFromBtRow(bigtableRow)
 
     val valueSeq = fields
       .filter(!_.isRowKey)
+      .filter(field => !catalog.sMap.cqMap.contains(field.sparkColName))
       .map(field => extractValue(field, bigtableRow))
-      .toMap
     val cqFields = catalog.sMap.cqMap.values.toSeq
-    val cqValueSeq = buildRowForRegex(cqFields, bigtableRow).toMap
-    val unionedRow = keySeq ++ valueSeq ++ cqValueSeq
-    SparkRow.fromSeq((fields ++ cqFields).map(unionedRow.get(_).orNull))
+    val cqValueSeq = buildRowForRegex(cqFields, bigtableRow)
+
+    if (catalog.sMap.cqMap.nonEmpty) {
+      val nonNullValues = valueSeq.filter(_._2 != null)
+      val nonEmptyMaps = cqValueSeq.filter(!_._2.isEmpty)
+
+      if (nonNullValues.isEmpty && nonEmptyMaps.isEmpty) {
+        return None
+      }
+    }
+
+    val unionedRow = (keySeq ++ valueSeq ++ cqValueSeq).toMap
+    Some(SparkRow.fromSeq(fields.map(unionedRow.get(_).orNull)))
   }
 
   private def extractValue(field: Field, bigtableRow: BigtableRow): (Field, Any) = {

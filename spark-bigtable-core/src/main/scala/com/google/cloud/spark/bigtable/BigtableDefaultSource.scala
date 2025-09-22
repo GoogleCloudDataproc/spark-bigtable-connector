@@ -229,9 +229,7 @@ case class BigtableRelation(
       )
 
     val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
-    readRdd.map { r =>
-      ReadRowConversions.buildRow(fieldsOrdered, r, catalog)
-    }
+    readRdd.flatMap(r => ReadRowConversions.buildRow(fieldsOrdered, r, catalog))
   }
 
   def getLineageDatasetIdentifier(
