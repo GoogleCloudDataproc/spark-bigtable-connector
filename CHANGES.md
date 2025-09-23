@@ -2,8 +2,6 @@
 
 ## Next
 
-## 0.7.1 - 2025-09-22
-
 * PR #92: fix: regex read row conversions
 * PR #87: fix: fix script for pyspark job to include scala 2.13 version 
 
