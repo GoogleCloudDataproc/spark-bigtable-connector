@@ -25,28 +25,40 @@ object SparkScanConfig {
   val PUSH_DOWN_FILTERS_CONFIG_KEY =
     "spark.bigtable.push.down.row.key.filters"
 
+  val MAX_VERSIONS_CONFIG_KEY = "spark.bigtable.read.max.versions"
+
   private[datasources] def fromMap(conf: Map[String, String]): SparkScanConfig = {
     SparkScanConfig(
       conf.get(TIME_RANGE_START_CONFIG_KEY).map(_.toLong),
       conf.get(TIME_RANGE_END_CONFIG_KEY).map(_.toLong),
-      conf.get(PUSH_DOWN_FILTERS_CONFIG_KEY).map(_.toBoolean))
+      conf.get(PUSH_DOWN_FILTERS_CONFIG_KEY).map(_.toBoolean),
+      conf.get(MAX_VERSIONS_CONFIG_KEY).map(_.toInt))
   }
 
   def apply(timeRangeStart: Option[Long],
             timeRangeEnd: Option[Long],
-            pushDownRowKeyFilters: Option[Boolean]): SparkScanConfig = {
+            pushDownRowKeyFilters: Option[Boolean],
+            maxVersions: Option[Int]): SparkScanConfig = {
     new SparkScanConfig(
       timeRangeStart,
       timeRangeEnd,
-      pushDownRowKeyFilters.getOrElse(true))
+      pushDownRowKeyFilters.getOrElse(true),
+      maxVersions)
   }
 
-  def apply(): SparkScanConfig = SparkScanConfig(None, None, None)
+  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None)
 }
 
 case class SparkScanConfig private[datasources]
 (timeRangeStart: Option[Long],
  timeRangeEnd: Option[Long],
- pushDownRowKeyFilters: Boolean) {
-  def getValidationErrors: Set[String] = Set()
+ pushDownRowKeyFilters: Boolean,
+ maxVersions: Option[Int]) {
+  def getValidationErrors: Set[String] = {
+    maxVersions match {
+      case Some(versions) if versions < 1 =>
+        Set(s"${SparkScanConfig.MAX_VERSIONS_CONFIG_KEY} must be a positive integer")
+      case _ => Set()
+    }
+  }
 }
