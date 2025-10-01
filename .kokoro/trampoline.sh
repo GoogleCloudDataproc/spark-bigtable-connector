@@ -32,5 +32,8 @@ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubun
 sudo apt update
 sudo apt install -y docker-ce
 
+# Some VMs don't export KOKORO_ROOT and cause builds to fail. Hence, forcefully
+# set it here.
+KOKORO_ROOT="${KOKORO_ROOT:-/tmpfs}"
 $(dirname $0)/populate-secrets.sh # Secret Manager secrets.
 python3 "${KOKORO_GFILE_DIR}/trampoline_v1.py"
