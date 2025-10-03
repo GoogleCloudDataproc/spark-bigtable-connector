@@ -133,6 +133,45 @@ documentation
 [here](https://cloud.google.com/bigtable/docs/use-bigtable-spark-connector).
 A list of main features is as follows:
 
+### Cell version limiting
+
+Limit the number of cell versions returned per column using the configuration
+key `spark.bigtable.read.max.versions`. This is equivalent to the
+`cells-per-column=N` flag in the `cbt` CLI and is useful when rows have
+accumulated many historical versions that are not needed for analytics queries
+or that risk hitting Bigtable row size limits.
+
+Example (Scala):
+```scala
+val df = spark.read
+  .format("bigtable")
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .option("spark.bigtable.read.max.versions", "1") // only latest version
+  .options(catalogMap)
+  .load()
+```
+
+Example (PySpark):
+```python
+df = (spark.read
+      .format("bigtable")
+      .option("spark.bigtable.project.id", project_id)
+      .option("spark.bigtable.instance.id", instance_id)
+      .option("spark.bigtable.read.max.versions", "1")  # only latest
+      .options(catalog=catalog_json)
+      .load())
+```
+
+How it works internally: the connector applies a Bigtable filter
+`FILTERS.limit().cellsPerColumn(N)` (not `Query.limit`, which limits rows) so
+that only the most recent N cells per column qualifier are returned from the
+service.
+
+Validation: values must be positive integers; if omitted all available
+versions are returned (subject to any Bigtable server-side garbage collection
+policies configured on the column family).
+
 ### Catalog definition
 
 You can define a catalog as a JSON-formatted string, to convert from the

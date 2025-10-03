@@ -5,5 +5,7 @@ import com.google.cloud.spark.bigtable.datasources.config.application.{SparkScan
 // Groups configurations related to the spark application itself
 case class ApplicationConfig(sparkScanConfig: SparkScanConfig,
                              sparkWritesConfig: SparkWritesConfig) {
-  def getValidationErrors(): Set[String] = Set()
+  def getValidationErrors(): Set[String] = {
+    sparkScanConfig.getValidationErrors ++ sparkWritesConfig.getValidationErrors
+  }
 }
