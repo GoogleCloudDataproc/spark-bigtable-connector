@@ -143,9 +143,8 @@ case class BigtableRelation(
     bigtableSparkConf.appConfig.sparkScanConfig.timeRangeStart.map(timestamp => Math.multiplyExact(timestamp, 1000L))
   val endTimestampMicros: Option[Long] =
     bigtableSparkConf.appConfig.sparkScanConfig.timeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
-
-  val maxVersions: Option[Int] = bigtableSparkConf.appConfig.sparkScanConfig.maxVersions
-  // Version limiting handled via FILTERS.limit().cellsPerColumn; no per-read log to avoid verbosity.
+  // Version limiting handled via FILTERS.limit().cellsPerColumn
+  val readMaxVersions: Option[Int] = bigtableSparkConf.appConfig.sparkScanConfig.maxVersions
 
   val writeTimestampMicros: Long = bigtableSparkConf.appConfig.sparkWritesConfig.writeTimestamp
     .map(timestamp => Math.multiplyExact(timestamp, 1000L))
@@ -225,7 +224,7 @@ case class BigtableRelation(
         sqlContext.sparkContext,
         startTimestampMicros,
         endTimestampMicros,
-        maxVersions
+        readMaxVersions
       )
 
     val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
