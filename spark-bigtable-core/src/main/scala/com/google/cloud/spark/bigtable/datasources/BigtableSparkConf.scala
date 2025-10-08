@@ -70,7 +70,7 @@ object BigtableSparkConf {
   val DEFAULT_BIGTABLE_PUSH_DOWN_FILTERS = true
 
   /** The maximum number of cell versions to return per column. */
-  val BIGTABLE_MAX_VERSIONS: String = SparkScanConfig.MAX_VERSIONS_CONFIG_KEY
+  val BIGTABLE_READ_MAX_VERSIONS: String = SparkScanConfig.MAX_VERSIONS_CONFIG_KEY
 
   /** The timeout duration for read rows request attempts. */
   val BIGTABLE_READ_ROWS_ATTEMPT_TIMEOUT_MS: String = ReadRowsRpcConfig.ATTEMPT_TIMEOUT_MS_CONFIG_KEY

@@ -50,8 +50,8 @@ class MaxVersionsFeatureTest extends AnyFunSuite {
     assert(exception.getMessage.contains("must be a positive integer"))
   }
 
-  test("BIGTABLE_MAX_VERSIONS configuration key should be correct") {
-    assert(BigtableSparkConf.BIGTABLE_MAX_VERSIONS === "spark.bigtable.read.max.versions")
+  test("BIGTABLE_READ_MAX_VERSIONS configuration key should be correct") {
+    assert(BigtableSparkConf.BIGTABLE_READ_MAX_VERSIONS === "spark.bigtable.read.max.versions")
   }
 
   test("maxVersions should be parsed from configuration map") {
