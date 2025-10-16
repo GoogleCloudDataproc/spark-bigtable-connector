@@ -222,9 +222,10 @@ case class BigtableRelation(
       case (Some(startStamp), Some(endStamp)) =>
         filter.filter(FILTERS.timestamp().range().startClosed(startStamp).endOpen(endStamp))
       case (None, Some(endStamp)) =>
-        filter.filter(FILTERS.timestamp().range().endClosed(endStamp))
+        filter.filter(FILTERS.timestamp().range().endOpen(endStamp))
       case (Some(startStamp), None) =>
         filter.filter(FILTERS.timestamp().range().startClosed(startStamp))
+      case (None, None) => // No timestamp filter
     }
     val readRdd: BigtableTableScanRDD =
       new BigtableTableScanRDD(
