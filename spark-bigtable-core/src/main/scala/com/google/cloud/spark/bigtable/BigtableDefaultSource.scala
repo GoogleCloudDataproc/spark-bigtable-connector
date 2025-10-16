@@ -18,7 +18,7 @@ package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
-import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS;
+import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.filters.{RowKeyWrapper, SparkSqlFilterAdapter}
 import com.google.common.collect.RangeSet
