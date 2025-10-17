@@ -216,17 +216,19 @@ case class BigtableRelation(
     val filterRangeSet: RangeSet[RowKeyWrapper] = SparkSqlFilterAdapter
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
 
-    val filter = FILTERS.chain().filter(FILTERS.limit().cellsPerColumn(1))
-
-    (startTimestampMicros, endTimestampMicros) match {
+    val timestampFilter = (startTimestampMicros, endTimestampMicros) match {
       case (Some(startStamp), Some(endStamp)) =>
-        filter.filter(FILTERS.timestamp().range().startClosed(startStamp).endOpen(endStamp))
+        FILTERS.timestamp().range().startClosed(startStamp).endOpen(endStamp))
       case (None, Some(endStamp)) =>
-        filter.filter(FILTERS.timestamp().range().endOpen(endStamp))
+        FILTERS.timestamp().range().endOpen(endStamp))
       case (Some(startStamp), None) =>
-        filter.filter(FILTERS.timestamp().range().startClosed(startStamp))
+        FILTERS.timestamp().range().startClosed(startStamp))
       case (None, None) => // No timestamp filter
     }
+
+    val filter = FILTERS.chain().filter(timestampFilter)
+      .filter(FILTERS.limit().cellsPerColumn(1))
+
     val readRdd: BigtableTableScanRDD =
       new BigtableTableScanRDD(
         clientKey,
