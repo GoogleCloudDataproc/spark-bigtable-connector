@@ -19,6 +19,7 @@ package com.google.cloud.spark.bigtable
 import com.google.api.gax.core.{CredentialsProvider, NoCredentialsProvider}
 import com.google.auth.Credentials
 import com.google.bigtable.v2.SampleRowKeysResponse
+import com.google.cloud.bigtable.data.v2.models.Filters
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.fakeserver.{FakeCustomDataService, FakeServerBuilder}
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
@@ -109,8 +110,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -184,8 +184,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -261,8 +260,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -341,8 +339,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -417,8 +414,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -483,8 +479,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     val actualPartitions: Array[BigtableScanPartition] =
@@ -529,8 +524,7 @@ class BigtableTableScanRDDTest
       filterRangeSet,
       relation.tableId,
       relation.sqlContext.sparkContext,
-      relation.startTimestampMicros,
-      relation.endTimestampMicros
+      Filters.FILTERS.pass()
     )
 
     // All we want is to validate our class was instantiated

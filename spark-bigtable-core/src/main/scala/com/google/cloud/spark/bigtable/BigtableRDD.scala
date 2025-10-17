@@ -1,11 +1,7 @@
 package com.google.cloud.spark.bigtable
 
-import com.google.cloud.bigtable.data.v2.models.{RowMutationEntry, Row => BigtableRow}
-import com.google.cloud.spark.bigtable.datasources.{
-  BigtableDataClientBuilder,
-  BigtableSparkConf,
-  BigtableTableScanRDD
-}
+import com.google.cloud.bigtable.data.v2.models.{Filters, RowMutationEntry, Row => BigtableRow}
+import com.google.cloud.spark.bigtable.datasources.{BigtableDataClientBuilder, BigtableSparkConf, BigtableTableScanRDD}
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{ImmutableRangeSet, Range}
 import org.apache.spark.SparkContext
@@ -22,8 +18,7 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
       tableId,
       sparkContext,
-      None,
-      None
+      Filters.FILTERS.pass()
     )
   }
 

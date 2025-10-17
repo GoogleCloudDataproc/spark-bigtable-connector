@@ -18,9 +18,9 @@ package com.google.cloud.spark.bigtable.datasources
 
 import com.google.api.gax.rpc.ServerStream
 import com.google.cloud.bigtable.data.v2.BigtableDataClient
-import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, TimestampFilter}
+import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter, TimestampFilter}
 import com.google.cloud.bigtable.data.v2.models.Range.ByteStringRange
-import com.google.cloud.bigtable.data.v2.models.{KeyOffset, Query, Row => BigtableRow}
+import com.google.cloud.bigtable.data.v2.models.{Filters, KeyOffset, Query, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.config.BigtableClientConfig
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{BoundType, RangeSet, TreeRangeSet, Range => GuavaRange}
@@ -37,8 +37,7 @@ class BigtableTableScanRDD(
     filterRangeSet: RangeSet[RowKeyWrapper],
     tableId: String,
     sparkContext: SparkContext,
-    startTimestampMicros: Option[Long],
-    endTimestampMicros: Option[Long]
+    filter: Filter
 ) extends RDD[BigtableRow](sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
@@ -134,13 +133,12 @@ class BigtableTableScanRDD(
       val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
       val bigtableDataClient: BigtableDataClient = clientHandle.getClient()
 
-      var query = Query.create(tableId)
+      var query = Query.create(tableId).filter(filter)
       split
         .asInstanceOf[BigtableScanPartition]
         .partitionRangeSet
         .asRanges()
         .forEach(applyRangeToQuery(_, query))
-      query = addTimestampFilter(query)
 
       val stream: ServerStream[BigtableRow] = bigtableDataClient.readRows(query)
       streamToIterator(stream, clientHandle)
@@ -199,21 +197,6 @@ class BigtableTableScanRDD(
         }
       }
       query.range(byteStringRange);
-    }
-  }
-
-  private def addTimestampFilter(query: Query): Query = {
-    val timestampFilter: TimestampFilter = FILTERS.timestamp()
-    (startTimestampMicros, endTimestampMicros) match {
-      case (Some(startStamp), Some(endStamp)) =>
-        query.filter(
-          timestampFilter.range().startClosed(startStamp).endOpen(endStamp)
-        )
-      case (None, Some(endStamp)) =>
-        query.filter(timestampFilter.range().endOpen(endStamp))
-      case (Some(startStamp), None) =>
-        query.filter(timestampFilter.range().startClosed(startStamp))
-      case (None, None) => query
     }
   }
 }

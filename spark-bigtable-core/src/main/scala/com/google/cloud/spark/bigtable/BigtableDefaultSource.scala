@@ -18,6 +18,7 @@ package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
+import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.filters.{RowKeyWrapper, SparkSqlFilterAdapter}
 import com.google.common.collect.RangeSet
@@ -214,14 +215,28 @@ case class BigtableRelation(
   ): RDD[SparkRow] = {
     val filterRangeSet: RangeSet[RowKeyWrapper] = SparkSqlFilterAdapter
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
+
+    val timestampFilter: com.google.cloud.bigtable.data.v2.models.Filters.Filter =
+      (startTimestampMicros, endTimestampMicros) match {
+      case (Some(startStamp), Some(endStamp)) =>
+        FILTERS.timestamp().range().startClosed(startStamp).endOpen(endStamp)
+      case (None, Some(endStamp)) =>
+        FILTERS.timestamp().range().endOpen(endStamp)
+      case (Some(startStamp), None) =>
+        FILTERS.timestamp().range().startClosed(startStamp)
+      case (None, None) => FILTERS.pass() // No timestamp filter
+    }
+
+    val queryFilter = FILTERS.chain().filter(timestampFilter)
+      .filter(FILTERS.limit().cellsPerColumn(1))
+
     val readRdd: BigtableTableScanRDD =
       new BigtableTableScanRDD(
         clientKey,
         filterRangeSet,
         tableId,
         sqlContext.sparkContext,
-        startTimestampMicros,
-        endTimestampMicros
+        queryFilter
       )
 
     val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
