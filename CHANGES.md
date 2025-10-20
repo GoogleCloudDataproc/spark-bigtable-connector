@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #97: fix: set max cell version to 1 for reads from dataframe
+
 ## 0.7.1 - 2025-09-23
 
 * PR #92: fix: regex read row conversions
