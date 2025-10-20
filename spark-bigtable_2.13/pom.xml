@@ -21,14 +21,14 @@
   <parent>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
-    <version>0.7.1</version> <!-- ${NEXT_VERSION_FLAG} -->
+    <version>0.7.2</version> <!-- ${NEXT_VERSION_FLAG} -->
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable_2.13</artifactId>
   <name>Google Bigtable - Apache Spark Connector for Scala 2.13</name>
-  <version>0.7.1</version> <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.7.2</version> <!-- ${NEXT_VERSION_FLAG} -->
 
   <properties>
     <scala.version>2.13.14</scala.version>
