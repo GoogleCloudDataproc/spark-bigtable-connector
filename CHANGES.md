@@ -1,5 +1,7 @@
 # Release Notes
 
+## Next
+
 ## 0.7.2 - 2025-10-20
 
 * PR #97: fix: set max cell version to 1 for reads from dataframe
