@@ -22,6 +22,20 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
     )
   }
 
+  def readRDD(
+      tableId: String,
+      bigtableSparkConf: BigtableSparkConf,
+      rowFilters: Filters.Filter
+  ): RDD[BigtableRow] = {
+    new BigtableTableScanRDD(
+      getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig,
+      ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
+      tableId,
+      sparkContext,
+      rowFilters
+    )
+  }
+
   def writeRDD(
       rdd: RDD[RowMutationEntry],
       tableId: String,

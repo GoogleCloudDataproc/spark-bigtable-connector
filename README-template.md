@@ -212,6 +212,9 @@ A few caveats:
   advisable to use `\C` as the wildcard expression, since `.` will not match on
   those
 - Control characters must be escaped
+- The regex in the catalog is not pushed down to the server. To push down the
+  column regex filter, specify the filters in the options. 
+  See the [Example](#reading-from-bigtable-with-filters)
 
 ### Writing to Bigtable
 
@@ -246,6 +249,48 @@ Dataset<Row> dataFrame = spark
   .option("spark.bigtable.instance.id", instanceId)
   .load();
 ```
+
+### Reading from Bigtable with Filters
+
+Push down filters for the columns in the catalog is not supported yet. However, this can be down with the `spark.bigtable.read.row.filters`
+option.
+
+```java
+import static com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.FILTERS;
+import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.Filter;
+import com.google.cloud.spark.bigtable.util.RowFilterUtils;
+
+/*
+catalog:
+{
+  "table": {"name": "t1"},
+  "rowkey": "id_rowkey",
+  "columns": {
+    "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
+  },
+  "regexColumns": {
+    "metadata": {"cf": "info", "pattern": "\\C*", "type": "long" }
+  }
+}
+*/
+
+Filter filters = FILTERS.chain()
+        .filter(FILTERS.family().exactMatch("info"))
+        .filter(FILTERS.qualifier().regex("\\C*"));
+String filterString = RowFilterUtils.encode(filters);
+
+Dataset<Row> dataFrame = spark
+  .read()
+  .format("bigtable")
+  .option("catalog", catalog)
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .option("spark.bigtable.read.row.filters", filterString)
+  .load();
+```
+
+You can perform read with any [supported complex filters](https://docs.cloud.google.com/bigtable/docs/using-filters#java)
+with this option.
 
 ### Efficient joins with other data sources
 
