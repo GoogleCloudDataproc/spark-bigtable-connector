@@ -23,11 +23,7 @@ import com.google.common.io.BaseEncoding
 object RowFilterUtils {
 
   def encode(filter: Filter): String = {
-    val filterProto = filter.toProto
-    val byteArray: Array[Byte] = filterProto.toByteArray
-    val protoString: String = BaseEncoding.base64().encode(byteArray)
-
-    protoString
+    BaseEncoding.base64().encode(filter.toProto.toByteArray)
   }
 
   def decode(protoString: String): Filter = {

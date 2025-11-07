@@ -231,12 +231,7 @@ case class BigtableRelation(
       case (None, None) => FILTERS.pass() // No timestamp filter
     }
 
-    val rowFilters: com.google.cloud.bigtable.data.v2.models.Filters.Filter = {
-      rowFilterString match {
-        case Some(value) => RowFilterUtils.decode(value)
-        case None => FILTERS.pass()
-      }
-    }
+    val rowFilters = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
 
     val queryFilter = FILTERS.chain().filter(timestampFilter)
       .filter(rowFilters)
