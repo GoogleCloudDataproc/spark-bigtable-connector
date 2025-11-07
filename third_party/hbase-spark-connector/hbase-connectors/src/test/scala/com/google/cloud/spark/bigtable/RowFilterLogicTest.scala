@@ -18,11 +18,10 @@ package com.google.cloud.spark.bigtable
 
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
 import com.google.cloud.bigtable.admin.v2.{BigtableTableAdminClient, BigtableTableAdminSettings}
-import com.google.cloud.bigtable.data.v2.models.{Filters, RowMutationEntry}
+import com.google.cloud.bigtable.data.v2.models.RowMutationEntry
 import com.google.cloud.bigtable.data.v2.{BigtableDataClient, BigtableDataSettings}
 import com.google.cloud.bigtable.emulator.v2.Emulator
 import com.google.cloud.spark.bigtable.datasources._
-import com.google.cloud.spark.bigtable.util.RowFilterUtils
 import com.google.protobuf.ByteString
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
