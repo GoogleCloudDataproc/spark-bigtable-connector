@@ -20,7 +20,7 @@ import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
 import com.google.cloud.spark.bigtable.Logging
 import org.scalatest.funsuite.AnyFunSuite
 
-class RowFiltersUtilTest
+class RowFilterUtilsTest
   extends AnyFunSuite
     with Logging {
   test("encode_decode") {
@@ -33,6 +33,6 @@ class RowFiltersUtilTest
 
     val value = RowFilterUtils.decode(filterString)
 
-    assert(value.equals(filter))
+    assert(value.toProto == filter.toProto)
   }
 }
