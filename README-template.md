@@ -252,8 +252,8 @@ Dataset<Row> dataFrame = spark
 
 ### Reading from Bigtable with Filters
 
-Push down filters for the columns in the catalog is not supported yet. However, this can be down with the `spark.bigtable.read.row.filters`
-option.
+Push down filters for the columns in the catalog is not supported yet. However, this can be done with the
+`spark.bigtable.read.row.filters` option.
 
 ```java
 import static com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.FILTERS;
