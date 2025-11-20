@@ -21,11 +21,11 @@ import static org.junit.Assert.fail;
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
+import com.google.cloud.bigtable.data.v2.models.Row;
+import com.google.cloud.bigtable.data.v2.models.RowCell;
+import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
 import com.google.cloud.spark.bigtable.datasources.BigtableSparkConf;
 import com.google.cloud.spark.bigtable.datasources.BigtableSparkConfBuilder;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Row;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowCell;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
 import com.google.cloud.spark.bigtable.repackaged.io.grpc.Status;
 import java.util.ArrayList;
 import java.util.List;

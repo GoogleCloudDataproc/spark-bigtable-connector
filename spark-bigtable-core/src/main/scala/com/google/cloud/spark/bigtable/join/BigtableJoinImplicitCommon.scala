@@ -8,8 +8,11 @@ import org.apache.spark.sql.{Column, DataFrame, SparkSession, Row => SparkRow}
 import com.google.api.gax.rpc.ServerStream
 import com.google.cloud.bigtable.data.v2.models.{Query, TableId, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.config.BigtableClientConfig
+import com.google.cloud.spark.bigtable.datasources.config.application.SparkScanConfig.ROW_FILTERS_CONFIG_KEY
+import com.google.cloud.spark.bigtable.util.RowFilterUtils
 import com.google.protobuf.ByteString
 import org.apache.spark.SparkContext
+import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
 
 import java.util
 import scala.collection.JavaConverters.asScalaBufferConverter
@@ -95,13 +98,15 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
       getBigtableConfig(parameters, bigtableSchema, catalog, spark.sparkContext)
     val btRowKeyField = catalog.sMap.fields.find(_.isRowKey).get
     val srcRowKeyField = btRowKeyField.copy(sparkColName = srcRowKeyCol)
+    val rowFilterString = parameters.get(ROW_FILTERS_CONFIG_KEY)
+    val rowFilters = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
     // Fetch Bigtable rows based on join keys from the source DataFrame
     val bigtableRdd = srcDf
       .select(srcRowKeyCol)
       .rdd
       .mapPartitionsWithIndex { (partitionIndex, rows) =>
         val rowKeys = rows.map(r => srcRowKeyField.scalaValueToBigtable(r.getAs[Any](srcRowKeyCol)))
-        val btRows = fetchBigtableRows(rowKeys, bigtableConfig, catalog.name, partitionIndex)
+        val btRows = fetchBigtableRows(rowKeys, rowFilters, bigtableConfig, catalog.name, partitionIndex)
         btRows
           .filter(_ != null)
           .flatMap(row => ReadRowConversions.buildRow(orderedFields, row, catalog))
@@ -147,6 +152,7 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
 
   private def fetchBigtableRows(
       rowKeys: Iterator[Array[Byte]],
+      rowFilters: Filter,
       bigtableClientConfig: BigtableClientConfig,
       tableId: String,
       pNumber: Int
@@ -155,7 +161,7 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
       val rows: util.List[ApiFuture[BigtableRow]] = new util.ArrayList[ApiFuture[BigtableRow]]()
       val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
       val bigtableClient = clientHandle.getClient()
-      val batcher = bigtableClient.newBulkReadRowsBatcher(TableId.of(tableId))
+      val batcher = bigtableClient.newBulkReadRowsBatcher(TableId.of(tableId), rowFilters)
       rowKeys.foreach { rowKey =>
         val rowKeyBytes = ByteString.copyFrom(rowKey)
         val rowFuture = batcher.add(rowKeyBytes)

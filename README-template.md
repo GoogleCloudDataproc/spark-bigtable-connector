@@ -255,10 +255,9 @@ Dataset<Row> dataFrame = spark
 Push down filters for the columns in the catalog is not supported yet. However, this can be done with the
 `spark.bigtable.read.row.filters` option.
 
-```java
-import static com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.FILTERS;
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.Filter;
-import com.google.cloud.spark.bigtable.util.RowFilterUtils;
+```scala
+import import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
+import com.google.cloud.spark.bigtable.util.RowFilterUtils
 
 /*
 catalog:
@@ -274,12 +273,12 @@ catalog:
 }
 */
 
-Filter filters = FILTERS.chain()
+val filters = FILTERS.chain()
         .filter(FILTERS.family().exactMatch("info"))
-        .filter(FILTERS.qualifier().regex("\\C*"));
-String filterString = RowFilterUtils.encode(filters);
+        .filter(FILTERS.qualifier().regex("\\C*"))
+val filterString = RowFilterUtils.encode(filters)
 
-Dataset<Row> dataFrame = spark
+val dataFrame = spark
   .read()
   .format("bigtable")
   .option("catalog", catalog)
@@ -651,12 +650,6 @@ Since the Bigtable Spark connector is based on the
 [Bigtable client for Java](https://github.com/googleapis/java-bigtable),
 you can directly use the client in your Spark applications, if you want
 to have even more control over how you interact with Bigtable.
-
-To use the Bigtable client for Java classes, append the
-`com.google.cloud.spark.bigtable.repackaged` prefix to the package names. For
-example, instead of using the class name
-as `com.google.cloud.bigtable.data.v2.BigtableDataClient`, use
-`com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.BigtableDataClient`.
 
 ## Examples
 
