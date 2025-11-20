@@ -212,6 +212,9 @@ A few caveats:
   advisable to use `\C` as the wildcard expression, since `.` will not match on
   those
 - Control characters must be escaped
+- The regex in the catalog is not pushed down to the server. To push down the
+  column regex filter, specify the filters in the options. 
+  See the [Example](#reading-from-bigtable-with-filters)
 
 ### Writing to Bigtable
 
@@ -246,6 +249,47 @@ Dataset<Row> dataFrame = spark
   .option("spark.bigtable.instance.id", instanceId)
   .load();
 ```
+
+### Reading from Bigtable with Filters
+
+Push down filters for the columns in the catalog is not supported yet. However, this can be done with the
+`spark.bigtable.read.row.filters` option.
+
+```scala
+import import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
+import com.google.cloud.spark.bigtable.util.RowFilterUtils
+
+/*
+catalog:
+{
+  "table": {"name": "t1"},
+  "rowkey": "id_rowkey",
+  "columns": {
+    "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
+  },
+  "regexColumns": {
+    "metadata": {"cf": "info", "pattern": "\\C*", "type": "long" }
+  }
+}
+*/
+
+val filters = FILTERS.chain()
+        .filter(FILTERS.family().exactMatch("info"))
+        .filter(FILTERS.qualifier().regex("\\C*"))
+val filterString = RowFilterUtils.encode(filters)
+
+val dataFrame = spark
+  .read()
+  .format("bigtable")
+  .option("catalog", catalog)
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .option("spark.bigtable.read.row.filters", filterString)
+  .load();
+```
+
+You can perform read with any [supported complex filters](https://docs.cloud.google.com/bigtable/docs/using-filters#java)
+with this option.
 
 ### Efficient joins with other data sources
 
@@ -606,12 +650,6 @@ Since the Bigtable Spark connector is based on the
 [Bigtable client for Java](https://github.com/googleapis/java-bigtable),
 you can directly use the client in your Spark applications, if you want
 to have even more control over how you interact with Bigtable.
-
-To use the Bigtable client for Java classes, append the
-`com.google.cloud.spark.bigtable.repackaged` prefix to the package names. For
-example, instead of using the class name
-as `com.google.cloud.bigtable.data.v2.BigtableDataClient`, use
-`com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.BigtableDataClient`.
 
 ## Examples
 

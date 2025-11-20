@@ -65,6 +65,9 @@ object BigtableSparkConf {
   /** Specifying whether to push row key filters to Bigtable or not. */
   val BIGTABLE_PUSH_DOWN_ROW_KEY_FILTERS: String = SparkScanConfig.PUSH_DOWN_FILTERS_CONFIG_KEY
 
+  /** Specifying the row filters to push down to read data from bigtable. */
+  val BIGTABLE_READ_ROW_FILTERS: String = SparkScanConfig.ROW_FILTERS_CONFIG_KEY
+
   /** By default, push down all filters (row key, column value, etc.) down. */
   @ObsoleteApi("This field is obsolete is will be removed on a future version. To use a default configuration simply leave it unset")
   val DEFAULT_BIGTABLE_PUSH_DOWN_FILTERS = true

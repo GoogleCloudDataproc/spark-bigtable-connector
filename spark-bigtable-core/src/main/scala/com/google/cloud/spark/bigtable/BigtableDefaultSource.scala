@@ -21,6 +21,7 @@ import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
 import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.filters.{RowKeyWrapper, SparkSqlFilterAdapter}
+import com.google.cloud.spark.bigtable.util.RowFilterUtils
 import com.google.common.collect.RangeSet
 import io.openlineage.spark.shade.client.OpenLineage
 import io.openlineage.spark.shade.client.utils.DatasetIdentifier
@@ -145,6 +146,9 @@ case class BigtableRelation(
   val endTimestampMicros: Option[Long] =
     bigtableSparkConf.appConfig.sparkScanConfig.timeRangeEnd.map(timestamp => Math.multiplyExact(timestamp, 1000L))
 
+  val rowFilterString: Option[String] =
+    bigtableSparkConf.appConfig.sparkScanConfig.rowFilters
+
   val writeTimestampMicros: Long = bigtableSparkConf.appConfig.sparkWritesConfig.writeTimestamp
     .map(timestamp => Math.multiplyExact(timestamp, 1000L))
     .getOrElse(Math.multiplyExact(System.currentTimeMillis(), 1000L))
@@ -227,7 +231,10 @@ case class BigtableRelation(
       case (None, None) => FILTERS.pass() // No timestamp filter
     }
 
+    val rowFilters = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
+
     val queryFilter = FILTERS.chain().filter(timestampFilter)
+      .filter(rowFilters)
       .filter(FILTERS.limit().cellsPerColumn(1))
 
     val readRdd: BigtableTableScanRDD =

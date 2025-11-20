@@ -278,6 +278,10 @@
                   <pattern>com.google</pattern>
                   <shadedPattern>com.google.cloud.spark.bigtable.repackaged.com.google</shadedPattern>
                   <excludes>
+                    <!-- Exclude everything from cloud bigtable client to be relocated.
+                         Note that there could be dependency conflict if customer has a different
+                         google-cloud-bigtable client version in their classpath. -->
+                    <exclude>com.google.cloud.bigtable.**</exclude>
                     <exclude>com.google.cloud.spark.bigtable.**</exclude>
                   </excludes>
                 </relocation>
