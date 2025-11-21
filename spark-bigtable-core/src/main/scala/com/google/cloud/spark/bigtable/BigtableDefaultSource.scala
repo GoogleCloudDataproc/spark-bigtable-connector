@@ -220,10 +220,8 @@ case class BigtableRelation(
     val filterRangeSet: RangeSet[RowKeyWrapper] = SparkSqlFilterAdapter
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
 
-    val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
-
     // push down column filter from catalog
-    val columnFilter = SparkSqlFilterAdapter.createColumnFilter(catalog, requiredColumns)
+    val columnFilter = SparkSqlFilterAdapter.createColumnFilter(catalog)
 
     val timestampFilter: com.google.cloud.bigtable.data.v2.models.Filters.Filter =
       (startTimestampMicros, endTimestampMicros) match {
@@ -253,6 +251,7 @@ case class BigtableRelation(
         finalFilter
       )
 
+    val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
     readRdd.flatMap(r => ReadRowConversions.buildRow(fieldsOrdered, r, catalog))
   }
 
