@@ -253,30 +253,18 @@ Dataset<Row> dataFrame = spark
 ### Reading from Bigtable with Filters
 
 Push down filters for the columns in the catalog is not supported yet. However, this can be done with the
-`spark.bigtable.read.row.filters` option.
+`spark.bigtable.read.row.filters` option. This option expects a string which is the Base64 encoding of a
+[Bigtable RowFilter](https://github.com/googleapis/java-bigtable/blob/v2.70.0/proto-google-cloud-bigtable-v2/src/main/java/com/google/bigtable/v2/RowFilter.java)
+object.
 
 ```scala
-import import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
-import com.google.cloud.spark.bigtable.util.RowFilterUtils
-
-/*
-catalog:
-{
-  "table": {"name": "t1"},
-  "rowkey": "id_rowkey",
-  "columns": {
-    "id": {"cf": "rowkey", "col": "id_rowkey", "type": "string"},
-  },
-  "regexColumns": {
-    "metadata": {"cf": "info", "pattern": "\\C*", "type": "long" }
-  }
-}
-*/
+import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
+import com.google.cloud.spark.bigtable.repackaged.com.google.common.io.BaseEncoding
 
 val filters = FILTERS.chain()
         .filter(FILTERS.family().exactMatch("info"))
         .filter(FILTERS.qualifier().regex("\\C*"))
-val filterString = RowFilterUtils.encode(filters)
+val filterString = BaseEncoding.base64().encode(filters.toProto.toByteArray)
 
 val dataFrame = spark
   .read()
@@ -650,6 +638,12 @@ Since the Bigtable Spark connector is based on the
 [Bigtable client for Java](https://github.com/googleapis/java-bigtable),
 you can directly use the client in your Spark applications, if you want
 to have even more control over how you interact with Bigtable.
+
+To use the Bigtable client for Java classes, append the
+`com.google.cloud.spark.bigtable.repackaged` prefix to the package names. For
+example, instead of using the class name
+as `com.google.cloud.bigtable.data.v2.BigtableDataClient`, use
+`com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.BigtableDataClient`.
 
 ## Examples
 

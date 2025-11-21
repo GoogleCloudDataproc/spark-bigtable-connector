@@ -18,6 +18,7 @@ package com.google.cloud.spark.bigtable.util
 
 import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
 import com.google.cloud.spark.bigtable.Logging
+import com.google.common.io.BaseEncoding
 import org.scalatest.funsuite.AnyFunSuite
 
 class RowFilterUtilsTest
@@ -29,7 +30,7 @@ class RowFilterUtilsTest
       .filter(FILTERS.qualifier().regex("abc.*"))
       .filter(FILTERS.value().range().startClosed("a").endOpen("b"))
 
-    val filterString = RowFilterUtils.encode(filter)
+    val filterString = BaseEncoding.base64().encode(filter.toProto.toByteArray)
 
     val value = RowFilterUtils.decode(filterString)
 

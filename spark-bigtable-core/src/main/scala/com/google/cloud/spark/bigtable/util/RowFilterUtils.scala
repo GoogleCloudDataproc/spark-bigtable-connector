@@ -16,20 +16,17 @@
 
 package com.google.cloud.spark.bigtable.util
 
-import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
 import com.google.bigtable.v2.RowFilter
+import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
 import com.google.common.io.BaseEncoding
 
-object RowFilterUtils {
-
-  def encode(filter: Filter): String = {
-    BaseEncoding.base64().encode(filter.toProto.toByteArray)
-  }
+private[bigtable] object RowFilterUtils {
 
   def decode(protoString: String): Filter = {
     val decodedBytes = BaseEncoding.base64().decode(protoString)
     val deserializedProto = RowFilter.parseFrom(decodedBytes)
-    FILTERS.fromProto(deserializedProto)
+    val filter = FILTERS.fromProto(deserializedProto)
+    filter
   }
 
 }

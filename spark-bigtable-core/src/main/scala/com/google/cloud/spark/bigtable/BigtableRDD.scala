@@ -3,6 +3,7 @@ package com.google.cloud.spark.bigtable
 import com.google.cloud.bigtable.data.v2.models.{Filters, RowMutationEntry, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.{BigtableDataClientBuilder, BigtableSparkConf, BigtableTableScanRDD}
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
+import com.google.cloud.spark.bigtable.util.RowFilterUtils
 import com.google.common.collect.{ImmutableRangeSet, Range}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -25,8 +26,9 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
   def readRDD(
       tableId: String,
       bigtableSparkConf: BigtableSparkConf,
-      rowFilters: Filters.Filter
+      rowFilterString: String
   ): RDD[BigtableRow] = {
+    val rowFilters = RowFilterUtils.decode(rowFilterString)
     new BigtableTableScanRDD(
       getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig,
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
