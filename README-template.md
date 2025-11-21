@@ -212,9 +212,6 @@ A few caveats:
   advisable to use `\C` as the wildcard expression, since `.` will not match on
   those
 - Control characters must be escaped
-- The regex in the catalog is not pushed down to the server. To push down the
-  column regex filter, specify the filters in the options. 
-  See the [Example](#reading-from-bigtable-with-filters)
 
 ### Writing to Bigtable
 
@@ -250,10 +247,10 @@ Dataset<Row> dataFrame = spark
   .load();
 ```
 
-### Reading from Bigtable with Filters
+### Reading from Bigtable with complex Filters
 
-Push down filters for the columns in the catalog is not supported yet. However, this can be done with the
-`spark.bigtable.read.row.filters` option. This option expects a string which is the Base64 encoding of a
+You can read from Bigtable with any supported [filters](https://docs.cloud.google.com/bigtable/docs/using-filters) with
+the `spark.bigtable.read.row.filters` option. This option expects a string which is the Base64 encoding of a
 [Bigtable RowFilter](https://github.com/googleapis/java-bigtable/blob/v2.70.0/proto-google-cloud-bigtable-v2/src/main/java/com/google/bigtable/v2/RowFilter.java)
 object.
 
@@ -275,9 +272,6 @@ val dataFrame = spark
   .option("spark.bigtable.read.row.filters", filterString)
   .load();
 ```
-
-You can perform read with any [supported complex filters](https://docs.cloud.google.com/bigtable/docs/using-filters#java)
-with this option.
 
 ### Efficient joins with other data sources
 

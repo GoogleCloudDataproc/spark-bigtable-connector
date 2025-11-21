@@ -13,6 +13,7 @@ import com.google.cloud.spark.bigtable.util.RowFilterUtils
 import com.google.protobuf.ByteString
 import org.apache.spark.SparkContext
 import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
+import com.google.cloud.spark.bigtable.filters.SparkSqlFilterAdapter
 
 import java.util
 import scala.collection.JavaConverters.asScalaBufferConverter
@@ -100,13 +101,14 @@ object BigtableJoinImplicitCommon extends Serializable with Logging {
     val srcRowKeyField = btRowKeyField.copy(sparkColName = srcRowKeyCol)
     val rowFilterString = parameters.get(ROW_FILTERS_CONFIG_KEY)
     val rowFilters = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
+    val columnFilters = SparkSqlFilterAdapter.createColumnFilter(catalog)
     // Fetch Bigtable rows based on join keys from the source DataFrame
     val bigtableRdd = srcDf
       .select(srcRowKeyCol)
       .rdd
       .mapPartitionsWithIndex { (partitionIndex, rows) =>
         val rowKeys = rows.map(r => srcRowKeyField.scalaValueToBigtable(r.getAs[Any](srcRowKeyCol)))
-        val btRows = fetchBigtableRows(rowKeys, rowFilters, bigtableConfig, catalog.name, partitionIndex)
+        val btRows = fetchBigtableRows(rowKeys, FILTERS.chain().filter(rowFilters).filter(columnFilters), bigtableConfig, catalog.name, partitionIndex)
         btRows
           .filter(_ != null)
           .flatMap(row => ReadRowConversions.buildRow(orderedFields, row, catalog))
