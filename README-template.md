@@ -254,7 +254,7 @@ Dataset<Row> dataFrame = spark
 
 Push down filters for the columns in the catalog is not supported yet. However, this can be done with the
 `spark.bigtable.read.row.filters` option. This option expects a string which is the Base64 encoding of a
-[Bigtable Row Filter](https://github.com/googleapis/java-bigtable/blob/v2.70.0/google-cloud-bigtable/src/main/java/com/google/cloud/bigtable/data/v2/models/Filters.java#L791)
+[Bigtable RowFilter](https://github.com/googleapis/java-bigtable/blob/v2.70.0/proto-google-cloud-bigtable-v2/src/main/java/com/google/bigtable/v2/RowFilter.java)
 object.
 
 ```scala
