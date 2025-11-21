@@ -28,4 +28,5 @@ private[bigtable] object RowFilterUtils {
     val filter = FILTERS.fromProto(deserializedProto)
     filter
   }
+
 }

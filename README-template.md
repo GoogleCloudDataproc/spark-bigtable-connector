@@ -258,7 +258,7 @@ Push down filters for the columns in the catalog is not supported yet. However, 
 object.
 
 ```scala
-import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter}
+import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
 import com.google.cloud.spark.bigtable.repackaged.com.google.common.io.BaseEncoding
 
 val filters = FILTERS.chain()
