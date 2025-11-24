@@ -55,18 +55,22 @@ object SparkSqlFilterAdapter {
 
   /** This method converts columns in catalog to Filters which will be
    * pushed down to Bigtable. */
-  def createColumnFilter(catalog: BigtableTableCatalog): Filters.Filter = {
-    val fields = catalog.sMap.fields
-    // push down column filter from catalog
-    // TODO: right now columns and regex columns are both filtered with qualifier regex filter.
-    // If this is not performant enough, we can split the columns to regex column and regular columns
-    // and use column range filter for regular columns.
-    val columnFilter = FILTERS.interleave()
-    fields.filter(!_.isRowKey).foreach(field => {
+  def createColumnFilter(catalog: BigtableTableCatalog, pushDownColumnFilters: Boolean): Filters.Filter = {
+    if (pushDownColumnFilters) {
+      val fields = catalog.sMap.fields
+      // push down column filter from catalog
+      // TODO: right now columns and regex columns are both filtered with qualifier regex filter.
+      // If this is not performant enough, we can split the columns to regex column and regular columns
+      // and use column range filter for regular columns.
+      val columnFilter = FILTERS.interleave()
+      fields.filter(!_.isRowKey).foreach(field => {
         columnFilter.filter(FILTERS.chain()
           .filter(FILTERS.family().exactMatch(field.btColFamily))
           .filter(FILTERS.qualifier().regex(field.btColName)))
-    })
-    columnFilter
+      })
+      columnFilter
+    } else {
+      FILTERS.pass()
+    }
   }
 }

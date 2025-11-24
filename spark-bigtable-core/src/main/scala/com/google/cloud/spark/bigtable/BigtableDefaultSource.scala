@@ -139,6 +139,8 @@ case class BigtableRelation(
 
   val pushDownRowKeyFilters: Boolean = bigtableSparkConf.appConfig.sparkScanConfig.pushDownRowKeyFilters
 
+  val pushDownColumnFilters: Boolean = bigtableSparkConf.appConfig.sparkScanConfig.pushDownColumnFilters
+
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.
   val startTimestampMicros: Option[Long] =
@@ -221,7 +223,8 @@ case class BigtableRelation(
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
 
     // push down column filter from catalog
-    val columnFilter = SparkSqlFilterAdapter.createColumnFilter(catalog)
+    val columnFilter = SparkSqlFilterAdapter
+      .createColumnFilter(catalog, pushDownColumnFilters)
 
     val timestampFilter: com.google.cloud.bigtable.data.v2.models.Filters.Filter =
       (startTimestampMicros, endTimestampMicros) match {
