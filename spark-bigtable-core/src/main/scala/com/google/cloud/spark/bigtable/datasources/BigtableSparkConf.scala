@@ -62,8 +62,11 @@ object BigtableSparkConf {
   /** The timestamp end range to filter cell values. */
   val BIGTABLE_TIMERANGE_END: String = SparkScanConfig.TIME_RANGE_END_CONFIG_KEY
 
-  /** Specifying whether to push row key filters to Bigtable or not. */
+  /** Specifying whether to push row key filters to Bigtable or not. Default is true. */
   val BIGTABLE_PUSH_DOWN_ROW_KEY_FILTERS: String = SparkScanConfig.PUSH_DOWN_FILTERS_CONFIG_KEY
+
+  /** Specifying whether to push down columns in the catalog to Bigtable or not. Default is true. */
+  val BIGTABLE_PUSH_DOWN_COLUMN_FILTERS: String = SparkScanConfig.PUSH_DOWN_COLUMN_FILTERS_CONFIG_KEY
 
   /** Specifying the row filters to push down to read data from bigtable. */
   val BIGTABLE_READ_ROW_FILTERS: String = SparkScanConfig.ROW_FILTERS_CONFIG_KEY
