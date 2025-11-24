@@ -63,8 +63,6 @@ object SparkSqlFilterAdapter {
     // and use column range filter for regular columns.
     val columnFilter = FILTERS.interleave()
     fields.filter(!_.isRowKey).foreach(field => {
-        columnFilter.filter(FILTERS.qualifier()
-          .rangeWithinFamily(field.btColFamily).startClosed(field.btColName).endClosed(field.btColName))
         columnFilter.filter(FILTERS.chain()
           .filter(FILTERS.family().exactMatch(field.btColFamily))
           .filter(FILTERS.qualifier().regex(field.btColName)))
