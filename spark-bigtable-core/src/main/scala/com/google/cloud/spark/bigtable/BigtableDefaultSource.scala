@@ -139,6 +139,8 @@ case class BigtableRelation(
 
   val pushDownRowKeyFilters: Boolean = bigtableSparkConf.appConfig.sparkScanConfig.pushDownRowKeyFilters
 
+  val pushDownColumnFilters: Boolean = bigtableSparkConf.appConfig.sparkScanConfig.pushDownColumnFilters
+
   // We get the timestamp in milliseconds but have to convert it to
   // microseconds before sending it to Bigtable.
   val startTimestampMicros: Option[Long] =
@@ -220,6 +222,10 @@ case class BigtableRelation(
     val filterRangeSet: RangeSet[RowKeyWrapper] = SparkSqlFilterAdapter
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
 
+    // push down column filter from catalog
+    val columnFilter = SparkSqlFilterAdapter
+      .createColumnFilter(catalog, pushDownColumnFilters)
+
     val timestampFilter: com.google.cloud.bigtable.data.v2.models.Filters.Filter =
       (startTimestampMicros, endTimestampMicros) match {
       case (Some(startStamp), Some(endStamp)) =>
@@ -231,10 +237,12 @@ case class BigtableRelation(
       case (None, None) => FILTERS.pass() // No timestamp filter
     }
 
-    val rowFilters = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
+    val otherFilter = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
 
-    val queryFilter = FILTERS.chain().filter(timestampFilter)
-      .filter(rowFilters)
+    val finalFilter = FILTERS.chain()
+      .filter(columnFilter)
+      .filter(timestampFilter)
+      .filter(otherFilter)
       .filter(FILTERS.limit().cellsPerColumn(1))
 
     val readRdd: BigtableTableScanRDD =
@@ -243,7 +251,7 @@ case class BigtableRelation(
         filterRangeSet,
         tableId,
         sqlContext.sparkContext,
-        queryFilter
+        finalFilter
       )
 
     val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)

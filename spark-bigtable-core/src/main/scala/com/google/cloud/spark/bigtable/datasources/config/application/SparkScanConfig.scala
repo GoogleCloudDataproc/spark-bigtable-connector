@@ -24,6 +24,9 @@ object SparkScanConfig {
   val PUSH_DOWN_FILTERS_CONFIG_KEY =
     "spark.bigtable.push.down.row.key.filters"
 
+  val PUSH_DOWN_COLUMN_FILTERS_CONFIG_KEY =
+    "spark.bigtable.push.down.column.filters"
+
   val ROW_FILTERS_CONFIG_KEY = "spark.bigtable.read.row.filters"
 
   private[datasources] def fromMap(conf: Map[String, String]): SparkScanConfig = {
@@ -31,6 +34,7 @@ object SparkScanConfig {
       conf.get(TIME_RANGE_START_CONFIG_KEY).map(_.toLong),
       conf.get(TIME_RANGE_END_CONFIG_KEY).map(_.toLong),
       conf.get(PUSH_DOWN_FILTERS_CONFIG_KEY).map(_.toBoolean),
+      conf.get(PUSH_DOWN_COLUMN_FILTERS_CONFIG_KEY).map(_.toBoolean),
       conf.get(ROW_FILTERS_CONFIG_KEY)
     )
   }
@@ -38,22 +42,25 @@ object SparkScanConfig {
   def apply(timeRangeStart: Option[Long],
             timeRangeEnd: Option[Long],
             pushDownRowKeyFilters: Option[Boolean],
+            pushDownColumnFilters: Option[Boolean],
             rowFilters: Option[String]): SparkScanConfig = {
     new SparkScanConfig(
       timeRangeStart,
       timeRangeEnd,
       pushDownRowKeyFilters.getOrElse(true),
+      pushDownColumnFilters.getOrElse(true),
       rowFilters
     )
   }
 
-  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None)
+  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None, None)
 }
 
 case class SparkScanConfig private[datasources]
 (timeRangeStart: Option[Long],
  timeRangeEnd: Option[Long],
  pushDownRowKeyFilters: Boolean,
+ pushDownColumnFilters: Boolean,
  rowFilters: Option[String]) {
   def getValidationErrors: Set[String] = Set()
 }
