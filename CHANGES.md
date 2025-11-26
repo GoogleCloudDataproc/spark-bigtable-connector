@@ -1,6 +1,6 @@
 # Release Notes
 
-## Next
+## 0.8.0 - 2025-11-26
 
 * PR #99: feat: provide option to pass in a row filter in df and RDD
 * PR #101: feat: pushdown column filters from catalog

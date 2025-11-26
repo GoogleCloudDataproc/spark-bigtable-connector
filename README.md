@@ -20,7 +20,7 @@ In Java and Scala applications, you can use different dependency management
 tools (e.g., Maven, sbt, or Gradle) to access the
 connector `com.google.cloud.spark.bigtable:spark-bigtable_2.13:<version>` or
 `com.google.cloud.spark.bigtable:spark-bigtable_2.12:<version>` (current
-`<version>` is `0.7.2`) and package it inside your application JAR
+`<version>` is `0.8.0`) and package it inside your application JAR
 using libraries such as Maven Shade Plugin. For PySpark applications, you can
 use the `--jars` flag to pass the GCS address of the connector when submitting
 it.
@@ -32,7 +32,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable_2.13</artifactId>
-    <version>0.7.2</version>
+    <version>0.8.0</version>
 </dependency>
 ```
 
@@ -41,7 +41,7 @@ For Maven, you can add the following snippet to your `pom.xml` file:
 <dependency>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable_2.12</artifactId>
-    <version>0.7.2</version>
+    <version>0.8.0</version>
 </dependency>
 ```
 
@@ -49,12 +49,12 @@ For sbt, you can add the following to your `build.sbt` file:
 
 ```
 // for scala 2.13
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.7.2"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.13" % "0.8.0"
 ```
 
 ```
 // for scala 2.12
-libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.7.2"
+libraryDependencies += "com.google.cloud.spark.bigtable" % "spark-bigtable_2.12" % "0.8.0"
 ```
 
 Finally, you can add the following to your `build.gradle` file when using
@@ -63,14 +63,14 @@ Gradle:
 ```
 // for scala 2.13
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.7.2'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.13', version: '0.8.0'
 }
 ```
 
 ```
 // for scala 2.12
 dependencies {
-implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.7.2'
+implementation group: 'com.google.cloud.bigtable', name: 'spark-bigtable_2.12', version: '0.8.0'
 }
 ```
 
@@ -237,6 +237,32 @@ Dataset<Row> dataFrame = spark
   .option("catalog", catalog)
   .option("spark.bigtable.project.id", projectId)
   .option("spark.bigtable.instance.id", instanceId)
+  .load();
+```
+
+### Reading from Bigtable with complex Filters
+
+You can read from Bigtable with any supported [filters](https://docs.cloud.google.com/bigtable/docs/using-filters) with
+the `spark.bigtable.read.row.filters` option. This option expects a string which is the Base64 encoding of a
+[Bigtable RowFilter](https://github.com/googleapis/java-bigtable/blob/v2.70.0/proto-google-cloud-bigtable-v2/src/main/java/com/google/bigtable/v2/RowFilter.java)
+object.
+
+```scala
+import com.google.cloud.spark.bigtable.repackaged.com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
+import com.google.cloud.spark.bigtable.repackaged.com.google.common.io.BaseEncoding
+
+val filters = FILTERS.chain()
+        .filter(FILTERS.family().exactMatch("info"))
+        .filter(FILTERS.qualifier().regex("\\C*"))
+val filterString = BaseEncoding.base64().encode(filters.toProto.toByteArray)
+
+val dataFrame = spark
+  .read()
+  .format("bigtable")
+  .option("catalog", catalog)
+  .option("spark.bigtable.project.id", projectId)
+  .option("spark.bigtable.instance.id", instanceId)
+  .option("spark.bigtable.read.row.filters", filterString)
   .load();
 ```
 
