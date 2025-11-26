@@ -21,14 +21,14 @@
   <parent>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
-    <version>0.7.2</version>  <!-- ${NEXT_VERSION_FLAG} -->
+    <version>0.8.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
     <relativePath>../</relativePath>
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable-core-it</artifactId>
   <name>Google Bigtable - Spark Connector Integration Tests</name>
-  <version>0.7.2</version>  <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.8.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
 
   <dependencies>
     <dependency>
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>com.google.cloud.spark.bigtable</groupId>
       <artifactId>${connector.artifact.id}</artifactId>
-      <version>0.7.2</version>  <!-- ${NEXT_VERSION_FLAG} -->
+      <version>0.8.0</version>  <!-- ${NEXT_VERSION_FLAG} -->
     </dependency>
 
     <dependency>
