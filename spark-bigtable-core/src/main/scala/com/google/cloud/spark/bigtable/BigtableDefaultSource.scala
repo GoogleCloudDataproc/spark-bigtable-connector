@@ -19,6 +19,7 @@ package com.google.cloud.spark.bigtable
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest
 import com.google.cloud.bigtable.data.v2.models.Filters.FILTERS
+import com.google.cloud.bigtable.data.v2.models.TableId
 import com.google.cloud.spark.bigtable.datasources._
 import com.google.cloud.spark.bigtable.filters.{RowKeyWrapper, SparkSqlFilterAdapter}
 import com.google.cloud.spark.bigtable.util.RowFilterUtils
@@ -46,42 +47,42 @@ object UserAgentInformation {
 }
 
 /** Bigtable DefaultSource class which creates a BigtableRelation object.
-  */
+ */
 @InterfaceAudience.Private
 class BigtableDefaultSource
-    extends RelationProvider
+  extends RelationProvider
     with CreatableRelationProvider
     with DataSourceRegister
     with LineageRelationProvider {
 
   /** Constructs a BigtableRelation object.
-    *
-    * @param sqlContext Spark SQL context
-    * @param parameters Parameters from Spark SQL
-    * @return           A BigtableRelation object
-    */
+   *
+   * @param sqlContext Spark SQL context
+   * @param parameters Parameters from Spark SQL
+   * @return A BigtableRelation object
+   */
   override def createRelation(
-      sqlContext: SQLContext,
-      parameters: Map[String, String]
-  ): BaseRelation = {
+                               sqlContext: SQLContext,
+                               parameters: Map[String, String]
+                             ): BaseRelation = {
     new BigtableRelation(parameters, None)(sqlContext)
   }
 
   /** Constructs a BigtableRelation object after writing the provided data
-    *   to Bigtable.
-    *
-    * @param sqlContext Spark SQL context
-    * @param mode       The save mode
-    * @param parameters Parameters from Spark SQL
-    * @param data       The data to write to Bigtable
-    * @return           A BigtableRelation object
-    */
+   * to Bigtable.
+   *
+   * @param sqlContext Spark SQL context
+   * @param mode       The save mode
+   * @param parameters Parameters from Spark SQL
+   * @param data       The data to write to Bigtable
+   * @return A BigtableRelation object
+   */
   override def createRelation(
-      sqlContext: SQLContext,
-      mode: SaveMode,
-      parameters: Map[String, String],
-      data: DataFrame
-  ): BaseRelation = {
+                               sqlContext: SQLContext,
+                               mode: SaveMode,
+                               parameters: Map[String, String],
+                               data: DataFrame
+                             ): BaseRelation = {
     val relation = BigtableRelation(parameters, Some(data.schema))(sqlContext)
     relation.createTableIfNeeded()
     relation.insert(data, overwrite = true)
@@ -91,11 +92,11 @@ class BigtableDefaultSource
   override def shortName(): String = "bigtable"
 
   def getLineageDatasetIdentifier(
-      sparkListenerEventName: String,
-      openLineage: OpenLineage,
-      sqlContext: Any,
-      parameters: Any
-  ): DatasetIdentifier = {
+                                   sparkListenerEventName: String,
+                                   openLineage: OpenLineage,
+                                   sqlContext: Any,
+                                   parameters: Any
+                                 ): DatasetIdentifier = {
     val params: Map[String, String] =
       parameters.asInstanceOf[Map[String, String]]
     val catalog = BigtableTableCatalog(params)
@@ -112,15 +113,15 @@ class BigtableDefaultSource
 }
 
 /** Custom Relation class which manages reading from and writing to Bigtable.
-  *
-  * @param sqlContext              Spark SQL context
-  */
+ *
+ * @param sqlContext Spark SQL context
+ */
 @InterfaceAudience.Private
 case class BigtableRelation(
-    @transient parameters: Map[String, String],
-    userSpecifiedSchema: Option[StructType]
-)(@transient val sqlContext: SQLContext)
-    extends BaseRelation
+                             @transient parameters: Map[String, String],
+                             userSpecifiedSchema: Option[StructType]
+                           )(@transient val sqlContext: SQLContext)
+  extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
     with Logging
@@ -156,14 +157,15 @@ case class BigtableRelation(
     .getOrElse(Math.multiplyExact(System.currentTimeMillis(), 1000L))
 
   def tableId = s"${catalog.name}"
+
   val clientKey = bigtableSparkConf.bigtableClientConfig
 
   override val schema: StructType =
     userSpecifiedSchema.getOrElse(catalog.toDataType)
 
   /** If specified by the user, create a new table
-    *  (throw exception if a table with that name already exists).
-    */
+   * (throw exception if a table with that name already exists).
+   */
   def createTableIfNeeded(): Unit = {
     val createNewTable: Boolean = bigtableSparkConf.appConfig.sparkWritesConfig.createNewTable
     if (createNewTable) {
@@ -182,13 +184,13 @@ case class BigtableRelation(
   }
 
   /** Takes a Spark SQL DataFrame and converts and writes it to Bigtable.
-    *
-    * @param data      The input DataFrame
-    * @param overwrite Whether to overwrite the existing data in Bigtable or not. This
-    *                    is defined since the function is overridden. In reality,
-    *                    we always overwrite the data due to Bigtable design.
-    * @return          A map from fields in the row key to the their value
-    */
+   *
+   * @param data      The input DataFrame
+   * @param overwrite Whether to overwrite the existing data in Bigtable or not. This
+   *                  is defined since the function is overridden. In reality,
+   *                  we always overwrite the data due to Bigtable design.
+   * @return A map from fields in the row key to the their value
+   */
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     val writeRowConversions =
       new WriteRowConversions(catalog, schema, writeTimestampMicros)
@@ -198,7 +200,7 @@ case class BigtableRelation(
         if (it.nonEmpty) {
           val clientHandle = BigtableDataClientBuilder.getHandle(clientKey)
           val bigtableDataClient = clientHandle.getClient()
-          val batcher = bigtableDataClient.newBulkMutationBatcher(tableId)
+          val batcher = bigtableDataClient.newMutateRowsBatcher(TableId.of(tableId), null)
           it.foreach { mutation =>
             batcher.add(mutation)
           }
@@ -210,15 +212,15 @@ case class BigtableRelation(
   }
 
   /** Here we create the RDD[SparkRow] after reading from Bigtable.
-    *
-    * @param requiredColumns Columns requested by the query
-    * @param filters         Filters to be applied
-    * @return                Resulting RDD for Spark SQL
-    */
+   *
+   * @param requiredColumns Columns requested by the query
+   * @param filters         Filters to be applied
+   * @return Resulting RDD for Spark SQL
+   */
   override def buildScan(
-      requiredColumns: Array[String],
-      filters: Array[Filter]
-  ): RDD[SparkRow] = {
+                          requiredColumns: Array[String],
+                          filters: Array[Filter]
+                        ): RDD[SparkRow] = {
     val filterRangeSet: RangeSet[RowKeyWrapper] = SparkSqlFilterAdapter
       .createRowKeyRangeSet(filters, catalog, pushDownRowKeyFilters)
 
@@ -228,14 +230,14 @@ case class BigtableRelation(
 
     val timestampFilter: com.google.cloud.bigtable.data.v2.models.Filters.Filter =
       (startTimestampMicros, endTimestampMicros) match {
-      case (Some(startStamp), Some(endStamp)) =>
-        FILTERS.timestamp().range().startClosed(startStamp).endOpen(endStamp)
-      case (None, Some(endStamp)) =>
-        FILTERS.timestamp().range().endOpen(endStamp)
-      case (Some(startStamp), None) =>
-        FILTERS.timestamp().range().startClosed(startStamp)
-      case (None, None) => FILTERS.pass() // No timestamp filter
-    }
+        case (Some(startStamp), Some(endStamp)) =>
+          FILTERS.timestamp().range().startClosed(startStamp).endOpen(endStamp)
+        case (None, Some(endStamp)) =>
+          FILTERS.timestamp().range().endOpen(endStamp)
+        case (Some(startStamp), None) =>
+          FILTERS.timestamp().range().startClosed(startStamp)
+        case (None, None) => FILTERS.pass() // No timestamp filter
+      }
 
     val otherFilter = rowFilterString.map(RowFilterUtils.decode).getOrElse(FILTERS.pass())
 
@@ -251,7 +253,8 @@ case class BigtableRelation(
         filterRangeSet,
         tableId,
         sqlContext.sparkContext,
-        finalFilter
+        finalFilter,
+        bigtableSparkConf.appConfig.sparkScanConfig.skipLargeRows
       )
 
     val fieldsOrdered = requiredColumns.map(catalog.sMap.getField)
@@ -259,9 +262,9 @@ case class BigtableRelation(
   }
 
   def getLineageDatasetIdentifier(
-      sparkListenerEventName: String,
-      openLineage: OpenLineage
-  ): DatasetIdentifier = {
+                                   sparkListenerEventName: String,
+                                   openLineage: OpenLineage
+                                 ): DatasetIdentifier = {
     val projectId = parameters.getOrElse(
       BigtableSparkConf.BIGTABLE_PROJECT_ID,
       "unknownProjectId"

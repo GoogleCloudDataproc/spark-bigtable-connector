@@ -20,7 +20,8 @@ import com.google.api.gax.rpc.ServerStream
 import com.google.cloud.bigtable.data.v2.BigtableDataClient
 import com.google.cloud.bigtable.data.v2.models.Filters.{FILTERS, Filter, TimestampFilter}
 import com.google.cloud.bigtable.data.v2.models.Range.ByteStringRange
-import com.google.cloud.bigtable.data.v2.models.{Filters, KeyOffset, Query, Row => BigtableRow}
+import com.google.cloud.bigtable.data.v2.models.{Filters, KeyOffset, Query, SampleRowKeysRequest, TableId, Row => BigtableRow}
+import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStub
 import com.google.cloud.spark.bigtable.datasources.config.BigtableClientConfig
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{BoundType, RangeSet, TreeRangeSet, Range => GuavaRange}
@@ -33,12 +34,13 @@ import scala.collection.JavaConverters._
 
 @InterfaceAudience.Private
 class BigtableTableScanRDD(
-    bigtableClientConfig: BigtableClientConfig,
-    filterRangeSet: RangeSet[RowKeyWrapper],
-    tableId: String,
-    sparkContext: SparkContext,
-    filter: Filter
-) extends RDD[BigtableRow](sparkContext, Nil) {
+                            bigtableClientConfig: BigtableClientConfig,
+                            filterRangeSet: RangeSet[RowKeyWrapper],
+                            tableId: String,
+                            sparkContext: SparkContext,
+                            filter: Filter,
+                            skipLargeRows: Boolean = false
+                          ) extends RDD[BigtableRow](sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
     try {
@@ -46,7 +48,7 @@ class BigtableTableScanRDD(
       val bigtableDataClient = clientHandle.getClient()
 
       val keyOffsets: List[KeyOffset] =
-        bigtableDataClient.sampleRowKeys(tableId).asScala.toList
+        bigtableDataClient.sampleRowKeysCallableWithRequest().call(SampleRowKeysRequest.create(TableId.of(tableId))).asScala.toList
 
       val tabletRanges: Array[BigtableTabletRange] =
         new Array[BigtableTabletRange](keyOffsets.size)
@@ -103,9 +105,9 @@ class BigtableTableScanRDD(
   }
 
   private def streamToIterator(
-      stream: ServerStream[BigtableRow],
-      clientHandle: BigtableDataClientBuilder.DataClientHandle
-  ): Iterator[BigtableRow] = {
+                                stream: ServerStream[BigtableRow],
+                                clientHandle: BigtableDataClientBuilder.DataClientHandle
+                              ): Iterator[BigtableRow] = {
     val it = stream.iterator()
     val iterator = new Iterator[BigtableRow] {
       override def hasNext: Boolean = {
@@ -118,6 +120,7 @@ class BigtableTableScanRDD(
           true
         }
       }
+
       override def next(): BigtableRow = {
         it.next()
       }
@@ -126,12 +129,12 @@ class BigtableTableScanRDD(
   }
 
   override def compute(
-      split: Partition,
-      context: TaskContext
-  ): Iterator[BigtableRow] = {
+                        split: Partition,
+                        context: TaskContext
+                      ): Iterator[BigtableRow] = {
     try {
       val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
-      val bigtableDataClient: BigtableDataClient = clientHandle.getClient()
+      val bigtableDataClient: EnhancedBigtableStub = clientHandle.getClient()
 
       var query = Query.create(tableId).filter(filter)
       split
@@ -140,7 +143,11 @@ class BigtableTableScanRDD(
         .asRanges()
         .forEach(applyRangeToQuery(_, query))
 
-      val stream: ServerStream[BigtableRow] = bigtableDataClient.readRows(query)
+      val stream: ServerStream[BigtableRow] = if (skipLargeRows) {
+        bigtableDataClient.skipLargeRowsCallable().call(query)
+      } else {
+        bigtableDataClient.readRowsCallable.call(query)
+      }
       streamToIterator(stream, clientHandle)
     } catch {
       case e: Exception => {
@@ -153,15 +160,15 @@ class BigtableTableScanRDD(
   }
 
   private def applyRangeToQuery(
-      guavaRange: GuavaRange[RowKeyWrapper],
-      query: Query
-  ): Unit = {
+                                 guavaRange: GuavaRange[RowKeyWrapper],
+                                 query: Query
+                               ): Unit = {
     if (
       guavaRange.hasLowerBound
-      && guavaRange.lowerBoundType() == BoundType.CLOSED
-      && guavaRange.hasUpperBound
-      && guavaRange.upperBoundType() == BoundType.CLOSED
-      && guavaRange.lowerEndpoint().equals(guavaRange.upperEndpoint())
+        && guavaRange.lowerBoundType() == BoundType.CLOSED
+        && guavaRange.hasUpperBound
+        && guavaRange.upperBoundType() == BoundType.CLOSED
+        && guavaRange.lowerEndpoint().equals(guavaRange.upperEndpoint())
     ) {
       query.rowKey(guavaRange.lowerEndpoint().getKey)
     } else {
@@ -203,14 +210,14 @@ class BigtableTableScanRDD(
 
 @InterfaceAudience.Private
 case class BigtableTabletRange(
-    override val index: Int,
-    start: ByteString,
-    end: ByteString
-) extends Partition
+                                override val index: Int,
+                                start: ByteString,
+                                end: ByteString
+                              ) extends Partition
 
 @InterfaceAudience.Private
 case class BigtableScanPartition(
-    override val index: Int,
-    tabletRange: BigtableTabletRange,
-    partitionRangeSet: RangeSet[RowKeyWrapper]
-) extends Partition
+                                  override val index: Int,
+                                  tabletRange: BigtableTabletRange,
+                                  partitionRangeSet: RangeSet[RowKeyWrapper]
+                                ) extends Partition
