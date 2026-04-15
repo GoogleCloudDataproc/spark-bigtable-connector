@@ -19,13 +19,14 @@ package com.google.cloud.spark.bigtable.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class LargeTestRow implements Serializable {
+/** A JavaBean class for using as a DataFrame row in tests with specified size. */
+public class TestSizedRow implements Serializable {
   private String stringCol;
   private byte[] bytesCol;
 
-  public LargeTestRow() {}
+  public TestSizedRow() {}
 
-  public LargeTestRow(String stringCol, byte[] bytesCol) {
+  public TestSizedRow(String stringCol, byte[] bytesCol) {
     this.stringCol = stringCol;
     this.bytesCol = bytesCol;
   }
@@ -60,7 +61,7 @@ public class LargeTestRow implements Serializable {
     if (this == obj) return true;
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
-    LargeTestRow other = (LargeTestRow) obj;
+    TestSizedRow other = (TestSizedRow) obj;
     if (stringCol == null) {
       if (other.stringCol != null) return false;
     } else if (!stringCol.equals(other.stringCol)) return false;

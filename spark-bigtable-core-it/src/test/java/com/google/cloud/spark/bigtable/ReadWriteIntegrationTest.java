@@ -23,11 +23,14 @@ import static org.junit.Assert.fail;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
 import com.google.cloud.spark.bigtable.model.Favorites;
+import com.google.cloud.spark.bigtable.model.TestSizedRow;
 import com.google.cloud.spark.bigtable.model.TestAvroRow;
 import com.google.cloud.spark.bigtable.model.TestRow;
 import com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.rpc.NotFoundException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -405,13 +408,12 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
     createBigtableTable(useTable, adminClient);
 
     try {
-      byte[] largeBytes = new byte[256 * 1024 * 1024 + 10];
-      com.google.cloud.spark.bigtable.model.LargeTestRow largeRow =
-          new com.google.cloud.spark.bigtable.model.LargeTestRow("largeRowKey", largeBytes);
-      java.util.List<com.google.cloud.spark.bigtable.model.LargeTestRow> rows =
-          java.util.Arrays.asList(largeRow);
+      // each row is 100MB. Write it 3 times to exceed the 256MB limit
+      byte[] largeBytes = new byte[100 * 1024 * 1024 + 10];
+      TestSizedRow largeRow = new TestSizedRow("largeRowKey", largeBytes);
+      List<TestSizedRow> rows = Arrays.asList(largeRow);
 
-      Dataset<Row> df = spark.createDataset(rows, Encoders.bean(com.google.cloud.spark.bigtable.model.LargeTestRow.class)).toDF();
+      Dataset<Row> df = spark.createDataset(rows, Encoders.bean(TestSizedRow.class)).toDF();
 
       String rawCatalog =
           "{\"table\":{\"name\":\"${tablename}\","
@@ -420,6 +422,9 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
               + " \"type\":\"string\"},\"bytesCol\":{\"cf\":\"col_family1\","
               + " \"col\":\"bytesCol\", \"type\":\"binary\"}}}";
       String catalog = parameterizeCatalog(rawCatalog, useTable);
+
+      writeDataframeToBigtable(df, catalog, false);
+      writeDataframeToBigtable(df, catalog, false);
       writeDataframeToBigtable(df, catalog, false);
 
       Dataset<Row> readDf = readDataframeFromBigtable(spark, catalog, withReaderSkipLargeRows(true));
