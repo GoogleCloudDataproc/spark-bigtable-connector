@@ -409,7 +409,7 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
 
     try {
       // each row is 100MB. Write it 3 times to exceed the 256MB limit
-      byte[] largeBytes = new byte[100 * 1024 * 1024 + 10];
+      byte[] largeBytes = new byte[100 * 1024 * 1024];
       TestSizedRow largeRow = new TestSizedRow("largeRowKey", largeBytes);
       List<TestSizedRow> rows = Arrays.asList(largeRow);
 
