@@ -45,57 +45,60 @@ class BigtableTableScanRDD(
   override def getPartitions: Array[Partition] = {
     try {
       val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
-      val bigtableDataClient = clientHandle.getClient()
+      try {
+        val bigtableDataClient = clientHandle.getClient()
 
-      val keyOffsets: List[KeyOffset] =
-        bigtableDataClient.sampleRowKeysCallableWithRequest().call(SampleRowKeysRequest.create(TableId.of(tableId))).asScala.toList
+        val keyOffsets: List[KeyOffset] =
+          bigtableDataClient.sampleRowKeysCallableWithRequest()
+            .call(SampleRowKeysRequest.create(TableId.of(tableId))).asScala.toList
 
-      val tabletRanges: Array[BigtableTabletRange] =
-        new Array[BigtableTabletRange](keyOffsets.size)
-      // We use empty ByteString as the smallest row key and null as the largest.
-      var start: ByteString = ByteString.EMPTY
-      var end: ByteString = null
-      var i = 0
-      while (i < keyOffsets.size - 1) {
-        end = keyOffsets(i).getKey
-        tabletRanges(i) = BigtableTabletRange(i, start, end)
-        start = end
-        i += 1
-      }
-      // Ensure that the last tablet's 'end key' is considered null since
-      //  it's considered the maximum value inside RowKeyWrapper.
-      tabletRanges(i) = BigtableTabletRange(i, start, null)
+        val tabletRanges: Array[BigtableTabletRange] =
+          new Array[BigtableTabletRange](keyOffsets.size)
+        // We use empty ByteString as the smallest row key and null as the largest.
+        var start: ByteString = ByteString.EMPTY
+        var end: ByteString = null
+        var i = 0
+        while (i < keyOffsets.size - 1) {
+          end = keyOffsets(i).getKey
+          tabletRanges(i) = BigtableTabletRange(i, start, end)
+          start = end
+          i += 1
+        }
+        // Ensure that the last tablet's 'end key' is considered null since
+        //  it's considered the maximum value inside RowKeyWrapper.
+        tabletRanges(i) = BigtableTabletRange(i, start, null)
 
-      // Consider switching to using shard(List<KeyOffset> sampledRowKeys) from
-      //  com.google.cloud.bigtable.data.v2.models.Query for intersecting
-      //  tablet ranges with filters.
-      var idx = 0
-      val partitions = tabletRanges.flatMap { tabletRange =>
-        val partitionRangeSet: RangeSet[RowKeyWrapper] =
-          TreeRangeSet.create[RowKeyWrapper]()
-        partitionRangeSet.add(
-          GuavaRange.closedOpen(
-            new RowKeyWrapper(tabletRange.start),
-            new RowKeyWrapper(tabletRange.end)
-          )
-        )
-        partitionRangeSet.removeAll(filterRangeSet.complement())
-        if (!partitionRangeSet.isEmpty) {
-          idx += 1
-          Some(
-            BigtableScanPartition(
-              idx - 1,
-              tabletRange,
-              partitionRangeSet
+        // Consider switching to using shard(List<KeyOffset> sampledRowKeys) from
+        //  com.google.cloud.bigtable.data.v2.models.Query for intersecting
+        //  tablet ranges with filters.
+        var idx = 0
+        val partitions = tabletRanges.flatMap { tabletRange =>
+          val partitionRangeSet: RangeSet[RowKeyWrapper] =
+            TreeRangeSet.create[RowKeyWrapper]()
+          partitionRangeSet.add(
+            GuavaRange.closedOpen(
+              new RowKeyWrapper(tabletRange.start),
+              new RowKeyWrapper(tabletRange.end)
             )
           )
-        } else {
-          None
+          partitionRangeSet.removeAll(filterRangeSet.complement())
+          if (!partitionRangeSet.isEmpty) {
+            idx += 1
+            Some(
+              BigtableScanPartition(
+                idx - 1,
+                tabletRange,
+                partitionRangeSet
+              )
+            )
+          } else {
+            None
+          }
         }
+        partitions.asInstanceOf[Array[Partition]]
+      } finally {
+        clientHandle.close()
       }
-
-      clientHandle.close()
-      partitions.asInstanceOf[Array[Partition]]
     } catch {
       case e: Exception => {
         logError("Received error when creating partitions: " + e.getMessage)

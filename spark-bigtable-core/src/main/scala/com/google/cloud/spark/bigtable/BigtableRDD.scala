@@ -50,11 +50,17 @@ class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializabl
       .foreachPartition(it => {
         if (it.nonEmpty) {
           val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
-          val bigtableDataClient = clientHandle.getClient()
-          val batcher = bigtableDataClient.newMutateRowsBatcher(TableId.of(tableId), null)
-          it.foreach(batcher.add)
-          batcher.close()
-          clientHandle.close()
+          try {
+            val bigtableDataClient = clientHandle.getClient()
+            val batcher = bigtableDataClient.newMutateRowsBatcher(TableId.of(tableId), null)
+            try {
+              it.foreach(batcher.add)
+            } finally {
+              batcher.close()
+            }
+          } finally {
+            clientHandle.close()
+          }
         }
       })
   }

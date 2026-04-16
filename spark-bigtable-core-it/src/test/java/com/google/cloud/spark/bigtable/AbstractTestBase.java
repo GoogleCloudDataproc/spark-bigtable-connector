@@ -34,12 +34,10 @@ import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.models.CreateTableRequest;
 import com.google.cloud.bigtable.admin.v2.models.GCRules.VersionRule;
 import com.google.cloud.spark.bigtable.model.TestRow;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.DataFrameReader;
 import org.apache.spark.sql.DataFrameWriter;

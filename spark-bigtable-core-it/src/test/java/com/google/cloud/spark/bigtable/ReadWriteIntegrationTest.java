@@ -22,16 +22,16 @@ import static org.junit.Assert.fail;
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
+import com.google.cloud.bigtable.data.v2.BigtableDataClient;
+import com.google.cloud.bigtable.data.v2.BigtableDataSettings;
+import com.google.cloud.bigtable.data.v2.models.RowMutation;
+import com.google.cloud.bigtable.data.v2.models.TableId;
 import com.google.cloud.spark.bigtable.model.Favorites;
-import com.google.cloud.spark.bigtable.model.TestSizedRow;
 import com.google.cloud.spark.bigtable.model.TestAvroRow;
 import com.google.cloud.spark.bigtable.model.TestRow;
 import com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.rpc.NotFoundException;
-
+import com.google.protobuf.ByteString;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -77,49 +77,49 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
 
   @Test
   @Parameters({
-      // String rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"stringCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\,"
-          + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
-          + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
-          + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
-          + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
-          + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\, \"col\":\"doubleCol\"\\,"
-          + " \"type\":\"double\"}}}",
-      // Double rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"doubleCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"col_family1\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\,"
-          + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
-          + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
-          + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
-          + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
-          + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"rowkey\"\\, \"col\":\"doubleCol\"\\,"
-          + " \"type\":\"double\"}}}",
-      // Compound rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,"
-          + "\"rowkey\":\"stringCol:stringCol2:shortCol:floatCol:longCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"\\, \"length\":\"15\"}\\,\"stringCol2\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"\\,"
-          + " \"length\":\"15\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\, \"col\":\"byteCol\"\\,"
-          + " \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\, \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"shortCol\"\\, \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\,"
-          + " \"col\":\"intCol\"\\, \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"longCol\"\\, \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"floatCol\"\\, \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\,"
-          + " \"col\":\"doubleCol\"\\, \"type\":\"double\"}}}"
+    // String rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"stringCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\,"
+        + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
+        + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
+        + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
+        + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
+        + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\, \"col\":\"doubleCol\"\\,"
+        + " \"type\":\"double\"}}}",
+    // Double rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"doubleCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"col_family1\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\,"
+        + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
+        + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
+        + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
+        + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
+        + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"rowkey\"\\, \"col\":\"doubleCol\"\\,"
+        + " \"type\":\"double\"}}}",
+    // Compound rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,"
+        + "\"rowkey\":\"stringCol:stringCol2:shortCol:floatCol:longCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"\\, \"length\":\"15\"}\\,\"stringCol2\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"\\,"
+        + " \"length\":\"15\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\, \"col\":\"byteCol\"\\,"
+        + " \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\, \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"shortCol\"\\, \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\,"
+        + " \"col\":\"intCol\"\\, \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"longCol\"\\, \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"floatCol\"\\, \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\,"
+        + " \"col\":\"doubleCol\"\\, \"type\":\"double\"}}}"
   })
   public void simpleWriteAndReadRowkeyTest(String rawCatalog) throws Exception {
     String useTable = generateTableId();
@@ -142,49 +142,49 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
 
   @Test
   @Parameters({
-      // String rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"stringCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\,"
-          + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
-          + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
-          + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
-          + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
-          + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\, \"col\":\"doubleCol\"\\,"
-          + " \"type\":\"double\"}}}",
-      // Double rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"doubleCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"col_family1\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\,"
-          + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
-          + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
-          + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
-          + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
-          + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"rowkey\"\\, \"col\":\"doubleCol\"\\,"
-          + " \"type\":\"double\"}}}",
-      // Compound rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,"
-          + "\"rowkey\":\"stringCol:stringCol2:shortCol:floatCol:longCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"\\, \"length\":\"15\"}\\,\"stringCol2\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"\\,"
-          + " \"length\":\"15\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\, \"col\":\"byteCol\"\\,"
-          + " \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\, \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"shortCol\"\\, \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\,"
-          + " \"col\":\"intCol\"\\, \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"longCol\"\\, \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"floatCol\"\\, \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\,"
-          + " \"col\":\"doubleCol\"\\, \"type\":\"double\"}}}"
+    // String rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"stringCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\,"
+        + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
+        + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
+        + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
+        + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
+        + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\, \"col\":\"doubleCol\"\\,"
+        + " \"type\":\"double\"}}}",
+    // Double rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"doubleCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"col_family1\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\,"
+        + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
+        + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
+        + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
+        + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
+        + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"rowkey\"\\, \"col\":\"doubleCol\"\\,"
+        + " \"type\":\"double\"}}}",
+    // Compound rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,"
+        + "\"rowkey\":\"stringCol:stringCol2:shortCol:floatCol:longCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"\\, \"length\":\"15\"}\\,\"stringCol2\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"\\,"
+        + " \"length\":\"15\"}\\,\"byteCol\":{\"cf\":\"col_family1\"\\, \"col\":\"byteCol\"\\,"
+        + " \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\, \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"shortCol\"\\, \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\,"
+        + " \"col\":\"intCol\"\\, \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"longCol\"\\, \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"floatCol\"\\, \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\,"
+        + " \"col\":\"doubleCol\"\\, \"type\":\"double\"}}}"
   })
   public void simpleWriteAndReadFilteredRowkeyTest(String rawCatalog) throws Exception {
     String useTable = generateTableId();
@@ -232,19 +232,19 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
   // This test is to check against the breaking point (i.e., 0) of long row keys.
   @Test
   @Parameters({
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"byteCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"col_family1\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"rowkey\"\\,"
-          + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"booleanCol\"\\,"
-          + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
-          + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
-          + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
-          + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
-          + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\, \"col\":\"doubleCol\"\\,"
-          + " \"type\":\"double\"}}}",
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"byteCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"col_family1\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"byteCol\":{\"cf\":\"rowkey\"\\,"
+        + " \"col\":\"byteCol\"\\, \"type\":\"byte\"}\\,\"booleanCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"booleanCol\"\\,"
+        + " \"type\":\"boolean\"}\\,\"shortCol\":{\"cf\":\"col_family2\"\\, \"col\":\"shortCol\"\\,"
+        + " \"type\":\"short\"}\\,\"intCol\":{\"cf\":\"col_family2\"\\, \"col\":\"intCol\"\\,"
+        + " \"type\":\"int\"}\\,\"longCol\":{\"cf\":\"col_family2\"\\, \"col\":\"longCol\"\\,"
+        + " \"type\":\"long\"}\\,\"floatCol\":{\"cf\":\"col_family3\"\\, \"col\":\"floatCol\"\\,"
+        + " \"type\":\"float\"}\\,\"doubleCol\":{\"cf\":\"col_family3\"\\, \"col\":\"doubleCol\"\\,"
+        + " \"type\":\"double\"}}}",
   })
   public void simpleWriteAndReadFilterOnByteRowkeyTest(String rawCatalog) throws Exception {
     String useTable = generateTableId();
@@ -269,11 +269,11 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
   // This test is to check against intersecting filters containing ranges and points.
   @Test
   @Parameters({
-      "((intCol = 20) OR ((intCol >= 1) AND (intCol <= 15))) AND (longCol < 1000), 16",
-      // The two points from each of the main AND branches (i.e., 40/50 or 10/15)
-      // intersect with the range of the other branch
-      "((intCol >= 1 AND intCol < 21) OR (intCol = 40 OR intCol = 50))"
-          + " AND ((intCol >= 30 AND intCol < 51) OR (intCol = 10 OR intCol = 15)), 4"
+    "((intCol = 20) OR ((intCol >= 1) AND (intCol <= 15))) AND (longCol < 1000), 16",
+    // The two points from each of the main AND branches (i.e., 40/50 or 10/15)
+    // intersect with the range of the other branch
+    "((intCol >= 1 AND intCol < 21) OR (intCol = 40 OR intCol = 50))"
+        + " AND ((intCol >= 30 AND intCol < 51) OR (intCol = 10 OR intCol = 15)), 4"
   })
   public void simpleWriteAndReadPointWithRangeIntersectionsTest(String filter, int expectedRowCount)
       throws Exception {
@@ -311,13 +311,13 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
 
   @Test
   @Parameters({
-      // String rowkey
-      "{\"table\":{\"name\":\"${tablename}\"\\,"
-          + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"stringCol\"\\,"
-          + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
-          + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"avroCol\":{\"cf\":\"col_family1\"\\,"
-          + " \"col\":\"avroCol\"\\, \"avro\":\"avroSchema\"}}}"
+    // String rowkey
+    "{\"table\":{\"name\":\"${tablename}\"\\,"
+        + "\"tableCoder\":\"PrimitiveType\"}\\,\"rowkey\":\"stringCol\"\\,"
+        + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\"\\, \"col\":\"stringCol\"\\,"
+        + " \"type\":\"string\"}\\,\"stringCol2\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"stringCol2\"\\, \"type\":\"string\"}\\,\"avroCol\":{\"cf\":\"col_family1\"\\,"
+        + " \"col\":\"avroCol\"\\, \"avro\":\"avroSchema\"}}}"
   })
   public void simpleWriteAndReadAvroDataTest(String rawCatalog) throws Exception {
     String useTable = generateTableId();
@@ -407,14 +407,24 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
     String useTable = generateTableId();
     createBigtableTable(useTable, adminClient);
 
+    BigtableDataSettings settings =
+        BigtableDataSettings.newBuilder().setProjectId(projectId).setInstanceId(instanceId).build();
+
+    byte[] value = new byte[100 * 1024 * 1024];
+    try (BigtableDataClient dataClient = BigtableDataClient.create(settings)) {
+      RowMutation largeRow =
+          RowMutation.create(TableId.of(useTable), "large-key")
+              .setCell("col_family1", ByteString.copyFromUtf8("q"), ByteString.copyFrom(value));
+      dataClient.mutateRow(largeRow);
+      dataClient.mutateRow(largeRow);
+      dataClient.mutateRow(largeRow);
+
+      RowMutation normalRow =
+          RowMutation.create(TableId.of(useTable), "key").setCell("col_family1", "q", "value");
+      dataClient.mutateRow(normalRow);
+    }
+
     try {
-      // each row is 100MB. Write it 3 times to exceed the 256MB limit
-      byte[] largeBytes = new byte[100 * 1024 * 1024];
-      TestSizedRow largeRow = new TestSizedRow("largeRowKey", largeBytes);
-      List<TestSizedRow> rows = Arrays.asList(largeRow);
-
-      Dataset<Row> df = spark.createDataset(rows, Encoders.bean(TestSizedRow.class)).toDF();
-
       String rawCatalog =
           "{\"table\":{\"name\":\"${tablename}\","
               + "\"tableCoder\":\"PrimitiveType\"},\"rowkey\":\"stringCol\","
@@ -423,21 +433,18 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
               + " \"col\":\"bytesCol\", \"type\":\"binary\"}}}";
       String catalog = parameterizeCatalog(rawCatalog, useTable);
 
-      writeDataframeToBigtable(df, catalog, false);
-      writeDataframeToBigtable(df, catalog, false);
-      writeDataframeToBigtable(df, catalog, false);
-
-      Dataset<Row> readDf = readDataframeFromBigtable(spark, catalog, withReaderSkipLargeRows(true));
+      Dataset<Row> readDf =
+          readDataframeFromBigtable(spark, catalog, withReaderSkipLargeRows(true));
       LOG.info("DataFrame was read from Bigtable with skipLargeRows=true.");
       // Since the row is skipped, the returned dataframe should be empty!
-      assertEquals(0, readDf.count());
+      assertEquals(1, readDf.count());
     } finally {
       deleteBigtableTable(useTable, adminClient);
     }
   }
 
   @Test
-  public void createNewTableWithSparkTest() throws Exception {
+  public void createNewTableWithSparkTest() {
     String useTable = generateTableId();
 
     try {
