@@ -30,7 +30,6 @@ import com.google.cloud.spark.bigtable.model.Favorites;
 import com.google.cloud.spark.bigtable.model.TestAvroRow;
 import com.google.cloud.spark.bigtable.model.TestRow;
 import com.google.cloud.spark.bigtable.repackaged.com.google.api.gax.rpc.NotFoundException;
-import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -407,30 +406,41 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
     String useTable = generateTableId();
     createBigtableTable(useTable, adminClient);
 
+    String rawCatalog =
+        "{\"table\":{\"name\":\"${tablename}\","
+            + "\"tableCoder\":\"PrimitiveType\"},\"rowkey\":\"stringCol1\","
+            + "\"columns\":{\"stringCol1\":{\"cf\":\"rowkey\", \"col\":\"stringCol1\","
+            + " \"type\":\"string\"},\"stringCol2\":{\"cf\":\"col_family1\","
+            + " \"col\":\"stringCol2\", \"type\":\"string\"},\"stringCol3\":{\"cf\":\"col_family1\","
+            + " \"col\":\"stringCol3\", \"type\":\"string\"}, \"stringCol4\":{\"cf\":\"col_family1\","
+            + "\"col\":\"stringCol4\", \"type\":\"string\"}}}";
+
     BigtableDataSettings settings =
         BigtableDataSettings.newBuilder().setProjectId(projectId).setInstanceId(instanceId).build();
 
     byte[] value = new byte[100 * 1024 * 1024];
     try (BigtableDataClient dataClient = BigtableDataClient.create(settings)) {
-      RowMutation largeRow =
+      // the columns need to match the catalog definition because of column pushdown. We also need
+      // to write to 3 different columns because each mutation has 100MB limit and reading from df
+      // by default only returns 1 cell
+      dataClient.mutateRow(
           RowMutation.create(TableId.of(useTable), "large-key")
-              .setCell("col_family1", ByteString.copyFromUtf8("q"), ByteString.copyFrom(value));
-      dataClient.mutateRow(largeRow);
-      dataClient.mutateRow(largeRow);
-      dataClient.mutateRow(largeRow);
+              .setCell("col_family1", "stringCol2", new String(value)));
+      dataClient.mutateRow(
+          RowMutation.create(TableId.of(useTable), "large-key")
+              .setCell("col_family1", "stringCol3", new String(value)));
+      dataClient.mutateRow(
+          RowMutation.create(TableId.of(useTable), "large-key")
+              .setCell("col_family1", "stringCol4", new String(value)));
 
+      // mutate another normal row to make sure we're actually reading data
       RowMutation normalRow =
-          RowMutation.create(TableId.of(useTable), "key").setCell("col_family1", "q", "value");
+          RowMutation.create(TableId.of(useTable), "key")
+              .setCell("col_family1", "stringCol2", "value");
       dataClient.mutateRow(normalRow);
     }
 
     try {
-      String rawCatalog =
-          "{\"table\":{\"name\":\"${tablename}\","
-              + "\"tableCoder\":\"PrimitiveType\"},\"rowkey\":\"stringCol\","
-              + "\"columns\":{\"stringCol\":{\"cf\":\"rowkey\", \"col\":\"stringCol\","
-              + " \"type\":\"string\"},\"bytesCol\":{\"cf\":\"col_family1\","
-              + " \"col\":\"bytesCol\", \"type\":\"binary\"}}}";
       String catalog = parameterizeCatalog(rawCatalog, useTable);
 
       Dataset<Row> readDf =
