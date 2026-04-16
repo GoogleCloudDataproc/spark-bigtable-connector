@@ -17,6 +17,7 @@ package com.google.cloud.spark.bigtable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.spark.SparkException;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
@@ -443,11 +445,16 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
     try {
       String catalog = parameterizeCatalog(rawCatalog, useTable);
 
+      // Reading with skipping large row should only return 1 row
       Dataset<Row> readDf =
           readDataframeFromBigtable(spark, catalog, withReaderSkipLargeRows(true));
       LOG.info("DataFrame was read from Bigtable with skipLargeRows=true.");
-      // Since the row is skipped, the returned dataframe should be empty!
       assertEquals(1, readDf.count());
+
+      // Reading the same catalog schema without skipping large row should fail
+      Dataset<Row> failDf = readDataframeFromBigtable(spark, catalog);
+      SparkException exception = assertThrows(SparkException.class, failDf::show);
+      assertTrue(exception.getMessage().contains("exceeds the limit"));
     } finally {
       deleteBigtableTable(useTable, adminClient);
     }
