@@ -38,7 +38,7 @@ object SparkScanConfig {
       conf.get(PUSH_DOWN_FILTERS_CONFIG_KEY).map(_.toBoolean),
       conf.get(PUSH_DOWN_COLUMN_FILTERS_CONFIG_KEY).map(_.toBoolean),
       conf.get(ROW_FILTERS_CONFIG_KEY),
-      conf.get(SKIP_LARGE_ROWS_CONFIG_KEY).map(_.toBoolean)
+      conf.get(SKIP_LARGE_ROWS_CONFIG_KEY).exists(_.toBoolean)
     )
   }
 
@@ -47,18 +47,18 @@ object SparkScanConfig {
             pushDownRowKeyFilters: Option[Boolean],
             pushDownColumnFilters: Option[Boolean],
             rowFilters: Option[String],
-            skipLargeRows: Option[Boolean]): SparkScanConfig = {
+            skipLargeRows: Boolean): SparkScanConfig = {
     new SparkScanConfig(
       timeRangeStart,
       timeRangeEnd,
       pushDownRowKeyFilters.getOrElse(true),
       pushDownColumnFilters.getOrElse(true),
       rowFilters,
-      skipLargeRows.getOrElse(false)
+      skipLargeRows
     )
   }
 
-  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None, None, None)
+  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None, None, skipLargeRows = false)
 }
 
 case class SparkScanConfig private[datasources]
