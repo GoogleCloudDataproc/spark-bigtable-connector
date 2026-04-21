@@ -17,11 +17,16 @@ package com.google.cloud.spark.bigtable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient;
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminSettings;
+import com.google.cloud.bigtable.data.v2.BigtableDataClient;
+import com.google.cloud.bigtable.data.v2.BigtableDataSettings;
+import com.google.cloud.bigtable.data.v2.models.RowMutation;
+import com.google.cloud.bigtable.data.v2.models.TableId;
 import com.google.cloud.spark.bigtable.model.Favorites;
 import com.google.cloud.spark.bigtable.model.TestAvroRow;
 import com.google.cloud.spark.bigtable.model.TestRow;
@@ -30,6 +35,7 @@ import java.util.ArrayList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.spark.SparkException;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
@@ -62,8 +68,12 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
 
   @AfterClass
   public static void cleanup() throws Exception {
-    adminClient.close();
-    stopSparkSession(spark);
+    if (adminClient != null) {
+      adminClient.close();
+    }
+    if (spark != null) {
+      stopSparkSession(spark);
+    }
   }
 
   @Test
@@ -394,7 +404,64 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
   }
 
   @Test
-  public void createNewTableWithSparkTest() throws Exception {
+  public void readWithSkipLargeRowsTest() throws Exception {
+    String useTable = generateTableId();
+    createBigtableTable(useTable, adminClient);
+
+    String rawCatalog =
+        "{\"table\":{\"name\":\"${tablename}\","
+            + "\"tableCoder\":\"PrimitiveType\"},\"rowkey\":\"stringCol1\","
+            + "\"columns\":{\"stringCol1\":{\"cf\":\"rowkey\", \"col\":\"stringCol1\","
+            + " \"type\":\"string\"},\"stringCol2\":{\"cf\":\"col_family1\","
+            + " \"col\":\"stringCol2\", \"type\":\"string\"},\"stringCol3\":{\"cf\":\"col_family1\","
+            + " \"col\":\"stringCol3\", \"type\":\"string\"}, \"stringCol4\":{\"cf\":\"col_family1\","
+            + "\"col\":\"stringCol4\", \"type\":\"string\"}}}";
+
+    BigtableDataSettings settings =
+        BigtableDataSettings.newBuilder().setProjectId(projectId).setInstanceId(instanceId).build();
+
+    byte[] value = new byte[100 * 1024 * 1024];
+    try (BigtableDataClient dataClient = BigtableDataClient.create(settings)) {
+      // the columns need to match the catalog definition because of column pushdown. We also need
+      // to write to 3 different columns because each mutation has 100MB limit and reading from df
+      // by default only returns 1 cell
+      dataClient.mutateRow(
+          RowMutation.create(TableId.of(useTable), "large-key")
+              .setCell("col_family1", "stringCol2", new String(value)));
+      dataClient.mutateRow(
+          RowMutation.create(TableId.of(useTable), "large-key")
+              .setCell("col_family1", "stringCol3", new String(value)));
+      dataClient.mutateRow(
+          RowMutation.create(TableId.of(useTable), "large-key")
+              .setCell("col_family1", "stringCol4", new String(value)));
+
+      // mutate another normal row to make sure we're actually reading data
+      RowMutation normalRow =
+          RowMutation.create(TableId.of(useTable), "key")
+              .setCell("col_family1", "stringCol2", "value");
+      dataClient.mutateRow(normalRow);
+    }
+
+    try {
+      String catalog = parameterizeCatalog(rawCatalog, useTable);
+
+      // Reading with skipping large row should only return 1 row
+      Dataset<Row> readDf =
+          readDataframeFromBigtable(spark, catalog, withReaderSkipLargeRows(true));
+      LOG.info("DataFrame was read from Bigtable with skipLargeRows=true.");
+      assertEquals(1, readDf.count());
+
+      // Reading the same catalog schema without skipping large row should fail
+      Dataset<Row> failDf = readDataframeFromBigtable(spark, catalog);
+      SparkException exception = assertThrows(SparkException.class, failDf::show);
+      assertTrue(exception.getMessage().contains("exceeds the limit"));
+    } finally {
+      deleteBigtableTable(useTable, adminClient);
+    }
+  }
+
+  @Test
+  public void createNewTableWithSparkTest() {
     String useTable = generateTableId();
 
     try {

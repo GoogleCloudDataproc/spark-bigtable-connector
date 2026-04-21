@@ -1,6 +1,6 @@
 package com.google.cloud.spark.bigtable
 
-import com.google.cloud.bigtable.data.v2.models.{Filters, RowMutationEntry, Row => BigtableRow}
+import com.google.cloud.bigtable.data.v2.models.{Filters, RowMutationEntry, TableId, Row => BigtableRow}
 import com.google.cloud.spark.bigtable.datasources.{BigtableDataClientBuilder, BigtableSparkConf, BigtableTableScanRDD}
 import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.cloud.spark.bigtable.util.RowFilterUtils
@@ -11,48 +11,56 @@ import org.apache.spark.rdd.RDD
 class BigtableRDD(@transient val sparkContext: SparkContext) extends Serializable with Logging {
 
   def readRDD(
-      tableId: String,
-      bigtableSparkConf: BigtableSparkConf
-  ): RDD[BigtableRow] = {
+               tableId: String,
+               bigtableSparkConf: BigtableSparkConf
+             ): RDD[BigtableRow] = {
     new BigtableTableScanRDD(
       getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig,
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
       tableId,
       sparkContext,
-      Filters.FILTERS.pass()
+      Filters.FILTERS.pass(),
+      bigtableSparkConf.appConfig.sparkScanConfig.skipLargeRows
     )
   }
 
   def readRDD(
-      tableId: String,
-      bigtableSparkConf: BigtableSparkConf,
-      rowFilterString: String
-  ): RDD[BigtableRow] = {
+               tableId: String,
+               bigtableSparkConf: BigtableSparkConf,
+               rowFilterString: String
+             ): RDD[BigtableRow] = {
     val rowFilters = RowFilterUtils.decode(rowFilterString)
     new BigtableTableScanRDD(
       getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig,
       ImmutableRangeSet.of(Range.all[RowKeyWrapper]()),
       tableId,
       sparkContext,
-      rowFilters
+      rowFilters,
+      bigtableSparkConf.appConfig.sparkScanConfig.skipLargeRows
     )
   }
 
   def writeRDD(
-      rdd: RDD[RowMutationEntry],
-      tableId: String,
-      bigtableSparkConf: BigtableSparkConf
-  ): Unit = {
+                rdd: RDD[RowMutationEntry],
+                tableId: String,
+                bigtableSparkConf: BigtableSparkConf
+              ): Unit = {
     val bigtableClientConfig = getSparkConfWithUserAgent(bigtableSparkConf).bigtableClientConfig
     rdd
       .foreachPartition(it => {
         if (it.nonEmpty) {
           val clientHandle = BigtableDataClientBuilder.getHandle(bigtableClientConfig)
-          val bigtableDataClient = clientHandle.getClient()
-          val batcher = bigtableDataClient.newBulkMutationBatcher(tableId)
-          it.foreach(batcher.add)
-          batcher.close()
-          clientHandle.close()
+          try {
+            val bigtableDataClient = clientHandle.getClient()
+            val batcher = bigtableDataClient.newMutateRowsBatcher(TableId.of(tableId), null)
+            try {
+              it.foreach(batcher.add)
+            } finally {
+              batcher.close()
+            }
+          } finally {
+            clientHandle.close()
+          }
         }
       })
   }

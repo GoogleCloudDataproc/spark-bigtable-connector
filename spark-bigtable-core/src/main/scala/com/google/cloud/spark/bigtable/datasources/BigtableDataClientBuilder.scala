@@ -17,7 +17,7 @@
 package com.google.cloud.spark.bigtable.datasources
 
 import com.google.cloud.bigtable.admin.v2.BigtableTableAdminClient
-import com.google.cloud.bigtable.data.v2.BigtableDataClient
+import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStub
 import com.google.cloud.spark.bigtable._
 import com.google.cloud.spark.bigtable.datasources.config.BigtableClientConfig
 import org.apache.yetus.audience.InterfaceAudience
@@ -25,19 +25,19 @@ import org.apache.yetus.audience.InterfaceAudience
 import scala.collection.mutable
 
 /** This class is responsible for creating BigtableDataClient objects, setting
-  * appropriate runtime configurations, and cashing them per each Spark worker
-  * to improve performance.
-  */
+ * appropriate runtime configurations, and cashing them per each Spark worker
+ * to improve performance.
+ */
 @InterfaceAudience.Private
 object BigtableDataClientBuilder extends Serializable with Logging {
 
   class DataClientHandle(
-                          client: BigtableDataClient,
+                          client: EnhancedBigtableStub,
                           clientConfig: BigtableClientConfig
                         ) extends AutoCloseable {
     private var wasReleased: Boolean = false
 
-    def getClient(): BigtableDataClient = {
+    def getClient(): EnhancedBigtableStub = {
       client
     }
 
@@ -54,14 +54,14 @@ object BigtableDataClientBuilder extends Serializable with Logging {
   }
 
   private val dataClientMap =
-    mutable.HashMap[BigtableClientConfig, BigtableDataClient]()
+    mutable.HashMap[BigtableClientConfig, EnhancedBigtableStub]()
   private val refCountMap = mutable.HashMap[BigtableClientConfig, Int]()
 
   def getHandle(clientConfig: BigtableClientConfig): DataClientHandle = synchronized {
     if (!refCountMap.contains(clientConfig)) {
       refCountMap += (clientConfig -> 0)
-      logDebug("Creating a new BigtableDataClient with key = " + clientConfig)
-      dataClientMap += (clientConfig -> BigtableDataClient.create(clientConfig.getDataSettings()))
+      logDebug("Creating a new EnhancedBigtableClient with key = " + clientConfig)
+      dataClientMap += (clientConfig -> EnhancedBigtableStub.create(clientConfig.getDataSettings().getStubSettings))
     }
     refCountMap(clientConfig) += 1
     new DataClientHandle(dataClientMap(clientConfig), clientConfig)
@@ -81,9 +81,10 @@ object BigtableDataClientBuilder extends Serializable with Logging {
       }
     }
 }
+
 /** This class is responsible for creating BigtableAdminClient objects and
-  * setting appropriate runtime configurations.
-  */
+ * setting appropriate runtime configurations.
+ */
 @InterfaceAudience.Private
 object BigtableAdminClientBuilder extends Serializable {
   def getAdminClient(clientConfig: BigtableClientConfig): BigtableTableAdminClient = {
@@ -92,8 +93,8 @@ object BigtableAdminClientBuilder extends Serializable {
   }
 
   private def createAdminClient(
-      clientConfig: BigtableClientConfig
-  ): BigtableTableAdminClient =
+                                 clientConfig: BigtableClientConfig
+                               ): BigtableTableAdminClient =
     BigtableTableAdminClient.create(clientConfig.getTableAdminSettings())
 }
 

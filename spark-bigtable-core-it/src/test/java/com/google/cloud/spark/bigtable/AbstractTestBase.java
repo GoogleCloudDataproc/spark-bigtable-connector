@@ -270,6 +270,10 @@ public abstract class AbstractTestBase {
     return reader -> reader.option(BIGTABLE_INSTANCE_ID(), newInstanceId);
   }
 
+  static ReaderOption withReaderSkipLargeRows(boolean skipLargeRows) {
+    return reader -> reader.option("spark.bigtable.read.skip.large.rows", skipLargeRows);
+  }
+
   Dataset<Row> readDataframeFromBigtable(
       SparkSession spark, String catalog, ReaderOption... options) {
     return readDataframeFromBigtable(spark, catalog, "", options);

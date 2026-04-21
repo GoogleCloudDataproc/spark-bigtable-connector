@@ -23,15 +23,15 @@ import com.google.cloud.spark.bigtable.datasources.config.{ApplicationConfig, Bi
 import org.apache.yetus.audience.InterfaceAudience
 
 /** This is the bigtable configuration. Users can either set them in SparkConf, which
-  * will take effect globally, or configure it per table, which will overwrite the value
-  * set in SparkConf. If not set, the default value will take effect.
-  * To access these variables inside Java, use the following import statement:
-  * `import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.*;`
-  * You can then use a syntax like `BIGTABLE_PROJECT_ID()` to access them.
-  * When using RDDs, you can use a config builder object and config setter methods,
-  * e.g., `new BigtableSparkConfBuilder().setProjectId(someProjectId).build()`
-  * to create the `BigtableSparkConf` object with specific configs.
-  */
+ * will take effect globally, or configure it per table, which will overwrite the value
+ * set in SparkConf. If not set, the default value will take effect.
+ * To access these variables inside Java, use the following import statement:
+ * `import static com.google.cloud.spark.bigtable.datasources.BigtableSparkConf.*;`
+ * You can then use a syntax like `BIGTABLE_PROJECT_ID()` to access them.
+ * When using RDDs, you can use a config builder object and config setter methods,
+ * e.g., `new BigtableSparkConfBuilder().setProjectId(someProjectId).build()`
+ * to create the `BigtableSparkConf` object with specific configs.
+ */
 @InterfaceAudience.Public
 object BigtableSparkConf {
   /** The Bigtable project id. */
@@ -47,8 +47,8 @@ object BigtableSparkConf {
   val DEFAULT_BIGTABLE_APP_PROFILE_ID = "default"
 
   /** The timestamp to set on all cells when writing. If not specified,
-    * all cells will have the current timestamp.
-    */
+   * all cells will have the current timestamp.
+   */
   val BIGTABLE_WRITE_TIMESTAMP: String = SparkWritesConfig.WRITE_TIMESTAMP_CONFIG_KEY
 
   /** Specifying whether to create a new Bigtable table or not. */
@@ -70,6 +70,9 @@ object BigtableSparkConf {
 
   /** Specifying the row filters to push down to read data from bigtable. */
   val BIGTABLE_READ_ROW_FILTERS: String = SparkScanConfig.ROW_FILTERS_CONFIG_KEY
+
+  /** Specifying whether to skip large rows when reading. The skipped rows are logged as warnings. */
+  val BIGTABLE_SKIP_LARGE_ROWS: String = SparkScanConfig.SKIP_LARGE_ROWS_CONFIG_KEY
 
   /** By default, push down all filters (row key, column value, etc.) down. */
   @ObsoleteApi("This field is obsolete is will be removed on a future version. To use a default configuration simply leave it unset")
@@ -111,7 +114,7 @@ object BigtableSparkConf {
   val BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER: String = CustomAuthConfig.CUSTOM_CREDENTIALS_PROVIDER_CONFIG_KEY
 
   /** Optional arguments to be passed to a custom CredentialsProvider. Multiple arguments may be passed by setting
-    * multiple values using this key prefix and a `.` */
+   * multiple values using this key prefix and a `.` */
   val BIGTABLE_CUSTOM_CREDENTIALS_PROVIDER_ARGS: String = CustomAuthConfig.CUSTOM_CREDENTIALS_PROVIDER_ARGS_CONFIG_KEY
 }
 
@@ -238,6 +241,11 @@ class BigtableSparkConfBuilder extends Serializable {
     this
   }
 
+  def setSkipLargeRows(value: Boolean): BigtableSparkConfBuilder = {
+    scanConf = scanConf.copy(skipLargeRows = value)
+    this
+  }
+
   def build(): BigtableSparkConf = {
     val bigtableClientConfig = BigtableClientConfig(
       bigtableResourcesConfig = resourcesConf,
@@ -255,7 +263,7 @@ class BigtableSparkConfBuilder extends Serializable {
 
     val errors = bigtableClientConfig.getValidationErrors() ++ applicationConfig.getValidationErrors()
 
-    if(errors.nonEmpty) {
+    if (errors.nonEmpty) {
       throw new IllegalArgumentException(errors.mkString(System.lineSeparator()))
     }
 
@@ -268,14 +276,15 @@ class BigtableSparkConfBuilder extends Serializable {
 
 object BigtableSparkConfBuilder {
   def apply(): BigtableSparkConfBuilder = new BigtableSparkConfBuilder()
+
   private[datasources] def apply(clientConfig: BigtableClientConfig,
                                  applicationConfig: ApplicationConfig): BigtableSparkConfBuilder =
     new BigtableSparkConfBuilder(clientConfig, applicationConfig)
 }
 
 case class BigtableSparkConf private[datasources]
-  (bigtableClientConfig: BigtableClientConfig,
-   appConfig: ApplicationConfig) {
+(bigtableClientConfig: BigtableClientConfig,
+ appConfig: ApplicationConfig) {
   def toBuilder: BigtableSparkConfBuilder =
     BigtableSparkConfBuilder(bigtableClientConfig, appConfig)
 }

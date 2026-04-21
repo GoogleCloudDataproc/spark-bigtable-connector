@@ -29,13 +29,16 @@ object SparkScanConfig {
 
   val ROW_FILTERS_CONFIG_KEY = "spark.bigtable.read.row.filters"
 
+  val SKIP_LARGE_ROWS_CONFIG_KEY = "spark.bigtable.read.skip.large.rows"
+
   private[datasources] def fromMap(conf: Map[String, String]): SparkScanConfig = {
     SparkScanConfig(
       conf.get(TIME_RANGE_START_CONFIG_KEY).map(_.toLong),
       conf.get(TIME_RANGE_END_CONFIG_KEY).map(_.toLong),
       conf.get(PUSH_DOWN_FILTERS_CONFIG_KEY).map(_.toBoolean),
       conf.get(PUSH_DOWN_COLUMN_FILTERS_CONFIG_KEY).map(_.toBoolean),
-      conf.get(ROW_FILTERS_CONFIG_KEY)
+      conf.get(ROW_FILTERS_CONFIG_KEY),
+      conf.get(SKIP_LARGE_ROWS_CONFIG_KEY).exists(_.toBoolean)
     )
   }
 
@@ -43,17 +46,19 @@ object SparkScanConfig {
             timeRangeEnd: Option[Long],
             pushDownRowKeyFilters: Option[Boolean],
             pushDownColumnFilters: Option[Boolean],
-            rowFilters: Option[String]): SparkScanConfig = {
+            rowFilters: Option[String],
+            skipLargeRows: Boolean): SparkScanConfig = {
     new SparkScanConfig(
       timeRangeStart,
       timeRangeEnd,
       pushDownRowKeyFilters.getOrElse(true),
       pushDownColumnFilters.getOrElse(true),
-      rowFilters
+      rowFilters,
+      skipLargeRows
     )
   }
 
-  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None, None)
+  def apply(): SparkScanConfig = SparkScanConfig(None, None, None, None, None, skipLargeRows = false)
 }
 
 case class SparkScanConfig private[datasources]
@@ -61,6 +66,7 @@ case class SparkScanConfig private[datasources]
  timeRangeEnd: Option[Long],
  pushDownRowKeyFilters: Boolean,
  pushDownColumnFilters: Boolean,
- rowFilters: Option[String]) {
+ rowFilters: Option[String],
+ skipLargeRows: Boolean) {
   def getValidationErrors: Set[String] = Set()
 }

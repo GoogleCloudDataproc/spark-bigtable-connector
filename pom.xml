@@ -64,8 +64,8 @@
     <scala.binary.version>2.13</scala.binary.version>
     <connector.artifact.id>spark-bigtable_2.13</connector.artifact.id>
     <spark.version>3.5.1</spark.version>
-    <bigtable.java.version>2.42.0</bigtable.java.version>
-    <bigtable.java.emulator.version>0.175.0</bigtable.java.emulator.version>
+    <bigtable.java.version>2.75.1</bigtable.java.version>
+    <bigtable.java.emulator.version>0.212.1</bigtable.java.emulator.version>
 
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
