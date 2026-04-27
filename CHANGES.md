@@ -2,7 +2,7 @@
 
 ## Next
 
-## 0.8.0 - 2025-11-26
+* PR #107: feat: add an option to skip reading large rows
 
 ## 0.8.0 - 2025-11-26
 
