@@ -1,5 +1,7 @@
 # Release Notes
 
+## Next
+
 ## 0.9.0 - 2026-04-27
 
 * PR #107: feat: add an option to skip reading large rows
