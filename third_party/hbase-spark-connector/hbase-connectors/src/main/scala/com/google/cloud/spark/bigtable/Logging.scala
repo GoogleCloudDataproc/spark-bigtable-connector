@@ -19,7 +19,6 @@ package com.google.cloud.spark.bigtable
 
 import org.apache.yetus.audience.InterfaceAudience
 import org.slf4j.{Logger, LoggerFactory}
-import org.slf4j.impl.StaticLoggerBinder
 
 /** Utility trait for classes that want to log data. Creates a SLF4J logger for the class and allows
   * logging messages at different levels using methods that only evaluate parameters lazily if the
@@ -103,8 +102,6 @@ trait Logging {
 
   private def initializeLogging(isInterpreter: Boolean): Unit = {
     // Don't use a logger in here, as this is itself occurring during initialization of a logger
-    // If Log4j 1.2 is being used, but is not initialized, load a default properties file
-    val binderClass = StaticLoggerBinder.getSingleton.getLoggerFactoryClassStr
     Logging.initialized = true
 
     // Force a call into slf4j to initialize it. Avoids this happening from multiple threads
