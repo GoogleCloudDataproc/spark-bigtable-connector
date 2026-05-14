@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #110: chore: remove unused StaticLoggerBinder import
+
 ## 0.9.0 - 2026-04-27
 
 * PR #107: feat: add an option to skip reading large rows
