@@ -1,5 +1,7 @@
 # Release Notes
 
+## Next
+
 ## 0.9.1 - 2026-05-14
 
 * PR #110: chore: remove unused StaticLoggerBinder import
