@@ -20,7 +20,7 @@ name := "spark-bigtable-example-scala2.12"
 version := "0.1"
 scalaVersion := "2.12.18"
 val sparkBigtable = "spark-bigtable_2.12"
-val sparkBigtableVersion = "0.7.0" /* ${NEXT_VERSION_FLAG} */
+val sparkBigtableVersion = "0.9.1" /* ${NEXT_VERSION_FLAG} */
 
 
 /** build settings for scala 2.13 */

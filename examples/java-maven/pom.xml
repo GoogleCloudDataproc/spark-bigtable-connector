@@ -30,8 +30,7 @@
         <spark.bigtable.artifact>spark-bigtable_2.12</spark.bigtable.artifact>
         <scala.binary.version>2.12</scala.binary.version>
         <spark.version>3.5.1</spark.version>
-        <reload4j.version>1.7.36</reload4j.version>
-        <spark.bigtable.version>0.4.0</spark.bigtable.version> <!-- ${NEXT_VERSION_FLAG} -->
+        <spark.bigtable.version>0.9.1</spark.bigtable.version> <!-- ${NEXT_VERSION_FLAG} -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
@@ -54,12 +53,6 @@
             <groupId>com.google.cloud.spark.bigtable</groupId>
             <artifactId>${spark.bigtable.artifact}</artifactId>
             <version>${spark.bigtable.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-reload4j</artifactId>
-            <version>${reload4j.version}</version>
         </dependency>
     </dependencies>
 
