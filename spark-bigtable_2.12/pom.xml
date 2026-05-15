@@ -33,7 +33,7 @@
   <properties>
     <scala.version>2.12.18</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
-    <spark.version>3.5.1</spark.version>
+    <spark.version>3.5.7</spark.version>
     <re2j.version>1.8</re2j.version>
     <upickle.version>4.2.1</upickle.version>
   </properties>
