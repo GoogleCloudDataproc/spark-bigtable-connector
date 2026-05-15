@@ -22,7 +22,7 @@ use the following command to submit the script to the cluster:
 ```shell
 # 2.13 or 2.12
 SCALA_VERSION=2.12
-BIGTABLE_SPARK_VERSION=0.3.0 # ${NEXT_VERSION_FLAG}
+BIGTABLE_SPARK_VERSION=0.9.1 # ${NEXT_VERSION_FLAG}
 
 gcloud dataproc jobs submit pyspark \
 --cluster=$BIGTABLE_SPARK_DATAPROC_CLUSTER \
