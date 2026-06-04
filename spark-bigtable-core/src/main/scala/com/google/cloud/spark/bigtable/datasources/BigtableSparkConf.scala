@@ -246,6 +246,11 @@ class BigtableSparkConfBuilder extends Serializable {
     this
   }
 
+  def setEmulatorPort(value: Int): BigtableSparkConfBuilder = {
+    emulatorPort = Some(value)
+    this
+  }
+
   def build(): BigtableSparkConf = {
     val bigtableClientConfig = BigtableClientConfig(
       bigtableResourcesConfig = resourcesConf,
