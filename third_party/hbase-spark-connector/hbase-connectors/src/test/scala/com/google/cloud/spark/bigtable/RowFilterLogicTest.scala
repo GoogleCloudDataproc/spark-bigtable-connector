@@ -119,11 +119,10 @@ class RowFilterLogicTest
   override def afterAll() {
     emulator.stop()
 
-    sc.stop()
-    // Clear the active/default SparkSession so a later suite in the same JVM
-    // gets a fresh session that honors its own SparkConf via getOrCreate().
-    SparkSession.clearActiveSession()
-    SparkSession.clearDefaultSession()
+    // Stops the SparkContext and clears the active/default SparkSession, so a
+    // later suite in the same JVM gets a fresh session that honors its own
+    // SparkConf via getOrCreate().
+    sqlContext.sparkSession.stop()
   }
 
   /** A example of query three fields and also only using rowkey points for the filter

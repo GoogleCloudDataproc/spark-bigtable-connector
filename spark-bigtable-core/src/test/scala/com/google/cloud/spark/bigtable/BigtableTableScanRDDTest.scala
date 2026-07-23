@@ -26,7 +26,7 @@ import com.google.cloud.spark.bigtable.filters.RowKeyWrapper
 import com.google.common.collect.{Range, RangeSet, TreeRangeSet}
 import com.google.protobuf.ByteString
 import org.apache.spark.sql.{SQLContext, SparkSession}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkConf
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
@@ -48,23 +48,20 @@ class BigtableTableScanRDDTest
 
   var fakeCustomDataService: FakeCustomDataService = _
   var emulatorPort: String = _
-  @transient var sc: SparkContext = _
   var sqlContext: SQLContext = _
   var rdd: BigtableTableScanRDD = _
 
   override def beforeAll(): Unit = {
     val sparkConf = new SparkConf
     val spark = SparkSession.builder().master("local").appName("test").config(sparkConf).getOrCreate()
-    sc = spark.sparkContext
     sqlContext = spark.sqlContext
   }
 
   override def afterAll(): Unit = {
-    sc.stop()
-    // Clear the active/default SparkSession so a later suite in the same JVM
-    // gets a fresh session that honors its own SparkConf via getOrCreate().
-    SparkSession.clearActiveSession()
-    SparkSession.clearDefaultSession()
+    // Stops the SparkContext and clears the active/default SparkSession, so a
+    // later suite in the same JVM gets a fresh session that honors its own
+    // SparkConf via getOrCreate().
+    sqlContext.sparkSession.stop()
   }
 
   override def beforeEach(): Unit = {

@@ -269,7 +269,9 @@ presubmit-spark4)
     # (e.g. sun.nio.ch.DirectBuffer). These flags must reach the forked test JVMs
     # too, so we set JAVA_TOOL_OPTIONS (inherited by every JVM) rather than
     # MAVEN_OPTS (which only affects the Maven process, not the scalatest fork).
-    export JAVA_TOOL_OPTIONS="--add-opens=java.base/java.lang=ALL-UNNAMED \
+    # Append (don't overwrite) so we preserve any JAVA_TOOL_OPTIONS the Kokoro
+    # environment already set (proxy, memory limits, diagnostic flags, etc.).
+    export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+$JAVA_TOOL_OPTIONS }--add-opens=java.base/java.lang=ALL-UNNAMED \
 --add-opens=java.base/java.lang.invoke=ALL-UNNAMED \
 --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
 --add-opens=java.base/java.io=ALL-UNNAMED \

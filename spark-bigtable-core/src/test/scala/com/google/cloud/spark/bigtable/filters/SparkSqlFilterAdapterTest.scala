@@ -21,7 +21,7 @@ import com.google.cloud.spark.bigtable.datasources._
 import com.google.common.collect.RangeSet
 import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.apache.spark.sql.sources.{And, EqualTo, Filter, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Not, Or, StringStartsWith}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkConf
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
@@ -57,22 +57,19 @@ class SparkSqlFilterAdapterTest
        |}
        |}""".stripMargin
 
-  @transient var sc: SparkContext = _
   var sqlContext: SQLContext = _
 
   override def beforeAll(): Unit = {
     val sparkConf = new SparkConf
     val spark = SparkSession.builder().master("local").appName("test").config(sparkConf).getOrCreate()
-    sc = spark.sparkContext
     sqlContext = spark.sqlContext
   }
 
   override def afterAll(): Unit = {
-    sc.stop()
-    // Clear the active/default SparkSession so a later suite in the same JVM
-    // gets a fresh session that honors its own SparkConf via getOrCreate().
-    SparkSession.clearActiveSession()
-    SparkSession.clearDefaultSession()
+    // Stops the SparkContext and clears the active/default SparkSession, so a
+    // later suite in the same JVM gets a fresh session that honors its own
+    // SparkConf via getOrCreate().
+    sqlContext.sparkSession.stop()
   }
 
   // Should be converted to
