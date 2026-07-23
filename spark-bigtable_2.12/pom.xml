@@ -30,42 +30,38 @@
   <name>Google Bigtable - Apache Spark Connector</name>
   <version>0.9.1</version> <!-- ${NEXT_VERSION_FLAG} -->
 
+  <!-- Variant coordinates: Spark 3.5.x / Scala 2.12. Everything else
+       (dependency versions, plugin config) is inherited from the parent. -->
   <properties>
     <scala.version>2.12.18</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
-    <spark.version>3.5.1</spark.version>
-    <re2j.version>1.8</re2j.version>
-    <upickle.version>4.2.1</upickle.version>
+    <spark.version>3.5.3</spark.version>
+    <hbase.connectors.scala.dir>../third_party/hbase-spark-connector/hbase-connectors-scala2.12/src/main/scala/</hbase.connectors.scala.dir>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-bigtable</artifactId>
-      <version>${bigtable.java.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
-      <version>${bigtable.java.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.re2j</groupId>
       <artifactId>re2j</artifactId>
-      <version>${re2j.version}</version>
     </dependency>
-
     <dependency>
       <groupId>com.lihaoyi</groupId>
       <artifactId>upickle_${scala.binary.version}</artifactId>
-      <version>${upickle.version}</version>
     </dependency>
 
     <!-- To fix the "NoClassDefFoundError: com/fasterxml/jackson/core/exc/StreamConstraintsException" error with Spark 3.5-->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.15.2</version>
+      <version>${jackson.version}</version>
     </dependency>
 
     <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
@@ -79,82 +75,42 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <!-- Spark dependencies -->
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_${scala.binary.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scalap</artifactId>
-        </exclusion>
-        <!-- exclude log4j v1 transitive dependencies as we use reload4j instead -->
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-sql_${scala.binary.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-reload4j</artifactId>
-      <version>${slf4j-reload4j.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <version>${scalatest.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>io.openlineage</groupId>
       <artifactId>spark-extension-interfaces</artifactId>
-      <version>${openlineage.version}</version>
     </dependency>
     <dependency>
       <groupId>io.openlineage</groupId>
       <artifactId>spark-extension-entrypoint</artifactId>
-      <version>1.0.0</version>
-      <scope>provided</scope>
     </dependency>
 
     <!-- Test dependencies -->
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-bigtable-emulator</artifactId>
-      <version>${bigtable.java.emulator.version}</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -164,203 +120,35 @@
         <directory>../spark-bigtable-core/src/main/resources</directory>
       </resource>
     </resources>
+    <!-- Config for all of these is inherited from the parent's <pluginManagement>. -->
     <plugins>
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>4.7.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.10.1</version>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.3.0</version>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>../spark-bigtable-core/src/main/scala</source>
-                <source>../spark-bigtable-core/src/test/java</source>
-                <!-- This directory only contains test server infrastructure used in unit/integration
-                      tests, so we specify it as a source. -->
-                <!-- We need to put third-party code inside the `third_party` directory
-                      for licensing compliance, including them in the project here. -->
-                <source>../third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</source>
-                <!-- We need to put third-party code inside the `third_party` directory
-                      for licensing compliance, including them in the project here.
-                      This is included to get the SchemaConverters class(it has different syntax for scala 2.12)-->
-                <source>
-                  ../third_party/hbase-spark-connector/hbase-connectors-scala2.12/src/main/scala/
-                </source>
-                <!-- Included for reciprocal license compliance.-->
-                <source>${project.build.directory}/sources</source>
-              </sources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>add-test-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>../spark-bigtable-core/src/test/scala</source>
-                <source>../third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.4.1</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer
-                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                <transformer
-                    implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                  <addHeader>false</addHeader>
-                </transformer>
-                <transformer
-                    implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
-                </transformer>
-                <transformer
-                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <manifestEntries>
-                    <Main-Class>${app.main.class}</Main-Class>
-                    <X-Compile-Source-JDK>${maven.compile.source}</X-Compile-Source-JDK>
-                    <X-Compile-Target-JDK>${maven.compile.target}</X-Compile-Target-JDK>
-                  </manifestEntries>
-                </transformer>
-              </transformers>
-              <artifactSet>
-                <excludes>
-                  <exclude>org.slf4j:slf4j-reload4j</exclude>
-                  <exclude>org.slf4j:slf4j-api</exclude>
-                  <exclude>ch.qos.reload4j:reload4j</exclude>
-                </excludes>
-              </artifactSet>
-              <relocations>
-                <relocation>
-                  <pattern>io.netty</pattern>
-                  <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.netty</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>io.grpc</pattern>
-                  <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.grpc</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>com.google</pattern>
-                  <shadedPattern>com.google.cloud.spark.bigtable.repackaged.com.google</shadedPattern>
-                  <excludes>
-                    <exclude>com.google.cloud.spark.bigtable.**</exclude>
-                  </excludes>
-                </relocation>
-                <relocation>
-                  <pattern>io.openlineage.spark.shade</pattern>
-                  <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade</shadedPattern>
-                </relocation>
-              </relocations>
-            </configuration>
-          </execution>
-        </executions>
-        <configuration>
-          <filters>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
-              </excludes>
-            </filter>
-          </filters>
-        </configuration>
       </plugin>
-      <!-- Enable scalatest. -->
       <plugin>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest-maven-plugin</artifactId>
-        <version>2.2.0</version>
-        <configuration>
-          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-          <junitxml>.</junitxml>
-          <filereports>WDF TestSuite.txt</filereports>
-          <runpath>../third_party/hbase-spark-connector/hbase-connectors/src/test</runpath>
-        </configuration>
-        <executions>
-          <execution>
-            <id>test</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>2.4.0</version>
-        <executions>
-          <execution>
-            <id>default-cli</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>add-third-party</goal>
-            </goals>
-            <configuration>
-              <excludedScopes>test,provided</excludedScopes>
-              <generateBundle>true</generateBundle>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
-      <!-- Include the source codes of dependencies with reciprocal licenses into the JAR. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.6.0</version>
-        <executions>
-          <execution>
-            <id>src-dependencies</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeArtifactIds>javax.annotation-api</includeArtifactIds>
-              <classifier>sources</classifier>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <outputDirectory>${project.build.directory}/sources</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

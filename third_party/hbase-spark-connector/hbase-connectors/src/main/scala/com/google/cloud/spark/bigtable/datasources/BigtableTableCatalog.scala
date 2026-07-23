@@ -25,7 +25,6 @@ import org.apache.yetus.audience.InterfaceAudience
 
 import java.sql.{Date, Timestamp}
 import scala.collection.mutable
-import scala.util.parsing.json.JSON
 
 // As we finalize the encoding of different types, we add support for them.
 object SupportedDataTypes {
