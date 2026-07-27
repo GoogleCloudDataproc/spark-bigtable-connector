@@ -30,14 +30,14 @@
   <name>Google Bigtable - Apache Spark 4 Connector for Scala 2.13</name>
   <version>0.9.1</version> <!-- ${NEXT_VERSION_FLAG} -->
 
-  <!-- Variant coordinates: Spark 4.0.x / Scala 2.13 (Spark 4 dropped Scala 2.12
+  <!-- Variant coordinates: Spark 4.1.x / Scala 2.13 (Spark 4 dropped Scala 2.12
        and log4j v1). Everything else is inherited from the parent. Unlike the
        Spark 3.x variants, this module does NOT need jackson-core or
        scala-parser-combinators. -->
   <properties>
     <scala.version>2.13.17</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
-    <spark.version>4.0.1</spark.version>
+    <spark.version>4.1.2</spark.version>
     <hbase.connectors.scala.dir>../third_party/hbase-spark-connector/hbase-connectors-scala2.13/src/main/scala/</hbase.connectors.scala.dir>
     <!-- Spark 4 requires Java 17 to compile and run. Override the parent's
          1.8 compiler targets so this module compiles for Java 17 (and the

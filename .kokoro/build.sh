@@ -308,7 +308,7 @@ presubmit-spark4)
     RETURN_CODE=0
     run_unit_tests "2.13" "spark-bigtable-spark4_2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
-    run_bigtable_spark_tests "4.0.1" "integration" "2.13" "spark-bigtable-spark4_2.13"
+    run_bigtable_spark_tests "4.1.2" "integration" "2.13" "spark-bigtable-spark4_2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 all_versions)
@@ -387,12 +387,12 @@ load-2.13)
 # --add-opens flags for the forked test JVMs.
 fuzz-spark4)
     set_spark4_java_tool_options
-    run_fuzz_tests "4.0.1" "2.13" "spark-bigtable-spark4_2.13"
+    run_fuzz_tests "4.1.2" "2.13" "spark-bigtable-spark4_2.13"
     RETURN_CODE=$?
     ;;
 long_running-spark4)
     set_spark4_java_tool_options
-    run_bigtable_spark_tests "4.0.1" "long-running" "2.13" "spark-bigtable-spark4_2.13"
+    run_bigtable_spark_tests "4.1.2" "long-running" "2.13" "spark-bigtable-spark4_2.13"
     RETURN_CODE=0
     ;;
 load-spark4)
