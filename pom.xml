@@ -339,6 +339,25 @@
                     <pattern>io.grpc</pattern>
                     <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.grpc</shadedPattern>
                   </relocation>
+                  <!-- Telemetry libraries that gRPC/google-http-client depend on.
+                       These MUST be relocated in lockstep with io.grpc above: they
+                       reference io.grpc.Context, so if they stay in their original
+                       packages while io.grpc is relocated, a host classpath that
+                       ships its own copy (e.g. Databricks bundles io.opencensus)
+                       wins and then fails with NoClassDefFoundError: io/grpc/Context
+                       because the plain io.grpc.Context is nowhere on the classpath. -->
+                  <relocation>
+                    <pattern>io.opencensus</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.opencensus</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>io.opentelemetry</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.opentelemetry</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>io.perfmark</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.perfmark</shadedPattern>
+                  </relocation>
                   <relocation>
                     <pattern>com.google</pattern>
                     <shadedPattern>com.google.cloud.spark.bigtable.repackaged.com.google</shadedPattern>
