@@ -26,7 +26,7 @@ import com.google.protobuf.ByteString
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -65,8 +65,9 @@ class RowFilterLogicTest
     logInfo(" - created table")
 
     val sparkConf = new SparkConf
-
-    sc = new SparkContext("local", "test", sparkConf)
+    val spark = SparkSession.builder().master("local").appName("test").config(sparkConf).getOrCreate()
+    sc = spark.sparkContext
+    sqlContext = spark.sqlContext
 
     fillTables()
 
@@ -79,8 +80,6 @@ class RowFilterLogicTest
               |"B_FIELD":{"cf":"c", "col":"b", "type":"string"}
             |}
           |}""".stripMargin
-
-    sqlContext = new SQLContext(sc)
 
     df = sqlContext.load(
       "bigtable",
@@ -120,7 +119,10 @@ class RowFilterLogicTest
   override def afterAll() {
     emulator.stop()
 
-    sc.stop()
+    // Stops the SparkContext and clears the active/default SparkSession, so a
+    // later suite in the same JVM gets a fresh session that honors its own
+    // SparkConf via getOrCreate().
+    sqlContext.sparkSession.stop()
   }
 
   /** A example of query three fields and also only using rowkey points for the filter

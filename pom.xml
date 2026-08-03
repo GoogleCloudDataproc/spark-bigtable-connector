@@ -54,16 +54,20 @@
     <module>spark-bigtable_2.12</module>
     <module>spark-bigtable_2.13</module>
     <module>spark-bigtable-core-it</module>
+    <!-- spark-bigtable-spark4_2.13 is NOT listed here: Spark 4 requires Java 17,
+         so building it under Java 8/11 (e.g. the java11 kokoro job's full-reactor
+         `mvn install`) fails with "invalid target release: 17". It is added to the
+         reactor only by the jdk17 profile below, which auto-activates on JDK 17+. -->
   </modules>
 
   <properties>
     <gpg.skip>true</gpg.skip>
     <nexus.remote.skip>false</nexus.remote.skip>
 
-    <scala.version>2.13.14</scala.version>
+    <scala.version>2.13.17</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <connector.artifact.id>spark-bigtable_2.13</connector.artifact.id>
-    <spark.version>3.5.1</spark.version>
+    <spark.version>3.5.3</spark.version>
     <bigtable.java.version>2.75.1</bigtable.java.version>
     <bigtable.java.emulator.version>0.212.1</bigtable.java.emulator.version>
 
@@ -83,9 +87,384 @@
     <scala-parser-combinators.version>1.1.2</scala-parser-combinators.version>
     <commons-lang.version>2.6</commons-lang.version>
     <openlineage.version>1.22.0</openlineage.version>
+
+    <!-- Dependency versions shared by all connector variant modules. -->
+    <openlineage-entrypoint.version>1.0.0</openlineage-entrypoint.version>
+    <re2j.version>1.8</re2j.version>
+    <upickle.version>4.2.1</upickle.version>
+    <jackson.version>2.15.2</jackson.version>
+
+    <!-- Build-plugin versions (config lives in <pluginManagement> below). -->
+    <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
+    <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+    <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
+    <maven-shade-plugin.version>3.4.1</maven-shade-plugin.version>
+    <scalatest-maven-plugin.version>2.2.0</scalatest-maven-plugin.version>
+    <license-maven-plugin.version>2.4.0</license-maven-plugin.version>
+    <maven-dependency-plugin.version>3.6.0</maven-dependency-plugin.version>
   </properties>
 
+  <!--
+    Versions (and common scope/exclusions) for every dependency used by the
+    connector variant modules. The variant poms declare these dependencies
+    without <version>, inheriting from here. Artifact ids that embed
+    ${scala.binary.version} resolve against each child's own property, so the
+    same entry serves Scala 2.12 and 2.13.
+  -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-bigtable</artifactId>
+        <version>${bigtable.java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>grpc-google-cloud-bigtable-admin-v2</artifactId>
+        <version>${bigtable.java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.re2j</groupId>
+        <artifactId>re2j</artifactId>
+        <version>${re2j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.lihaoyi</groupId>
+        <artifactId>upickle_${scala.binary.version}</artifactId>
+        <version>${upickle.version}</version>
+      </dependency>
+
+      <!--
+        NOTE: jackson-core and scala-parser-combinators are deliberately NOT
+        managed here. They are Spark-3.x-only pins (see the 3.x variant poms).
+        A <dependencyManagement> entry also overrides *transitive* versions, so
+        pinning jackson-core to the Spark-3.5 value (${jackson.version}) here
+        would drag Spark 4's newer transitive jackson down to it and break the
+        Spark 4 module at runtime (BufferRecycler.releaseToPool NoSuchMethodError).
+        Keeping them as version-bearing direct deps in the 3.x modules only keeps
+        Spark 4 on its own transitive versions.
+      -->
+
+      <!-- Scala -->
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>${scala.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- Spark -->
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-core_${scala.binary.version}</artifactId>
+        <version>${spark.version}</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scalap</artifactId>
+          </exclusion>
+          <!-- exclude log4j v1 transitive dependencies as we use reload4j instead -->
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-sql_${scala.binary.version}</artifactId>
+        <version>${spark.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- OpenLineage -->
+      <dependency>
+        <groupId>io.openlineage</groupId>
+        <artifactId>spark-extension-interfaces</artifactId>
+        <version>${openlineage.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.openlineage</groupId>
+        <artifactId>spark-extension-entrypoint</artifactId>
+        <version>${openlineage-entrypoint.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <!-- Test -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-reload4j</artifactId>
+        <version>${slf4j-reload4j.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_${scala.binary.version}</artifactId>
+        <version>${scalatest.version}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-bigtable-emulator</artifactId>
+        <version>${bigtable.java.emulator.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <!--
+    Full build-plugin configuration shared by all variant modules. Each variant
+    pom lists only the plugin coordinates (no config) and inherits the config
+    below. The one per-variant knob is ${hbase.connectors.scala.dir}, the
+    Scala-version-specific third_party source directory, set in each child.
+  -->
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>net.alchim31.maven</groupId>
+          <artifactId>scala-maven-plugin</artifactId>
+          <version>${scala-maven-plugin.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>compile</goal>
+                <goal>testCompile</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven-compiler-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build-helper-maven-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>add-source</id>
+              <phase>generate-sources</phase>
+              <goals>
+                <goal>add-source</goal>
+              </goals>
+              <configuration>
+                <sources>
+                  <source>../spark-bigtable-core/src/main/scala</source>
+                  <source>../spark-bigtable-core/src/test/java</source>
+                  <!-- Test server infrastructure used in unit/integration tests. -->
+                  <!-- Third-party code kept under third_party/ for licensing compliance. -->
+                  <source>../third_party/hbase-spark-connector/hbase-connectors/src/main/scala/</source>
+                  <!-- SchemaConverters differs by Scala binary version; set per child. -->
+                  <source>${hbase.connectors.scala.dir}</source>
+                  <!-- Included for reciprocal license compliance. -->
+                  <source>${project.build.directory}/sources</source>
+                </sources>
+              </configuration>
+            </execution>
+            <execution>
+              <id>add-test-source</id>
+              <phase>generate-sources</phase>
+              <goals>
+                <goal>add-test-source</goal>
+              </goals>
+              <configuration>
+                <sources>
+                  <source>../spark-bigtable-core/src/test/scala</source>
+                  <source>../third_party/hbase-spark-connector/hbase-connectors/src/test/scala/</source>
+                </sources>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <transformers>
+                  <transformer
+                      implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                  <transformer
+                      implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                    <addHeader>false</addHeader>
+                  </transformer>
+                  <transformer
+                      implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                  </transformer>
+                  <transformer
+                      implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    <manifestEntries>
+                      <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
+                      <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
+                    </manifestEntries>
+                  </transformer>
+                </transformers>
+                <artifactSet>
+                  <excludes>
+                    <exclude>org.slf4j:slf4j-reload4j</exclude>
+                    <exclude>org.slf4j:slf4j-api</exclude>
+                    <exclude>ch.qos.reload4j:reload4j</exclude>
+                  </excludes>
+                </artifactSet>
+                <relocations>
+                  <relocation>
+                    <pattern>io.netty</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.netty</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>io.grpc</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.grpc</shadedPattern>
+                  </relocation>
+                  <!-- Telemetry libraries that gRPC/google-http-client depend on.
+                       These MUST be relocated in lockstep with io.grpc above: they
+                       reference io.grpc.Context, so if they stay in their original
+                       packages while io.grpc is relocated, a host classpath that
+                       ships its own copy (e.g. Databricks bundles io.opencensus)
+                       wins and then fails with NoClassDefFoundError: io/grpc/Context
+                       because the plain io.grpc.Context is nowhere on the classpath. -->
+                  <relocation>
+                    <pattern>io.opencensus</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.opencensus</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>io.opentelemetry</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.opentelemetry</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>io.perfmark</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.perfmark</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>com.google</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.com.google</shadedPattern>
+                    <excludes>
+                      <exclude>com.google.cloud.spark.bigtable.**</exclude>
+                    </excludes>
+                  </relocation>
+                  <relocation>
+                    <pattern>io.openlineage.spark.shade</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade</shadedPattern>
+                  </relocation>
+                </relocations>
+              </configuration>
+            </execution>
+          </executions>
+          <configuration>
+            <filters>
+              <filter>
+                <artifact>*:*</artifact>
+                <excludes>
+                  <exclude>META-INF/*.SF</exclude>
+                  <exclude>META-INF/*.DSA</exclude>
+                  <exclude>META-INF/*.RSA</exclude>
+                </excludes>
+              </filter>
+            </filters>
+          </configuration>
+        </plugin>
+        <!-- Enable scalatest. -->
+        <plugin>
+          <groupId>org.scalatest</groupId>
+          <artifactId>scalatest-maven-plugin</artifactId>
+          <version>${scalatest-maven-plugin.version}</version>
+          <configuration>
+            <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+            <junitxml>.</junitxml>
+            <filereports>WDF TestSuite.txt</filereports>
+            <runpath>../third_party/hbase-spark-connector/hbase-connectors/src/test</runpath>
+          </configuration>
+          <executions>
+            <execution>
+              <id>test</id>
+              <goals>
+                <goal>test</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${license-maven-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>default-cli</id>
+              <phase>generate-resources</phase>
+              <goals>
+                <goal>add-third-party</goal>
+              </goals>
+              <configuration>
+                <excludedScopes>test,provided</excludedScopes>
+                <generateBundle>true</generateBundle>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <!-- Include the source codes of dependencies with reciprocal licenses into the JAR. -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${maven-dependency-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>src-dependencies</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>unpack-dependencies</goal>
+              </goals>
+              <configuration>
+                <includeArtifactIds>javax.annotation-api</includeArtifactIds>
+                <classifier>sources</classifier>
+                <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+                <outputDirectory>${project.build.directory}/sources</outputDirectory>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
   <profiles>
+    <!-- Spark 4 requires Java 17. This profile auto-activates on JDK 17+ and adds
+         the Spark 4 module to the reactor, so a full-reactor build only attempts to
+         compile it when the running JDK can actually target 17. On Java 8/11 the
+         module is absent from the reactor entirely (see the <modules> note above),
+         which is what keeps the java11 kokoro job from failing on it. The java17
+         kokoro job (presubmit-spark4) runs on JDK 17, so the module is included. -->
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>spark-bigtable-spark4_2.13</module>
+      </modules>
+    </profile>
     <profile>
       <id>release</id>
       <properties>

@@ -51,7 +51,10 @@ apt install -y google-cloud-sdk-cbt
 
 run_unit_tests() {
     SCALA_VERSION=$1
-    CONNECTOR_MODULE=spark-bigtable_${SCALA_VERSION}
+    # Optional 2nd arg overrides the module name. Needed for the Spark 4 module,
+    # whose name (spark-bigtable-spark4_2.13) doesn't follow the
+    # spark-bigtable_<scala> pattern used by the Spark 3.x modules.
+    CONNECTOR_MODULE=${2:-spark-bigtable_${SCALA_VERSION}}
     echo "***Running connector's unit tests for ${CONNECTOR_MODULE}.***"
     ./mvnw -pl ${CONNECTOR_MODULE} -am  \
         test -B -ntp -Dclirr.skip=true -Denforcer.skip=true -Dcheckstyle.skip
@@ -62,7 +65,10 @@ run_bigtable_spark_tests() {
     SPARK_VERSION=$1
     MAVEN_PROFILES=$2
     SCALA_VERSION=$3
-    echo "***Running Spark-Bigtable tests for Spark ${SPARK_VERSION}, Scala ${SCALA_VERSION} and profile(s) ${MAVEN_PROFILES}.***"
+    # Optional 4th arg overrides the connector artifact the IT module builds
+    # against. Needed for the Spark 4 module (spark-bigtable-spark4_2.13).
+    CONNECTOR_ARTIFACT_ID=${4:-spark-bigtable_${SCALA_VERSION}}
+    echo "***Running Spark-Bigtable tests for Spark ${SPARK_VERSION}, Scala ${SCALA_VERSION}, connector ${CONNECTOR_ARTIFACT_ID} and profile(s) ${MAVEN_PROFILES}.***"
     BIGTABLE_SPARK_IT_MODULE="spark-bigtable-core-it"
     ./mvnw -pl ${BIGTABLE_SPARK_IT_MODULE} \
         failsafe:integration-test failsafe:verify \
@@ -70,7 +76,7 @@ run_bigtable_spark_tests() {
         -Dspark.version=${SPARK_VERSION} \
         -DbigtableProjectId=${BIGTABLE_PROJECT_ID} \
         -DbigtableInstanceId=${BIGTABLE_INSTANCE_ID} \
-        -Dconnector.artifact.id=spark-bigtable_${SCALA_VERSION} \
+        -Dconnector.artifact.id=${CONNECTOR_ARTIFACT_ID} \
         -Dscala.binary.version=${SCALA_VERSION} \
         -P ${MAVEN_PROFILES}
     return $?
@@ -78,9 +84,13 @@ run_bigtable_spark_tests() {
 
 get_bigtable_spark_jar() {
     SCALA_VERSION=$1
+    # Optional 2nd arg overrides the module (== artifactId == jar prefix). Needed
+    # for the Spark 4 module (spark-bigtable-spark4_2.13), which doesn't follow the
+    # spark-bigtable_<scala> naming.
+    CONNECTOR_MODULE=${2:-spark-bigtable_${SCALA_VERSION}}
     # This makes the script independent of the connector's version and
     # ignores the source code JAR.
-    echo $(ls spark-bigtable_${SCALA_VERSION}/target/spark-bigtable_${SCALA_VERSION}-* | grep -v sources)
+    echo $(ls ${CONNECTOR_MODULE}/target/${CONNECTOR_MODULE}-* | grep -v sources)
 }
 
 create_table_id() {
@@ -153,10 +163,18 @@ run_load_test() {
 }
 
 run_load_test_serverless() {
-    # Hardcoded to 2.13 since 2.12 is running on a cluster
-    SCALA_VERSION="2.13"
-    echo "***Running Load test for scala ${SCALA_VERSION}.***"
-    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION})
+    # Defaults to 2.13 since 2.12 is running on a cluster.
+    SCALA_VERSION=${1:-2.13}
+    # Optional 2nd arg overrides the module/jar. Needed for the Spark 4 module
+    # (spark-bigtable-spark4_2.13), which doesn't follow the spark-bigtable_<scala>
+    # naming.
+    CONNECTOR_MODULE=${2:-spark-bigtable_${SCALA_VERSION}}
+    # Optional 3rd arg pins the Dataproc Serverless runtime version. Spark 4.0.x
+    # needs runtime 3.0; leaving it empty uses the region's default runtime (which
+    # ships Spark 3.x) for the existing 2.13 load test.
+    DATAPROC_RUNTIME_VERSION=${3:-}
+    echo "***Running Load test for scala ${SCALA_VERSION}, module ${CONNECTOR_MODULE}, runtime '${DATAPROC_RUNTIME_VERSION:-default}'.***"
+    BIGTABLE_SPARK_JAR=$(get_bigtable_spark_jar ${SCALA_VERSION} ${CONNECTOR_MODULE})
     DEPS_BUCKET="bigtable-spark-test-deps"
     TEST_SCRIPT="spark-bigtable-core/test-pyspark/load_test.py"
     BASE_SCRIPT="spark-bigtable-core/test-pyspark/test_base.py"
@@ -171,6 +189,7 @@ run_load_test_serverless() {
         --deps-bucket=${DEPS_BUCKET} \
         --jars=${BIGTABLE_SPARK_JAR} \
         --subnet=${TEST_SUBNET} \
+        ${DATAPROC_RUNTIME_VERSION:+--version=${DATAPROC_RUNTIME_VERSION}} \
         ${TEST_SCRIPT} \
         --py-files=${BASE_SCRIPT} \
         -- \
@@ -187,7 +206,10 @@ run_load_test_serverless() {
 run_fuzz_tests() {
     SPARK_VERSION=$1
     SCALA_VERSION=$2
-    echo "***Running Spark-Bigtable fuzz tests for Spark ${SPARK_VERSION} and Scala ${SCALA_VERSION}.***"
+    # Optional 3rd arg overrides the connector artifact the IT module builds
+    # against. Needed for the Spark 4 module (spark-bigtable-spark4_2.13).
+    CONNECTOR_ARTIFACT_ID=${3:-spark-bigtable_${SCALA_VERSION}}
+    echo "***Running Spark-Bigtable fuzz tests for Spark ${SPARK_VERSION}, Scala ${SCALA_VERSION} and connector ${CONNECTOR_ARTIFACT_ID}.***"
     TABLE_ID=$(create_table_id "fuzz")
     create_table_with_random_splits \
       "${BIGTABLE_PROJECT_ID}" "${BIGTABLE_INSTANCE_ID}" "$TABLE_ID"
@@ -199,7 +221,7 @@ run_fuzz_tests() {
         -DbigtableProjectId="${BIGTABLE_PROJECT_ID}" \
         -DbigtableInstanceId="${BIGTABLE_INSTANCE_ID}" \
         -DbigtableTableId="${TABLE_ID}" \
-        -Dconnector.artifact.id=spark-bigtable_${SCALA_VERSION} \
+        -Dconnector.artifact.id=${CONNECTOR_ARTIFACT_ID} \
         -Dscala.binary.version=${SCALA_VERSION} \
         -P fuzz
     exit_code=$?
@@ -240,6 +262,30 @@ run_pyspark_test() {
     return $exit_code
 }
 
+# Spark 4.0 requires Java 17. On Java 17 Spark needs a set of --add-opens flags to
+# reach internal JDK packages that were sealed by JPMS; without them the tests fail
+# with IllegalAccessError (e.g. sun.nio.ch.DirectBuffer). These flags must reach the
+# forked test JVMs too, so we set JAVA_TOOL_OPTIONS (inherited by every JVM) rather
+# than MAVEN_OPTS (which only affects the Maven process, not the scalatest fork).
+# Append (don't overwrite) so we preserve any JAVA_TOOL_OPTIONS the Kokoro
+# environment already set (proxy, memory limits, diagnostic flags, etc.).
+set_spark4_java_tool_options() {
+    export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+$JAVA_TOOL_OPTIONS }--add-opens=java.base/java.lang=ALL-UNNAMED \
+--add-opens=java.base/java.lang.invoke=ALL-UNNAMED \
+--add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
+--add-opens=java.base/java.io=ALL-UNNAMED \
+--add-opens=java.base/java.net=ALL-UNNAMED \
+--add-opens=java.base/java.nio=ALL-UNNAMED \
+--add-opens=java.base/java.util=ALL-UNNAMED \
+--add-opens=java.base/java.util.concurrent=ALL-UNNAMED \
+--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED \
+--add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
+--add-opens=java.base/sun.nio.cs=ALL-UNNAMED \
+--add-opens=java.base/sun.security.action=ALL-UNNAMED \
+--add-opens=java.base/sun.util.calendar=ALL-UNNAMED \
+--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+}
+
 case ${JOB_TYPE} in
 presubmit)
     RETURN_CODE=0
@@ -254,6 +300,15 @@ presubmit)
     run_pyspark_test "3.3.0" "3" "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
     run_unit_tests "2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    ;;
+presubmit-spark4)
+    # This job runs on the java17 image; Spark 4.0 needs the JPMS --add-opens flags.
+    set_spark4_java_tool_options
+    RETURN_CODE=0
+    run_unit_tests "2.13" "spark-bigtable-spark4_2.13"
+    RETURN_CODE=$(($RETURN_CODE || $?))
+    run_bigtable_spark_tests "4.1.2" "integration" "2.13" "spark-bigtable-spark4_2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
     ;;
 all_versions)
@@ -325,6 +380,25 @@ load)
     ;;
 load-2.13)
     run_load_test_serverless
+    RETURN_CODE=0
+    ;;
+# Spark 4 periodic jobs. These run on the java17 image (Spark 4 requires Java 17)
+# and target the spark-bigtable-spark4_2.13 module, so they need the JPMS
+# --add-opens flags for the forked test JVMs.
+fuzz-spark4)
+    set_spark4_java_tool_options
+    run_fuzz_tests "4.1.2" "2.13" "spark-bigtable-spark4_2.13"
+    RETURN_CODE=$?
+    ;;
+long_running-spark4)
+    set_spark4_java_tool_options
+    run_bigtable_spark_tests "4.1.2" "long-running" "2.13" "spark-bigtable-spark4_2.13"
+    RETURN_CODE=0
+    ;;
+load-spark4)
+    # Dataproc Serverless runtime 3.0 ships Spark 4.0.x / Scala 2.13. The load test
+    # driver (PySpark) runs on the serverless batch, so no local --add-opens needed.
+    run_load_test_serverless "2.13" "spark-bigtable-spark4_2.13" "3.0"
     RETURN_CODE=0
     ;;
 *)

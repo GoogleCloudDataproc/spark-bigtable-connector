@@ -26,17 +26,24 @@
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
-  <artifactId>spark-bigtable_2.13</artifactId>
-  <name>Google Bigtable - Apache Spark Connector for Scala 2.13</name>
+  <artifactId>spark-bigtable-spark4_2.13</artifactId>
+  <name>Google Bigtable - Apache Spark 4 Connector for Scala 2.13</name>
   <version>0.9.1</version> <!-- ${NEXT_VERSION_FLAG} -->
 
-  <!-- Variant coordinates: Spark 3.5.x / Scala 2.13. Everything else
-       (dependency versions, plugin config) is inherited from the parent. -->
+  <!-- Variant coordinates: Spark 4.1.x / Scala 2.13 (Spark 4 dropped Scala 2.12
+       and log4j v1). Everything else is inherited from the parent. Unlike the
+       Spark 3.x variants, this module does NOT need jackson-core or
+       scala-parser-combinators. -->
   <properties>
     <scala.version>2.13.17</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
-    <spark.version>3.5.3</spark.version>
+    <spark.version>4.1.2</spark.version>
     <hbase.connectors.scala.dir>../third_party/hbase-spark-connector/hbase-connectors-scala2.13/src/main/scala/</hbase.connectors.scala.dir>
+    <!-- Spark 4 requires Java 17 to compile and run. Override the parent's
+         1.8 compiler targets so this module compiles for Java 17 (and the
+         shaded JAR manifest's X-Compile-*-JDK reflect 17). -->
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
   </properties>
 
   <dependencies>
@@ -57,27 +64,13 @@
       <artifactId>upickle_${scala.binary.version}</artifactId>
     </dependency>
 
-    <!-- To fix the "NoClassDefFoundError: com/fasterxml/jackson/core/exc/StreamConstraintsException" error with Spark 3.5-->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
-    <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_${scala.binary.version}</artifactId>
-      <version>${scala-parser-combinators.version}</version>
-    </dependency>
-
     <!-- Scala dependencies -->
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
 
-    <!-- Spark dependencies -->
+    <!-- Spark 4 dependencies -->
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_${scala.binary.version}</artifactId>
@@ -87,10 +80,10 @@
       <artifactId>spark-sql_${scala.binary.version}</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-reload4j</artifactId>
-    </dependency>
+    <!-- No slf4j-reload4j here: Spark 4 dropped Log4j 1.x and its spark-core
+         transitively provides the Log4j 2 SLF4J binding (log4j-slf4j2-impl).
+         Adding reload4j (a Log4j 1.x binding) would create a duplicate SLF4J
+         binding and classpath conflicts. -->
 
     <!-- Test dependencies -->
     <dependency>

@@ -130,8 +130,15 @@ The connector supports the following Spark versions:
 
 | Scala version | Spark versions                    | Spark Application Languages                             |
 |---------------|-----------------------------------|---------------------------------------------------------|
+| 2.13          | 4.1.x                             | Java, Scala, PySpark (`.py` files or Jupyter notebooks) |
 | 2.13          | 3.1.x, 3.2.x, 3.4.x, 3.5.x        | Java, Scala, PySpark (`.py` files or Jupyter notebooks) |
 | 2.12          | 2.4.8, 3.1.x, 3.2.x, 3.4.x, 3.5.x | Java, Scala, PySpark (`.py` files or Jupyter notebooks) |
+
+> **Note:** Spark 4.1.x requires Scala 2.13 and Java 17, and is published as a
+> separate artifact,
+> `com.google.cloud.spark.bigtable:spark-bigtable-spark4_2.13`. The Spark 3.x and
+> 2.4.x connectors (`spark-bigtable_2.13` / `spark-bigtable_2.12`) run on Java 8
+> or 11.
 
 ## Main features
 

@@ -116,6 +116,38 @@
   </build>
 
   <profiles>
+    <!-- This module is Java-only integration tests, built against one connector
+         variant at a time selected by -Dscala.binary.version (kokoro passes only
+         the binary version, never the full scala.version). The parent centralizes
+         scala-library's version as ${scala.version}, whose default is 2.13.x, so
+         without these profiles a 2.12 build would drag in scala-library 2.13.x and
+         fail at runtime (e.g. NoClassDefFoundError: scala/Serializable in the
+         forked Failsafe JVM). Keep scala.version in lock-step with the binary
+         version so the resolved scala-library matches the connector variant. -->
+    <profile>
+      <id>scala-2.12</id>
+      <activation>
+        <property>
+          <name>scala.binary.version</name>
+          <value>2.12</value>
+        </property>
+      </activation>
+      <properties>
+        <scala.version>2.12.18</scala.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>scala-2.13</id>
+      <activation>
+        <property>
+          <name>scala.binary.version</name>
+          <value>2.13</value>
+        </property>
+      </activation>
+      <properties>
+        <scala.version>2.13.17</scala.version>
+      </properties>
+    </profile>
     <profile>
       <id>integration</id>
       <activation>
