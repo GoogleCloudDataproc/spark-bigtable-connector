@@ -30,6 +30,15 @@
   <name>Google Bigtable - Spark Connector Integration Tests</name>
   <version>0.9.1</version>  <!-- ${NEXT_VERSION_FLAG} -->
 
+  <properties>
+    <!-- OpenLineage agent (openlineage-spark) used only by OpenLineageIntegrationTest.
+         Defaults to the connector-wide ${openlineage.version}; the spark4 profile below
+         overrides it because OpenLineage < 1.36 predates Apache Spark 4 support and its
+         DatabricksUtils calls QueryExecution.sparkSession(), removed in Spark 4
+         (NoSuchMethodError that kills the listener thread and the SparkContext). -->
+    <openlineage.it.version>${openlineage.version}</openlineage.it.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
@@ -98,7 +107,7 @@
     <dependency>
       <groupId>io.openlineage</groupId>
       <artifactId>openlineage-spark_${scala.binary.version}</artifactId>
-      <version>${openlineage.version}</version>
+      <version>${openlineage.it.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -116,6 +125,23 @@
   </build>
 
   <profiles>
+    <!-- The Spark 4 variant needs a Spark-4-aware OpenLineage agent. This profile
+         activates on the same -Dconnector.artifact.id the kokoro spark4 IT run
+         passes (see .kokoro/build.sh), bumping only the openlineage-spark test
+         dependency; the Spark 3.x runs keep ${openlineage.version} untouched. -->
+    <profile>
+      <id>spark4-openlineage</id>
+      <activation>
+        <property>
+          <name>connector.artifact.id</name>
+          <value>spark-bigtable-spark4_2.13</value>
+        </property>
+      </activation>
+      <properties>
+        <openlineage.it.version>1.52.0</openlineage.it.version>
+      </properties>
+    </profile>
+
     <!-- This module is Java-only integration tests, built against one connector
          variant at a time selected by -Dscala.binary.version (kokoro passes only
          the binary version, never the full scala.version). The parent centralizes
