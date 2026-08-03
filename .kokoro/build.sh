@@ -301,8 +301,7 @@ presubmit)
     RETURN_CODE=$(($RETURN_CODE || $?))
     run_unit_tests "2.13"
     RETURN_CODE=$(($RETURN_CODE || $?))
-    ;;
-presubmit-spark4)
+
     # This job runs on the java17 image; Spark 4.0 needs the JPMS --add-opens flags.
     set_spark4_java_tool_options
     RETURN_CODE=0
