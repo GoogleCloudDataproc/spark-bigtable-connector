@@ -2,6 +2,8 @@
 
 ## Next
 
+* PR #115: feat: add spark 4.x support
+
 ## 0.9.1 - 2026-05-14
 
 * PR #110: chore: remove unused StaticLoggerBinder import
