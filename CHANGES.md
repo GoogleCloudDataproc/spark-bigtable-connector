@@ -2,6 +2,8 @@
 
 ## Next
 
+* fix: publish the Spark 4 connector artifact (spark-bigtable-spark4_2.13), which was missing from the 0.10.0 release
+
 ## 0.10.0 - 2026-08-04
 
 * PR #115: feat: add spark 4.x support
