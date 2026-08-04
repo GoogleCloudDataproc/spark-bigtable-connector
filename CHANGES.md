@@ -1,6 +1,6 @@
 # Release Notes
 
-## Next
+## 0.10.0 - 2026-08-04
 
 * PR #115: feat: add spark 4.x support
 
