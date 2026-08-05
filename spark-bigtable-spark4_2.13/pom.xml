@@ -21,14 +21,14 @@
   <parent>
     <groupId>com.google.cloud.spark.bigtable</groupId>
     <artifactId>spark-bigtable-connector</artifactId>
-    <version>0.10.0</version> <!-- ${NEXT_VERSION_FLAG} -->
+    <version>0.10.1</version> <!-- ${NEXT_VERSION_FLAG} -->
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <groupId>com.google.cloud.spark.bigtable</groupId>
   <artifactId>spark-bigtable-spark4_2.13</artifactId>
   <name>Google Bigtable - Apache Spark 4 Connector for Scala 2.13</name>
-  <version>0.10.0</version> <!-- ${NEXT_VERSION_FLAG} -->
+  <version>0.10.1</version> <!-- ${NEXT_VERSION_FLAG} -->
 
   <!-- Variant coordinates: Spark 4.1.x / Scala 2.13 (Spark 4 dropped Scala 2.12
        and log4j v1). Everything else is inherited from the parent. Unlike the
