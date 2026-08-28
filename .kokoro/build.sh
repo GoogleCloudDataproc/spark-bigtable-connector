@@ -46,8 +46,46 @@ fi
 RETURN_CODE=0
 set +e
 
-echo "Installing the cbt CLI command."
-apt install -y google-cloud-sdk-cbt
+# Ensure cbt is in PATH if it's installed alongside gcloud but not in PATH
+if ! command -v cbt &> /dev/null && command -v gcloud &> /dev/null; then
+  GCLOUD_PATH=$(readlink -f "$(command -v gcloud)")
+  GCLOUD_BIN_DIR=$(dirname "${GCLOUD_PATH}")
+  if [[ -x "${GCLOUD_BIN_DIR}/cbt" ]]; then
+    export PATH="${PATH}:${GCLOUD_BIN_DIR}"
+  fi
+fi
+
+# Install cbt if it is not present
+if ! command -v cbt &> /dev/null; then
+  echo "Installing the cbt CLI command."
+  if command -v gcloud &> /dev/null && gcloud components install cbt --quiet 2>/dev/null; then
+    echo "cbt installed via gcloud components."
+  else
+    echo "Installing cbt via apt..."
+    if command -v sudo &> /dev/null; then
+      sudo apt-get update -y || true
+      sudo apt-get install -y google-cloud-cli-cbt || sudo apt-get install -y google-cloud-sdk-cbt
+    else
+      apt-get update -y || true
+      apt-get install -y google-cloud-cli-cbt || apt-get install -y google-cloud-sdk-cbt
+    fi
+  fi
+
+  # Ensure the newly installed cbt is in PATH
+  if ! command -v cbt &> /dev/null && command -v gcloud &> /dev/null; then
+    GCLOUD_PATH=$(readlink -f "$(command -v gcloud)")
+    GCLOUD_BIN_DIR=$(dirname "${GCLOUD_PATH}")
+    if [[ -x "${GCLOUD_BIN_DIR}/cbt" ]]; then
+      export PATH="${PATH}:${GCLOUD_BIN_DIR}"
+    fi
+  fi
+fi
+
+if command -v cbt &> /dev/null; then
+  echo "cbt CLI is available at $(command -v cbt)."
+else
+  echo "WARNING: cbt CLI could not be installed."
+fi
 
 run_unit_tests() {
     SCALA_VERSION=$1
