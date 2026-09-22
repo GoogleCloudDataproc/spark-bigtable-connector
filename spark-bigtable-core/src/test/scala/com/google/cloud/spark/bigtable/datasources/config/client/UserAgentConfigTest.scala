@@ -44,11 +44,7 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
       sparkVersion = "3.5.1",
       scalaVersion = null,
       sourceInfo = null,
-      javaVersion = null,
-      msasImageVersion = null,
-      databricksVersion = null,
-      k8sEnvironment = null,
-      msasServerlessVersion = null
+      platformOrRuntime = null
     )
     val text = configWithNulls.userAgentText
 
@@ -58,50 +54,47 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
     assert(text.trim == text)
   }
 
-  // Verify that Dataproc image tag (DATAPROC_IMAGE_VERSION) is included only when populated.
-  test("UserAgentConfig conditionally includes Dataproc image version when populated") {
-    val configWithImage = UserAgentConfig(
+  // Verify that the detected platform/runtime flag is included only when populated.
+  test("UserAgentConfig conditionally includes the platform or runtime flag") {
+    val configWithDataproc = UserAgentConfig(
       connectorArtifactId = "spark-bigtable",
       connectorVersion = "0.10.1",
       sparkVersion = "3.5.1",
       scalaVersion = "2.12.18",
       sourceInfo = "DF/V1",
-      msasImageVersion = "dataproc/3.0"
+      platformOrRuntime = "dataproc/3.0"
     )
-    assert(configWithImage.userAgentText.contains("dataproc/3.0"))
+    assert(configWithDataproc.userAgentText.contains("dataproc/3.0"))
 
-    val configWithoutImage = UserAgentConfig(
+    val configWithGke = UserAgentConfig(
       connectorArtifactId = "spark-bigtable",
       connectorVersion = "0.10.1",
       sparkVersion = "3.5.1",
       scalaVersion = "2.12.18",
       sourceInfo = "DF/V1",
-      msasImageVersion = ""
+      platformOrRuntime = "platform/gke"
     )
-    assert(!configWithoutImage.userAgentText.contains("dataproc"))
-  }
+    assert(configWithGke.userAgentText.contains("platform/gke"))
 
-  // Verify that Databricks runtime tag (DATABRICKS_RUNTIME_VERSION) is included only when populated.
-  test("UserAgentConfig conditionally includes Databricks runtime version when populated") {
-    val configWithDbr = UserAgentConfig(
+    val configWithDatabricks = UserAgentConfig(
       connectorArtifactId = "spark-bigtable",
       connectorVersion = "0.10.1",
       sparkVersion = "3.5.1",
       scalaVersion = "2.12.18",
       sourceInfo = "DF/V1",
-      databricksVersion = "databricks/18.3"
+      platformOrRuntime = "databricks/18.3"
     )
-    assert(configWithDbr.userAgentText.contains("databricks/18.3"))
+    assert(configWithDatabricks.userAgentText.contains("databricks/18.3"))
 
-    val configWithoutDbr = UserAgentConfig(
+    val configWithoutPlatform = UserAgentConfig(
       connectorArtifactId = "spark-bigtable",
       connectorVersion = "0.10.1",
       sparkVersion = "3.5.1",
       scalaVersion = "2.12.18",
       sourceInfo = "DF/V1",
-      databricksVersion = ""
+      platformOrRuntime = ""
     )
-    assert(!configWithoutDbr.userAgentText.contains("databricks"))
+    assert(configWithoutPlatform.userAgentText == "spark-bigtable/0.10.1 spark/3.5.1 DF/V1 scala/2.12.18")
   }
 
   // Verify that UserAgentConfig properly configures FixedHeaderProvider on BigtableDataSettings.
@@ -112,7 +105,7 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
       sparkVersion = "3.5.1",
       scalaVersion = "2.12.18",
       sourceInfo = "DF/V1",
-      msasImageVersion = "dataproc/3.0"
+      platformOrRuntime = "dataproc/3.0"
     )
 
     val settingsBuilder = BigtableDataSettings.newBuilder()
@@ -135,7 +128,7 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
       sparkVersion = "3.5.1",
       scalaVersion = "2.12.18",
       sourceInfo = "DF/V1",
-      msasImageVersion = "dataproc/3.0"
+      platformOrRuntime = "dataproc/3.0"
     )
 
     val settingsBuilder = BigtableTableAdminSettings.newBuilder()
@@ -156,83 +149,66 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
       .setProjectId("test-project")
       .setInstanceId("test-instance")
       .setSparkVersion("3.5.1")
-      .setScalaVersion("2.12.18")
-      .setJavaVersion("17.0.10")
       .setUserAgentSourceInfo("DF/V1")
-      .setMsasImageVersion("dataproc/3.0")
-      .setDatabricksVersion("databricks/18.3")
-      .setK8sEnvironment("platform/gke")
-      .setMsasServerlessVersion("platform/gcp-serverless")
       .build()
 
     val userAgentConfig = conf.bigtableClientConfig.userAgentConfig
     assert(userAgentConfig.sparkVersion == "3.5.1")
-    assert(userAgentConfig.scalaVersion == "2.12.18")
-    assert(userAgentConfig.javaVersion == "17.0.10")
-    assert(userAgentConfig.msasImageVersion == "dataproc/3.0")
-    assert(userAgentConfig.databricksVersion == "databricks/18.3")
-    assert(userAgentConfig.k8sEnvironment == "platform/gke")
-    assert(userAgentConfig.msasServerlessVersion == "platform/gcp-serverless")
-    assert(userAgentConfig.userAgentText.contains("spark-bigtable/"))
-    assert(userAgentConfig.userAgentText.contains("dataproc/3.0"))
-    assert(userAgentConfig.userAgentText.contains("databricks/18.3"))
-    assert(userAgentConfig.userAgentText.contains("platform/gke"))
-    assert(userAgentConfig.userAgentText.contains("platform/gcp-serverless"))
+    assert(userAgentConfig.sourceInfo == "DF/V1")
+    assert(userAgentConfig.userAgentText.startsWith("spark-bigtable/"))
+    assert(userAgentConfig.userAgentText.contains("spark/3.5.1"))
+    assert(userAgentConfig.userAgentText.contains("DF/V1"))
+
+    // platformOrRuntime has no setter: it is pulled from the UserAgentConfig default
+    // argument when the builder is constructed. Assert it survives the builder's
+    // copy chain into the built conf and is rendered as the trailing token.
+    // Kept environment-agnostic so this holds whether or not a platform is detected.
+    val expectedPlatform = UserAgentConfig.PLATFORM_OR_RUNTIME
+    assert(userAgentConfig.platformOrRuntime == expectedPlatform)
+    if (expectedPlatform.nonEmpty) {
+      assert(userAgentConfig.userAgentText.endsWith(expectedPlatform))
+    } else {
+      assert(userAgentConfig.userAgentText.endsWith(s"scala/${userAgentConfig.scalaVersion}"))
+    }
   }
 
-  // Verify that UserAgentConfig conditionally includes k8s environment when set.
-  test("UserAgentConfig conditionally includes k8sEnvironment when populated") {
-    val configWithK8s = UserAgentConfig(
-      connectorArtifactId = "spark-bigtable",
-      connectorVersion = "0.10.1",
-      sparkVersion = "3.5.1",
-      scalaVersion = "2.12.18",
-      sourceInfo = "DF/V1",
-      k8sEnvironment = "platform/gke"
-    )
-    assert(configWithK8s.userAgentText.contains("platform/gke"))
+  // Verify that a populated platformOrRuntime survives the builder's copy chain.
+  // Seeds a known value rather than relying on UserAgentConfig.PLATFORM_OR_RUNTIME,
+  // which is empty on a developer laptop and would make the assertion vacuous.
+  test("platformOrRuntime survives a toBuilder round-trip and later setters") {
+    val base = BigtableSparkConfBuilder()
+      .setProjectId("test-project")
+      .setInstanceId("test-instance")
+      .setSparkVersion("3.5.1")
+      .setUserAgentSourceInfo("DF/V1")
+      .build()
 
-    val configWithoutK8s = UserAgentConfig(
-      connectorArtifactId = "spark-bigtable",
-      connectorVersion = "0.10.1",
-      sparkVersion = "3.5.1",
-      scalaVersion = "2.12.18",
-      sourceInfo = "DF/V1",
-      k8sEnvironment = ""
+    val seeded = base.copy(
+      bigtableClientConfig = base.bigtableClientConfig.copy(
+        userAgentConfig = base.bigtableClientConfig.userAgentConfig.copy(
+          platformOrRuntime = "dataproc/3.0"
+        )
+      )
     )
-    assert(!configWithoutK8s.userAgentText.contains("platform/"))
+
+    // toBuilder -> setter -> build() is the exact path BigtableRDD uses when it
+    // overwrites sourceInfo with RDD_TEXT, so a clobbered field would surface here.
+    val roundTripped = seeded.toBuilder
+      .setUserAgentSourceInfo("RDD/")
+      .build()
+
+    val ua = roundTripped.bigtableClientConfig.userAgentConfig
+    assert(ua.platformOrRuntime == "dataproc/3.0")
+    assert(ua.sourceInfo == "RDD/")
+    assert(ua.sparkVersion == "3.5.1")
+    assert(ua.userAgentText.endsWith("dataproc/3.0"))
   }
 
-  // Verify that UserAgentConfig conditionally includes msasServerlessVersion when set.
-  test("UserAgentConfig conditionally includes msasServerlessVersion when populated") {
-    val configWithServerless = UserAgentConfig(
-      connectorArtifactId = "spark-bigtable",
-      connectorVersion = "0.10.1",
-      sparkVersion = "3.5.1",
-      scalaVersion = "2.12.18",
-      sourceInfo = "DF/V1",
-      msasServerlessVersion = "platform/gcp-serverless"
-    )
-    assert(configWithServerless.userAgentText.contains("platform/gcp-serverless"))
-
-    val configWithoutServerless = UserAgentConfig(
-      connectorArtifactId = "spark-bigtable",
-      connectorVersion = "0.10.1",
-      sparkVersion = "3.5.1",
-      scalaVersion = "2.12.18",
-      sourceInfo = "DF/V1",
-      msasServerlessVersion = ""
-    )
-    assert(!configWithoutServerless.userAgentText.contains("platform/gcp-serverless"))
-  }
-
-  // Verify that companion object constants and system property defaults are defined and non-null.
-  test("MSAS_IMAGE_VERSION, DATABRICKS_RUNTIME_VERSION, JAVA_VERSION, K8S_ENVIRONMENT, and MSAS_SERVERLESS_VERSION are defined") {
-    assert(UserAgentConfig.MSAS_IMAGE_VERSION != null)
-    assert(UserAgentConfig.DATABRICKS_RUNTIME_VERSION != null)
-    assert(UserAgentConfig.JAVA_VERSION != null && UserAgentConfig.JAVA_VERSION.nonEmpty)
-    assert(UserAgentConfig.K8S_ENVIRONMENT != null)
-    assert(UserAgentConfig.MSAS_SERVERLESS_VERSION != null)
+  // Verify that companion object detection constants are defined and non-null.
+  test("PLATFORM_OR_RUNTIME is defined") {
+    assert(UserAgentConfig.PLATFORM_OR_RUNTIME != null)
+    assert(UserAgentConfig.DETECTED_PLATFORM_OR_RUNTIME
+      .forall(flag => UserAgentConfig.PLATFORM_OR_RUNTIME == flag.flag))
   }
 
   // Verify that isMsasServerless detects hostname with gdpic prefix.
@@ -248,18 +224,21 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
   // Verify that UserAgentFlag types produce expected flags for GCP runtimes and other platforms.
   test("UserAgentFlag produces correct formatted flags") {
     // GCP runtimes with versions
-    assert(UserAgentFlag.Dataproc("3.0").flag == "dataproc/3.0")
+    assert(GcpRuntime.Dataproc("3.0").flag == "dataproc/3.0")
 
     // Platform flags (platform/<name>)
-    assert(UserAgentFlag.GcpServerless.flag == "platform/gcp-serverless")
-    assert(UserAgentFlag.Gke.flag == "platform/gke")
-    assert(UserAgentFlag.Eks.flag == "platform/eks")
-    assert(UserAgentFlag.Emr.flag == "platform/emr")
-    assert(UserAgentFlag.EmrServerless.flag == "platform/emr-serverless")
-    assert(UserAgentFlag.K8s.flag == "platform/k8s")
+    assert(Platform.GcpServerless.flag == "platform/gcp-serverless")
+    assert(Platform.GKE.flag == "platform/gke")
+    assert(Platform.EKS.flag == "platform/eks")
+    assert(Platform.EMR.flag == "platform/emr")
+    assert(Platform.EMRServerless.flag == "platform/emr-serverless")
+    assert(Platform.K8s.flag == "platform/k8s")
 
     // Databricks runtime
-    assert(UserAgentFlag.Databricks("18.3").flag == "databricks/18.3")
+    assert(Platform.Databricks("18.3").flag == "databricks/18.3")
+    assert(Platform.Databricks("  18.3  ").flag == "databricks/18.3")
+    assert(Platform.Databricks("").flag == "databricks")
+    assert(Platform.Databricks(null).flag == "databricks")
   }
 
   // Verify priority chain in detectPlatformOrRuntime
@@ -344,27 +323,6 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
     assert(noneDetected.isEmpty)
   }
 
-  // Verify that customPlatformOrRuntime is appended to userAgentText
-  test("UserAgentConfig conditionally includes customPlatformOrRuntime when populated") {
-    val configWithEmr = UserAgentConfig(
-      connectorArtifactId = "spark-bigtable",
-      connectorVersion = "0.10.1",
-      sparkVersion = "3.5.1",
-      scalaVersion = "2.12.18",
-      sourceInfo = "DF/V1",
-      customPlatformOrRuntime = "platform/emr"
-    )
-    assert(configWithEmr.userAgentText.contains("platform/emr"))
-
-    val builderWithPlatform = BigtableSparkConfBuilder()
-      .setProjectId("test-project")
-      .setInstanceId("test-instance")
-      .setSparkVersion("3.5.1")
-      .setPlatform(Platform.EMRServerless)
-      .build()
-    assert(builderWithPlatform.bigtableClientConfig.userAgentConfig.userAgentText.contains("platform/emr-serverless"))
-  }
-
   // Verify that EMR and EMR Serverless runtime indicators are accurately detected
   test("detectPlatformOrRuntime detects EMR Serverless via runtime properties") {
     // Via PLATFORM_TYPE
@@ -427,4 +385,3 @@ class UserAgentConfigTest extends AnyFunSuite with Logging {
     assert(!emrChecked, "Non-GCP properties must not be queried when a GCP platform is identified")
   }
 }
-

@@ -10,38 +10,12 @@ object UserAgentConfig {
   private val CONNECTOR_VERSION = "0.10.1" // ${NEXT_VERSION_FLAG}
   private val CONNECTOR_ID = "spark-bigtable"
 
-  lazy val JAVA_VERSION: String =
-    Option(System.getProperty("java.version"))
-      .getOrElse("UNSET_JAVA_VERSION")
-
   // Priority-based platform and runtime detection (ensures at most one is ever set)
   lazy val DETECTED_PLATFORM_OR_RUNTIME: Option[UserAgentFlag] = detectPlatformOrRuntime()
 
-  lazy val MSAS_IMAGE_VERSION: String = DETECTED_PLATFORM_OR_RUNTIME match {
-    case Some(r: GcpRuntime) => r.flag
-    case _ => ""
-  }
-
-  lazy val MSAS_SERVERLESS_VERSION: String = DETECTED_PLATFORM_OR_RUNTIME match {
-    case Some(Platform.GcpServerless) => Platform.GcpServerless.flag
-    case _ => ""
-  }
-
-  lazy val DATABRICKS_RUNTIME_VERSION: String = DETECTED_PLATFORM_OR_RUNTIME match {
-    case Some(d: Platform.Databricks) => d.flag
-    case _ => ""
-  }
-
-  lazy val K8S_ENVIRONMENT: String = DETECTED_PLATFORM_OR_RUNTIME match {
-    case Some(p @ (Platform.GKE | Platform.EKS | Platform.K8s)) => p.flag
-    case _ => ""
-  }
-
-  lazy val CUSTOM_PLATFORM_OR_RUNTIME: String = DETECTED_PLATFORM_OR_RUNTIME match {
-    case Some(Platform.EMR) => Platform.EMR.flag
-    case Some(Platform.EMRServerless) => Platform.EMRServerless.flag
-    case _ => ""
-  }
+  // The single flag emitted for the detected platform or runtime, e.g. "dataproc/3.0",
+  // "platform/gke" or "databricks/18.2". Empty when no platform is identified.
+  lazy val PLATFORM_OR_RUNTIME: String = DETECTED_PLATFORM_OR_RUNTIME.map(_.flag).getOrElse("")
 
   private[client] def isRunningInKubernetes: Boolean =
     Option(System.getenv("KUBERNETES_SERVICE_HOST")).exists(_.trim.nonEmpty)
@@ -118,7 +92,7 @@ object UserAgentConfig {
    * 1. GCP Platforms (Dataproc Serverless, Dataproc on GCE, Dataproc on GKE)
    * 2. AWS Platforms (EMR Serverless, EMR on EKS, EMR on EC2)
    * 3. Databricks (DATABRICKS_RUNTIME_VERSION)
-   * 4. Generic Kubernetes (KUBERNETES_SERVICE_HOST or service account)
+   * 4. Generic Kubernetes (KUBERNETES_SERVICE_HOST)
    */
   private[client] def detectPlatformOrRuntime(
       env: String => Option[String],
@@ -148,64 +122,21 @@ object UserAgentConfig {
     CONNECTOR_VERSION,
     "UNSET_SPARK_VERSION",
     scala.util.Properties.versionNumberString,
-    "UNSET_SOURCE",
-    JAVA_VERSION,
-    MSAS_IMAGE_VERSION,
-    DATABRICKS_RUNTIME_VERSION,
-    K8S_ENVIRONMENT,
-    MSAS_SERVERLESS_VERSION,
-    CUSTOM_PLATFORM_OR_RUNTIME
+    "UNSET_SOURCE"
   )
 }
 
+/**
+ * Builds the connector's user-agent string.
+ *
+ * @param platformOrRuntime auto-detected platform or runtime flag; at most one is ever set.
+ */
 case class UserAgentConfig(connectorArtifactId: String,
                            connectorVersion: String,
                            sparkVersion: String,
                            scalaVersion: String,
                            sourceInfo: String,
-                           javaVersion: String = UserAgentConfig.JAVA_VERSION,
-                           msasImageVersion: String = UserAgentConfig.MSAS_IMAGE_VERSION,
-                           databricksVersion: String = UserAgentConfig.DATABRICKS_RUNTIME_VERSION,
-                           k8sEnvironment: String = UserAgentConfig.K8S_ENVIRONMENT,
-                           msasServerlessVersion: String = UserAgentConfig.MSAS_SERVERLESS_VERSION,
-                           customPlatformOrRuntime: String = UserAgentConfig.CUSTOM_PLATFORM_OR_RUNTIME) extends ClientConfigTrait {
-  def this(connectorArtifactId: String,
-           connectorVersion: String,
-           sparkVersion: String,
-           scalaVersion: String,
-           sourceInfo: String) = this(
-    connectorArtifactId,
-    connectorVersion,
-    sparkVersion,
-    scalaVersion,
-    sourceInfo,
-    UserAgentConfig.JAVA_VERSION,
-    UserAgentConfig.MSAS_IMAGE_VERSION,
-    UserAgentConfig.DATABRICKS_RUNTIME_VERSION,
-    UserAgentConfig.K8S_ENVIRONMENT,
-    UserAgentConfig.MSAS_SERVERLESS_VERSION,
-    UserAgentConfig.CUSTOM_PLATFORM_OR_RUNTIME
-  )
-
-  def this(connectorArtifactId: String,
-           connectorVersion: String,
-           sparkVersion: String,
-           scalaVersion: String,
-           sourceInfo: String,
-           msasImageVersion: String) = this(
-    connectorArtifactId,
-    connectorVersion,
-    sparkVersion,
-    scalaVersion,
-    sourceInfo,
-    UserAgentConfig.JAVA_VERSION,
-    msasImageVersion,
-    UserAgentConfig.DATABRICKS_RUNTIME_VERSION,
-    UserAgentConfig.K8S_ENVIRONMENT,
-    UserAgentConfig.MSAS_SERVERLESS_VERSION,
-    UserAgentConfig.CUSTOM_PLATFORM_OR_RUNTIME
-  )
-
+                           platformOrRuntime: String = UserAgentConfig.PLATFORM_OR_RUNTIME) extends ClientConfigTrait {
   override def getValidationErrors: Set[String] = Set()
 
   override def applySettings(settingsBuilder: BigtableDataSettings.Builder): Unit = {
@@ -228,14 +159,9 @@ case class UserAgentConfig(connectorArtifactId: String,
     Seq(
       Some(s"$connectorArtifactId/$connectorVersion"),
       Some(s"spark/$sparkVersion"),
-      Option(javaVersion).filter(_.nonEmpty).map(v => s"java/$v"),
-      Option(scalaVersion).filter(_.nonEmpty).map(v => s"scala/$v"),
       Option(sourceInfo).filter(_.nonEmpty),
-      Option(msasImageVersion).filter(_.nonEmpty),
-      Option(databricksVersion).filter(_.nonEmpty),
-      Option(k8sEnvironment).filter(_.nonEmpty),
-      Option(msasServerlessVersion).filter(_.nonEmpty),
-      Option(customPlatformOrRuntime).filter(_.nonEmpty)
+      Option(scalaVersion).filter(_.nonEmpty).map(v => s"scala/$v"),
+      Option(platformOrRuntime).filter(_.nonEmpty)
     ).flatten.mkString(" ")
   }
 
@@ -244,22 +170,18 @@ case class UserAgentConfig(connectorArtifactId: String,
        | connectorArtifactId: $connectorArtifactId
        | connectorVersion: $connectorVersion
        | sparkVersion: $sparkVersion
-       | javaVersion: $javaVersion
        | scalaVersion: $scalaVersion
        | sourceInfo: $sourceInfo
-       | msasImageVersion: $msasImageVersion
-       | databricksVersion: $databricksVersion
-       | k8sEnvironment: $k8sEnvironment
-       | msasServerlessVersion: $msasServerlessVersion
-       | customPlatformOrRuntime: $customPlatformOrRuntime
+       | platformOrRuntime: $platformOrRuntime
        |)""".stripMargin
 }
 
 /**
  * Type definitions for platform and runtime user-agent flags.
  *
- * GCP runtimes track runtime/version (dataproc/<version>, serverless/<version>),
- * while other platforms emit platform/<platform-name> (platform/gke, platform/eks, platform/emr, platform/emr-serverless, platform/k8s).
+ * GCP runtimes track runtime/version (e.g. dataproc/3.0), while other platforms emit
+ * platform/<platform-name> (platform/gcp-serverless, platform/gke, platform/eks,
+ * platform/emr, platform/emr-serverless, platform/k8s).
  */
 sealed trait UserAgentFlag {
   def flag: String
@@ -287,21 +209,4 @@ object Platform {
   case object EMR extends Platform("platform/emr")
   case object EMRServerless extends Platform("platform/emr-serverless")
   case object K8s extends Platform("platform/k8s")
-  case object NoPlatform extends Platform("")
 }
-
-object UserAgentFlag {
-  type GcpRuntime = com.google.cloud.spark.bigtable.datasources.config.client.GcpRuntime
-  val Dataproc = GcpRuntime.Dataproc
-
-  type OtherPlatform = Platform
-  val GcpServerless = Platform.GcpServerless
-  val Gke = Platform.GKE
-  val Eks = Platform.EKS
-  val Emr = Platform.EMR
-  val EmrServerless = Platform.EMRServerless
-  val K8s = Platform.K8s
-  val Databricks = Platform.Databricks
-}
-
-
