@@ -92,7 +92,7 @@
     <openlineage-entrypoint.version>1.0.0</openlineage-entrypoint.version>
     <re2j.version>1.8</re2j.version>
     <upickle.version>4.2.1</upickle.version>
-    <jackson.version>2.15.2</jackson.version>
+    <jackson.version>2.18.8</jackson.version>
 
     <!-- Build-plugin versions (config lives in <pluginManagement> below). -->
     <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
