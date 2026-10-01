@@ -285,7 +285,7 @@ run_pyspark_test() {
     # must be manually uploaded to the bucket first.
     # TODO: Move this logic to an env setup script/Java code for easier reproduction.
     # Unsupported flag -q was found in the original gsutil command and has been omitted.
-    gcloud storage cp "gs://bigtable-spark-test-resources/spark-files/${SPARK_BIN_NAME}.tgz" .
+    gcloud storage cp --quiet "gs://bigtable-spark-test-resources/spark-files/${SPARK_BIN_NAME}.tgz" .
     tar xzf ${SPARK_BIN_NAME}.tgz
     PYSPARK_TABLE_ID=$(create_table_id "pyspark")
     ./${SPARK_BIN_NAME}/bin/spark-submit \
