@@ -284,7 +284,7 @@ run_pyspark_test() {
     # Download Apache Spark on the machine from a GCS bucket, new versions
     # must be manually uploaded to the bucket first.
     # TODO: Move this logic to an env setup script/Java code for easier reproduction.
-    gsutil -q cp "gs://bigtable-spark-test-resources/spark-files/${SPARK_BIN_NAME}.tgz" .
+    gcloud storage cp --quiet "gs://bigtable-spark-test-resources/spark-files/${SPARK_BIN_NAME}.tgz" .
     tar xzf ${SPARK_BIN_NAME}.tgz
     PYSPARK_TABLE_ID=$(create_table_id "pyspark")
     ./${SPARK_BIN_NAME}/bin/spark-submit \
