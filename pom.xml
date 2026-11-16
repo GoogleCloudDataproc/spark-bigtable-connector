@@ -328,6 +328,14 @@
                     <exclude>org.slf4j:slf4j-reload4j</exclude>
                     <exclude>org.slf4j:slf4j-api</exclude>
                     <exclude>ch.qos.reload4j:reload4j</exclude>
+                    <!-- Conscrypt can't be relocated: its prebuilt JNI library registers
+                         its native methods against the hard-coded org/conscrypt/* class
+                         names. gRPC only loads it reflectively (io.grpc.internal.ConscryptLoader)
+                         as an optional faster crypto provider and falls back to the JDK
+                         provider when it is absent, so leave it to the runtime classpath
+                         rather than bundling an unrelocated copy that clashes with the
+                         platform's own Conscrypt. -->
+                    <exclude>org.conscrypt:conscrypt-openjdk-uber</exclude>
                   </excludes>
                 </artifactSet>
                 <relocations>
@@ -368,6 +376,75 @@
                   <relocation>
                     <pattern>io.openlineage.spark.shade</pattern>
                     <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.openlineage.spark.shade</shadedPattern>
+                  </relocation>
+                  <!-- Remaining third-party packages bundled in the jar, relocated so they
+                       can't clash with other copies on the Spark classpath. -->
+                  <relocation>
+                    <pattern>org.apache.http</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.org.apache.http</shadedPattern>
+                  </relocation>
+                  <!-- Only commons-codec is bundled. A broader org.apache.commons pattern
+                       would also rewrite references to commons-logging and commons-lang,
+                       which are not bundled and come from Spark. -->
+                  <relocation>
+                    <pattern>org.apache.commons.codec</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.org.apache.commons.codec</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>org.threeten</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.org.threeten</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>com.fasterxml.jackson</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.com.fasterxml.jackson</shadedPattern>
+                  </relocation>
+                  <!-- Scala libraries. Shading doesn't rewrite the Scala signatures, so
+                       Scala code can't be compiled against these relocated classes, but
+                       the connector's already-compiled code runs fine against them. -->
+                  <relocation>
+                    <pattern>upickle</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.upickle</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>ujson</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.ujson</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>upack</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.upack</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>geny</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.geny</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>scala.util.parsing</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.scala.util.parsing</shadedPattern>
+                  </relocation>
+                  <!-- Annotation-only packages. -->
+                  <relocation>
+                    <pattern>org.checkerframework</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.org.checkerframework</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>javax.annotation</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.javax.annotation</shadedPattern>
+                    <excludes>
+                      <!-- Part of the JDK (java.compiler module). -->
+                      <exclude>javax.annotation.processing.**</exclude>
+                    </excludes>
+                  </relocation>
+                  <relocation>
+                    <pattern>org.jspecify</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.org.jspecify</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>org.codehaus.mojo.animal_sniffer</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.org.codehaus.mojo.animal_sniffer</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>android.annotation</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.android.annotation</shadedPattern>
                   </relocation>
                 </relocations>
               </configuration>
