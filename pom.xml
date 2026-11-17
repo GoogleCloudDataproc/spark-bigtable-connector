@@ -68,8 +68,8 @@
     <scala.binary.version>2.13</scala.binary.version>
     <connector.artifact.id>spark-bigtable_2.13</connector.artifact.id>
     <spark.version>3.5.3</spark.version>
-    <bigtable.java.version>2.75.1</bigtable.java.version>
-    <bigtable.java.emulator.version>0.212.1</bigtable.java.emulator.version>
+    <bigtable.java.version>2.89.0</bigtable.java.version>
+    <bigtable.java.emulator.version>0.226.0</bigtable.java.emulator.version>
 
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -92,7 +92,7 @@
     <openlineage-entrypoint.version>1.0.0</openlineage-entrypoint.version>
     <re2j.version>1.8</re2j.version>
     <upickle.version>4.2.1</upickle.version>
-    <jackson.version>2.15.2</jackson.version>
+    <jackson.version>2.18.11</jackson.version>
 
     <!-- Build-plugin versions (config lives in <pluginManagement> below). -->
     <scala-maven-plugin.version>4.7.2</scala-maven-plugin.version>
