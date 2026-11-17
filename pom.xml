@@ -335,7 +335,7 @@
                          provider when it is absent, so leave it to the runtime classpath
                          rather than bundling an unrelocated copy that clashes with the
                          platform's own Conscrypt. -->
-                    <exclude>org.conscrypt:conscrypt-openjdk-uber</exclude>
+                    <exclude>org.conscrypt:*</exclude>
                   </excludes>
                 </artifactSet>
                 <relocations>
