@@ -57,13 +57,6 @@
       <artifactId>upickle_${scala.binary.version}</artifactId>
     </dependency>
 
-    <!-- To fix the "NoClassDefFoundError: com/fasterxml/jackson/core/exc/StreamConstraintsException" error with Spark 3.5-->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
     <!-- To fix the "NoClassDefFoundError: scala/util/parsing/json/JSON$" error with Spark 3.4. -->
     <dependency>
       <groupId>org.scala-lang.modules</groupId>
