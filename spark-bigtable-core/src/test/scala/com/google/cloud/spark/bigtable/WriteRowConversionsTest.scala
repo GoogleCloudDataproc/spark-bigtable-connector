@@ -129,6 +129,7 @@ class WriteRowConversionsTest
                     .setTimestampMicros(10000000L)
                     .setValue(ByteString.copyFrom(cellMutationBytes))
                 )
+                .setTimestampOrigin(Mutation.TimestampOrigin.USER_SPECIFIED)
             )
             .build()
         assert(actualEntry == expectedEntry)
@@ -200,6 +201,7 @@ class WriteRowConversionsTest
                   ByteString.copyFrom(BytesConverter.toBytes("colValue"))
                 )
             )
+            .setTimestampOrigin(Mutation.TimestampOrigin.USER_SPECIFIED)
         )
         .build()
     assert(actualEntry == expectedEntry)
@@ -312,6 +314,7 @@ class WriteRowConversionsTest
                   ByteString.copyFrom(BytesConverter.toBytes(6767676767L))
                 )
             )
+            .setTimestampOrigin(Mutation.TimestampOrigin.USER_SPECIFIED)
         )
         .addMutations(
           Mutation
@@ -328,6 +331,7 @@ class WriteRowConversionsTest
                   ByteString.copyFrom(BytesConverter.toBytes(456.98701))
                 )
             )
+            .setTimestampOrigin(Mutation.TimestampOrigin.USER_SPECIFIED)
         )
         .addMutations(
           Mutation
@@ -344,6 +348,7 @@ class WriteRowConversionsTest
                   ByteString.copyFrom(BytesConverter.toBytes("StringCOL_123"))
                 )
             )
+            .setTimestampOrigin(Mutation.TimestampOrigin.USER_SPECIFIED)
         )
         .addMutations(
           Mutation
@@ -358,6 +363,7 @@ class WriteRowConversionsTest
                 .setTimestampMicros(10000000L)
                 .setValue(ByteString.copyFrom(BytesConverter.toBytes(-1999)))
             )
+            .setTimestampOrigin(Mutation.TimestampOrigin.USER_SPECIFIED)
         )
         .build()
 
