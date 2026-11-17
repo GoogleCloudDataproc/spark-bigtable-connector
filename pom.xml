@@ -462,6 +462,15 @@
                   <exclude>META-INF/*.SF</exclude>
                   <exclude>META-INF/*.DSA</exclude>
                   <exclude>META-INF/*.RSA</exclude>
+                  <!-- Shade relocates the class names inside versioned entries but not
+                       their paths, so they would be broken. The shaded jar isn't
+                       multi-release anyway, so the JVM only loads the base classes. -->
+                  <exclude>META-INF/versions/**</exclude>
+                  <exclude>module-info.class</exclude>
+                  <!-- threeten-extra registers its chronologies with the JDK. Once
+                       relocated, any call to Chronology.getAvailableChronologies() on the
+                       JVM would load our shaded copies, so don't register them. -->
+                  <exclude>META-INF/services/java.time.chrono.Chronology</exclude>
                 </excludes>
               </filter>
             </filters>
