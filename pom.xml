@@ -86,7 +86,7 @@
     <reload4j.version>1.2.24</reload4j.version>
     <scala-parser-combinators.version>1.1.2</scala-parser-combinators.version>
     <commons-lang.version>2.6</commons-lang.version>
-    <openlineage.version>1.22.0</openlineage.version>
+    <openlineage.version>1.55.0</openlineage.version>
 
     <!-- Dependency versions shared by all connector variant modules. -->
     <openlineage-entrypoint.version>1.0.0</openlineage-entrypoint.version>
@@ -338,6 +338,10 @@
                   <relocation>
                     <pattern>io.grpc</pattern>
                     <shadedPattern>com.google.cloud.spark.bigtable.repackaged.io.grpc</shadedPattern>
+                  </relocation>
+                  <relocation>
+                    <pattern>dev.cel</pattern>
+                    <shadedPattern>com.google.cloud.spark.bigtable.repackaged.dev.cel</shadedPattern>
                   </relocation>
                   <!-- Telemetry libraries that gRPC/google-http-client depend on.
                        These MUST be relocated in lockstep with io.grpc above: they
