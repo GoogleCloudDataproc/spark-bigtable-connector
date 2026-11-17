@@ -138,7 +138,7 @@
         </property>
       </activation>
       <properties>
-        <openlineage.it.version>1.52.0</openlineage.it.version>
+        <openlineage.it.version>1.55.0</openlineage.it.version>
       </properties>
     </profile>
 
