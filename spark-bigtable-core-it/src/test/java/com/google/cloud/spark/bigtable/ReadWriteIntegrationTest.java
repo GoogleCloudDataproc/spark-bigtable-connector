@@ -417,8 +417,12 @@ public class ReadWriteIntegrationTest extends AbstractTestBase {
             + " \"col\":\"stringCol3\", \"type\":\"string\"}, \"stringCol4\":{\"cf\":\"col_family1\","
             + "\"col\":\"stringCol4\", \"type\":\"string\"}}}";
 
-    BigtableDataSettings settings =
-        BigtableDataSettings.newBuilder().setProjectId(projectId).setInstanceId(instanceId).build();
+    BigtableDataSettings.Builder settingsBuilder =
+        BigtableDataSettings.newBuilder().setProjectId(projectId).setInstanceId(instanceId);
+    // Disable vRPC sessions for the 100 MB setup mutations so uploading a 100 MB cell does not
+    // starve session heartbeats and fail with UNAVAILABLE: missed heartbeat.
+    settingsBuilder.stubSettings().setSessionsEnabled(false);
+    BigtableDataSettings settings = settingsBuilder.build();
 
     byte[] value = new byte[100 * 1024 * 1024];
     try (BigtableDataClient dataClient = BigtableDataClient.create(settings)) {
