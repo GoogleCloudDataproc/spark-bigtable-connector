@@ -1,5 +1,7 @@
 # Release Notes
 
+## Next
+
 ## 0.10.2 - 2026-11-19
 
 * fix: relocate the remaining third-party classes in the shaded jars and stop bundling Conscrypt
